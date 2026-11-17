@@ -1,17 +1,18 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import {
   Radar,
   RadarChart,
-  PolarGrid,
   PolarAngleAxis,
   ResponsiveContainer,
 } from 'recharts';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-const COLORS = {
+const DEFAULT_COLORS = {
+  bgColor: '#18191a',
   team1: '#1f2937', // Black
   team2: '#692fb2', // Purple
   radarTick: '#692fb2',
@@ -19,6 +20,20 @@ const COLORS = {
 };
 
 export default function Dashboard4() {
+  const [colors, setColors] = useState(DEFAULT_COLORS);
+
+  useEffect(() => {
+    const load = () => {
+      try {
+        const saved = localStorage.getItem('rtb_colors_dashboard4');
+        if (saved) setColors({ ...DEFAULT_COLORS, ...JSON.parse(saved) });
+      } catch (e) {}
+    };
+    load();
+    window.addEventListener('storage', load);
+    return () => window.removeEventListener('storage', load);
+  }, []);
+
   const { data, error, isLoading } = useSWR('/api/sheet4', fetcher, {
     refreshInterval: 5000,
   });
@@ -29,7 +44,6 @@ export default function Dashboard4() {
   const team1Row = data.data[0];
   const team2Row = data.data[1];
 
-  // Extract Team Names from index 0 (e.g. "C:\Team Logo\X2.png" -> "X2")
   const extractTeamName = (path: string) => {
     if (!path) return 'TEAM';
     const parts = path.split('\\');
@@ -43,7 +57,7 @@ export default function Dashboard4() {
     assist: parseInt(team1Row[3]) || 0,
     knockDown: parseInt(team1Row[4]) || 0,
     damage: parseInt(team1Row[7]) || 0,
-    color: COLORS.team1,
+    color: colors.team1,
   };
 
   const team2 = {
@@ -52,12 +66,11 @@ export default function Dashboard4() {
     assist: parseInt(team2Row[3]) || 0,
     knockDown: parseInt(team2Row[4]) || 0,
     damage: parseInt(team2Row[7]) || 0,
-    color: COLORS.team2,
+    color: colors.team2,
   };
 
-  // Normalize data for Radar Chart (0 to 100)
   const getNormalized = (val1: number, val2: number) => {
-    const max = Math.max(val1, val2) * 1.1; // 10% headroom
+    const max = Math.max(val1, val2) * 1.1;
     if (max === 0) return { n1: 0, n2: 0 };
     return { n1: (val1 / max) * 100, n2: (val2 / max) * 100 };
   };
@@ -88,12 +101,10 @@ export default function Dashboard4() {
 
   const CustomRadarTick = (props: any) => {
     const { payload, x, y, cx, cy, textAnchor } = props;
-    // Calculate direction from center to the tick
     const dx = x - cx;
     const dy = y - cy;
     const length = Math.sqrt(dx * dx + dy * dy);
     
-    // Push the text further out by 35 pixels
     const pushOut = 35;
     const nx = x + (dx / length) * pushOut;
     const ny = y + (dy / length) * pushOut;
@@ -103,7 +114,7 @@ export default function Dashboard4() {
         x={nx}
         y={ny}
         textAnchor={textAnchor || "middle"}
-        fill={COLORS.radarTick}
+        fill={colors.radarTick}
         fontSize={18}
         fontWeight="900"
       >
@@ -113,11 +124,8 @@ export default function Dashboard4() {
   };
 
   return (
-    <div className="w-full min-h-screen p-8 flex items-center justify-center bg-transparent overflow-hidden">
-      
-      {/* Container for the 3 columns (Left Stats, Radar, Right Stats) */}
+    <div className="w-full min-h-screen p-8 flex flex-col items-center justify-center bg-transparent overflow-hidden">
       <div className="w-full max-w-7xl flex items-center justify-between z-10 relative px-12">
-        
         {/* Left Team Stats */}
         <div className="flex flex-col items-end w-64 text-right">
           <div 
@@ -139,15 +147,13 @@ export default function Dashboard4() {
         <div className="w-[700px] h-[600px]">
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart cx="50%" cy="50%" outerRadius="52%" data={radarData} margin={{ top: 20, right: 80, bottom: 20, left: 80 }}>
-              {/* Outer boundary box */}
-              <Radar dataKey="max" stroke="#1f2937" fill="none" strokeWidth={2} isAnimationActive={true} animationDuration={3000} />
-              {/* The labels (KILL PTS, DAMAGE, etc.) at the 4 corners pushed further out */}
+              <Radar dataKey="max" stroke={colors.radarGrid} fill="none" strokeWidth={2} isAnimationActive={true} animationDuration={3000} />
+              
               <PolarAngleAxis 
                 dataKey="subject" 
                 tick={<CustomRadarTick />}
               />
               
-              {/* Radar for Team 1 */}
               <Radar
                 name={team1.name}
                 dataKey="A"
@@ -160,7 +166,6 @@ export default function Dashboard4() {
                 animationDuration={3000}
               />
               
-              {/* Radar for Team 2 */}
               <Radar
                 name={team2.name}
                 dataKey="B"
@@ -192,7 +197,6 @@ export default function Dashboard4() {
             <p>{team2.knockDown}</p>
           </div>
         </div>
-
       </div>
     </div>
   );

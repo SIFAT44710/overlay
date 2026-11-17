@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import {
   LineChart,
@@ -14,15 +15,30 @@ import {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-const COLORS = {
-  killPoints: '#00ffa3', // Green
-  survivalScore: '#ffea00', // Yellow
-  damage: '#ff00a0', // Pink
+const DEFAULT_COLORS = {
+  bgColor: '#18191a',
+  killPoints: '#00ffa3',
+  survivalScore: '#ffea00',
+  damage: '#ff00a0',
   axisTextLeft: '#ffffff80',
   axisTextRight: '#ff00a0',
 };
 
 export default function Dashboard3() {
+  const [colors, setColors] = useState(DEFAULT_COLORS);
+
+  useEffect(() => {
+    const load = () => {
+      try {
+        const saved = localStorage.getItem('rtb_colors_dashboard3');
+        if (saved) setColors({ ...DEFAULT_COLORS, ...JSON.parse(saved) });
+      } catch (e) {}
+    };
+    load();
+    window.addEventListener('storage', load);
+    return () => window.removeEventListener('storage', load);
+  }, []);
+
   const { data, error, isLoading } = useSWR('/api/sheet', fetcher, {
     refreshInterval: 5000,
   });
@@ -43,8 +59,6 @@ export default function Dashboard3() {
       };
     });
 
-  // Sort by Total Score to give a logical flow to the lines, or keep original order
-  // Let's sort by Total (descending) so the best teams are on the left
   chartData.sort((a: any, b: any) => b.total - a.total);
 
   const CustomXAxisTick = ({ x, y, payload }: any) => {
@@ -52,7 +66,6 @@ export default function Dashboard3() {
     
     return (
       <g transform={`translate(${x},${y})`}>
-        {/* Only Logo, No Text */}
         <image 
           href={teamData.logo} 
           x={-20} 
@@ -67,21 +80,21 @@ export default function Dashboard3() {
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
-      const data = payload[0].payload;
+      const d = payload[0].payload;
       return (
         <div className="bg-[#111111ee] backdrop-blur-md p-4 border border-[#444] rounded-xl shadow-2xl">
           <div className="flex items-center space-x-3 mb-3 border-b border-[#333] pb-2">
-            <img src={data.logo} alt="logo" className="w-8 h-8 rounded-full" />
-            <span className="text-white font-bold text-lg">{data.name}</span>
+            <img src={d.logo} alt="logo" className="w-8 h-8 rounded-full" />
+            <span className="text-white font-bold text-lg">{d.name}</span>
           </div>
-          <p className="font-semibold flex justify-between" style={{ color: COLORS.killPoints }}>
-            <span>Kill Points:</span> <span className="ml-4">{data.kills}</span>
+          <p className="font-semibold flex justify-between" style={{ color: colors.killPoints }}>
+            <span>Kill Points:</span> <span className="ml-4">{d.kills}</span>
           </p>
-          <p className="font-semibold flex justify-between" style={{ color: COLORS.survivalScore }}>
-            <span>Survival Score:</span> <span className="ml-4">{data.survival}</span>
+          <p className="font-semibold flex justify-between" style={{ color: colors.survivalScore }}>
+            <span>Survival Score:</span> <span className="ml-4">{d.survival}</span>
           </p>
-          <p className="font-semibold flex justify-between border-t border-[#333] mt-2 pt-2" style={{ color: COLORS.damage }}>
-            <span>Damage:</span> <span className="ml-4">{data.damage}</span>
+          <p className="font-semibold flex justify-between border-t border-[#333] mt-2 pt-2" style={{ color: colors.damage }}>
+            <span>Damage:</span> <span className="ml-4">{d.damage}</span>
           </p>
         </div>
       );
@@ -100,9 +113,7 @@ export default function Dashboard3() {
     
     return (
       <g transform={`translate(${cx},${cy})`}>
-        {/* Radar ping animation circle */}
         <circle className="animate-ping" cx={0} cy={0} r={8} fill={fill} opacity={0.5} />
-        {/* Solid pulsing core dot */}
         <circle className="animate-pulse" cx={0} cy={0} r={5} fill={fill} stroke="#111" strokeWidth={2} />
       </g>
     );
@@ -122,23 +133,21 @@ export default function Dashboard3() {
           <LineChart data={chartData} margin={{ top: 20, right: 20, bottom: 40, left: 20 }}>
             <CartesianGrid stroke="#ffffff15" vertical={false} />
             
-            {/* Left Axis for Kills and Survival */}
             <YAxis 
               yAxisId="left" 
               axisLine={false}
               tickLine={false}
-              tick={{fill: COLORS.axisTextLeft, fontSize: 14, fontWeight: 'bold'}} 
-              label={{ value: 'KILL', angle: -90, position: 'insideLeft', fill: COLORS.axisTextLeft, fontWeight: 'bold', offset: -10 }}
+              tick={{fill: colors.axisTextLeft, fontSize: 14, fontWeight: 'bold'}} 
+              label={{ value: 'KILL', angle: -90, position: 'insideLeft', fill: colors.axisTextLeft, fontWeight: 'bold', offset: -10 }}
             />
             
-            {/* Right Axis for Damage */}
             <YAxis 
               yAxisId="right" 
               orientation="right"
               axisLine={false}
               tickLine={false}
-              tick={{fill: COLORS.axisTextRight, fontSize: 14, fontWeight: 'bold'}} 
-              label={{ value: 'DAMAGE', angle: 90, position: 'insideRight', fill: COLORS.axisTextRight, fontWeight: 'bold', offset: -10 }}
+              tick={{fill: colors.axisTextRight, fontSize: 14, fontWeight: 'bold'}} 
+              label={{ value: 'DAMAGE', angle: 90, position: 'insideRight', fill: colors.axisTextRight, fontWeight: 'bold', offset: -10 }}
             />
             
             <XAxis 
@@ -162,44 +171,41 @@ export default function Dashboard3() {
               wrapperStyle={{ paddingTop: '40px' }}
             />
 
-            {/* Kill Points Line (Green with Blinking Dots) */}
             <Line 
               yAxisId="left"
               type="monotone" 
               name="Kill Points"
               dataKey="kills" 
-              stroke={COLORS.killPoints} 
+              stroke={colors.killPoints} 
               strokeWidth={3} 
-              dot={<BlinkingDot fill={COLORS.killPoints} />} 
-              activeDot={{ r: 8, fill: '#fff', stroke: COLORS.killPoints, strokeWidth: 2 }} 
+              dot={<BlinkingDot fill={colors.killPoints} />} 
+              activeDot={{ r: 8, fill: '#fff', stroke: colors.killPoints, strokeWidth: 2 }} 
               isAnimationActive={true}
               animationDuration={3000}
             />
             
-            {/* Survival Score Line */}
             <Line 
               yAxisId="left"
               type="monotone" 
               name="Survival Score"
               dataKey="survival" 
-              stroke={COLORS.survivalScore} 
+              stroke={colors.survivalScore} 
               strokeWidth={3} 
-              dot={{ r: 5, fill: COLORS.survivalScore, stroke: '#111', strokeWidth: 2 }} 
-              activeDot={{ r: 8, fill: '#fff', stroke: COLORS.survivalScore, strokeWidth: 2 }} 
+              dot={{ r: 5, fill: colors.survivalScore, stroke: '#111', strokeWidth: 2 }} 
+              activeDot={{ r: 8, fill: '#fff', stroke: colors.survivalScore, strokeWidth: 2 }} 
               isAnimationActive={true}
               animationDuration={3000}
             />
             
-            {/* Damage Line (on Right Axis) */}
             <Line 
               yAxisId="right"
               type="monotone" 
               name="Damage"
               dataKey="damage" 
-              stroke={COLORS.damage} 
+              stroke={colors.damage} 
               strokeWidth={3} 
-              dot={{ r: 5, fill: COLORS.damage, stroke: '#111', strokeWidth: 2 }} 
-              activeDot={{ r: 8, fill: '#fff', stroke: COLORS.damage, strokeWidth: 2 }} 
+              dot={{ r: 5, fill: colors.damage, stroke: '#111', strokeWidth: 2 }} 
+              activeDot={{ r: 8, fill: '#fff', stroke: colors.damage, strokeWidth: 2 }} 
               isAnimationActive={true}
               animationDuration={3000}
             />

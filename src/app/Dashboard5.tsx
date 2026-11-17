@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import {
   LineChart,
@@ -12,13 +13,28 @@ import {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-const COLORS = {
+const DEFAULT_COLORS = {
   team1: '#000000', // Black
   team2: '#692fb2', // Purple
   lineStroke: '#6b7280', // Gray line connecting the dots
+  textColor: '#ffffff',
 };
 
 export default function Dashboard5() {
+  const [colors, setColors] = useState(DEFAULT_COLORS);
+
+  useEffect(() => {
+    const load = () => {
+      try {
+        const saved = localStorage.getItem('rtb_colors_dashboard5');
+        if (saved) setColors({ ...DEFAULT_COLORS, ...JSON.parse(saved) });
+      } catch (e) {}
+    };
+    load();
+    window.addEventListener('storage', load);
+    return () => window.removeEventListener('storage', load);
+  }, []);
+
   const { data, error, isLoading } = useSWR('/api/sheet5', fetcher, {
     refreshInterval: 5000,
   });
@@ -43,8 +59,8 @@ export default function Dashboard5() {
     knockDown: parseInt(team1Row[4]) || 0,
     damage: parseInt(team1Row[7]) || 0,
     headshots: parseInt(team1Row[30]) || 0,
-    color: COLORS.team1,
-    textColor: '#ffffff'
+    color: colors.team1,
+    textColor: colors.textColor,
   };
 
   const team2 = {
@@ -54,8 +70,8 @@ export default function Dashboard5() {
     knockDown: parseInt(team2Row[4]) || 0,
     damage: parseInt(team2Row[7]) || 0,
     headshots: parseInt(team2Row[30]) || 0,
-    color: COLORS.team2,
-    textColor: '#ffffff'
+    color: colors.team2,
+    textColor: colors.textColor,
   };
 
   // Map values to a specific vertical band to enforce the 'V' shape
@@ -172,11 +188,11 @@ export default function Dashboard5() {
             <XAxis dataKey="name" hide={true} />
             <YAxis domain={[0, 100]} hide={true} />
             
-            {/* Team 1 Line (Purple) */}
+            {/* Team 1 Line */}
             <Line 
               type="linear" 
               dataKey="team1" 
-              stroke={COLORS.lineStroke} 
+              stroke={colors.lineStroke} 
               strokeWidth={3} 
               dot={(props) => (
                 <CustomDot 
@@ -190,11 +206,11 @@ export default function Dashboard5() {
               animationDuration={3000}
             />
             
-            {/* Team 2 Line (Yellow) */}
+            {/* Team 2 Line */}
             <Line 
               type="linear" 
               dataKey="team2" 
-              stroke={COLORS.lineStroke} 
+              stroke={colors.lineStroke} 
               strokeWidth={3} 
               dot={(props) => (
                 <CustomDot 
