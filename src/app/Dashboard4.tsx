@@ -19,10 +19,14 @@ const DEFAULT_COLORS = {
   radarGrid: '#1f2937',
 };
 
-export default function Dashboard4() {
-  const [colors, setColors] = useState(DEFAULT_COLORS);
+export default function Dashboard4({ overrideColors }: { overrideColors?: any } = {}) {
+  const [colors, setColors] = useState(overrideColors || DEFAULT_COLORS);
 
   useEffect(() => {
+    if (overrideColors) {
+      setColors({ ...DEFAULT_COLORS, ...overrideColors });
+      return;
+    }
     const load = () => {
       try {
         const saved = localStorage.getItem('rtb_colors_dashboard4');
@@ -32,14 +36,23 @@ export default function Dashboard4() {
     load();
     window.addEventListener('storage', load);
     return () => window.removeEventListener('storage', load);
-  }, []);
+  }, [overrideColors]);
 
   const { data, error, isLoading } = useSWR('/api/sheet4', fetcher, {
     refreshInterval: 5000,
   });
 
-  if (isLoading) return null;
-  if (error || !data?.data || data.data.length < 2) return <div className="flex h-screen items-center justify-center text-red-500">Error loading data.</div>;
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center text-white/60">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 border-3 border-purple-500 border-t-transparent rounded-full animate-spin" />
+          <span className="text-2xl font-black tracking-widest uppercase">Loading Radar Data...</span>
+        </div>
+      </div>
+    );
+  }
+  if (error || !data?.data || data.data.length < 2) return <div className="flex h-screen items-center justify-center text-red-500 font-bold text-xl">Error loading data.</div>;
 
   const team1Row = data.data[0];
   const team2Row = data.data[1];

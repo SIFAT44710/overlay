@@ -1,7 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Dashboard from '../Dashboard';
+import Dashboard2 from '../Dashboard2';
+import Dashboard3 from '../Dashboard3';
+import Dashboard4 from '../Dashboard4';
+import Dashboard5 from '../Dashboard5';
+import Dashboard6 from '../Dashboard6';
+import Dashboard7 from '../Dashboard7';
 
 interface ColorFieldDef {
   key: string;
@@ -275,6 +282,81 @@ const SLIDES: SlideConfig[] = [
   },
 ];
 
+interface PreviewStageProps {
+  activeSlideId: number;
+  currentColors: Record<string, string>;
+  bgMode: 'dark' | 'transparent' | 'stream';
+}
+
+function BroadcastPreviewStage({ activeSlideId, currentColors, bgMode }: PreviewStageProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.25);
+
+  useEffect(() => {
+    const updateScale = () => {
+      if (containerRef.current) {
+        const width = containerRef.current.clientWidth;
+        if (width > 0) {
+          setScale(width / 1920);
+        }
+      }
+    };
+    updateScale();
+    const ro = new ResizeObserver(updateScale);
+    if (containerRef.current) ro.observe(containerRef.current);
+    window.addEventListener('resize', updateScale);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', updateScale);
+    };
+  }, []);
+
+  let bgStyle: React.CSSProperties = {};
+  if (bgMode === 'transparent') {
+    bgStyle = {
+      backgroundImage: `repeating-conic-gradient(#262626 0% 25%, #181818 0% 50%)`,
+      backgroundSize: '20px 20px',
+    };
+  } else if (bgMode === 'stream') {
+    bgStyle = {
+      backgroundImage: `radial-gradient(circle at center, #1e1b4b 0%, #090a12 100%)`,
+    };
+  } else {
+    bgStyle = {
+      backgroundColor: currentColors.bgColor || '#18191a',
+    };
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      style={bgStyle}
+      className="w-full aspect-video rounded-xl overflow-hidden border border-[#3a3b3c] relative shadow-2xl transition-colors duration-150 select-none flex items-start justify-start"
+    >
+      <div
+        style={{
+          width: 1920,
+          height: 1080,
+          transform: `scale(${scale})`,
+          transformOrigin: '0 0',
+        }}
+        className="pointer-events-none select-none origin-top-left shrink-0"
+      >
+        {activeSlideId === 1 && <Dashboard overrideColors={currentColors} />}
+        {activeSlideId === 2 && <Dashboard2 overrideColors={currentColors} />}
+        {activeSlideId === 3 && <Dashboard3 overrideColors={currentColors} />}
+        {activeSlideId === 4 && <Dashboard4 overrideColors={currentColors} />}
+        {activeSlideId === 5 && <Dashboard5 overrideColors={currentColors} />}
+        {activeSlideId === 6 && <Dashboard6 overrideColors={currentColors} />}
+        {activeSlideId === 7 && <Dashboard7 overrideColors={currentColors} />}
+      </div>
+      <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded text-[10px] font-bold text-neutral-300 border border-white/10 z-20">
+        Live 1080p Stage
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPalettePage() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [passwordInput, setPasswordInput] = useState<string>('');
@@ -284,6 +366,7 @@ export default function AdminPalettePage() {
   const [colorState, setColorState] = useState<Record<string, Record<string, string>>>({});
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [saveToast, setSaveToast] = useState<string | null>(null);
+  const [bgMode, setBgMode] = useState<'dark' | 'transparent' | 'stream'>('dark');
 
   // Check auth on load
   useEffect(() => {
@@ -656,36 +739,64 @@ export default function AdminPalettePage() {
         {/* Right Column: Live Broadcast Preview Frame (5 Cols) */}
         <div className="lg:col-span-5 space-y-6">
           <div className="sticky top-6 p-5 rounded-2xl bg-[#242526] border border-[#3a3b3c] shadow-xl flex flex-col">
-            <div className="flex items-center justify-between mb-3 pb-3 border-b border-[#3a3b3c]">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3 pb-3 border-b border-[#3a3b3c]">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
                 <span className="text-xs font-black uppercase tracking-wider text-white">
                   Live Overlay Preview (Slide {activeSlide.id})
                 </span>
               </div>
-              <span className="text-[10px] font-mono text-[#b0b3b8]">1920 x 1080 Aspect</span>
-            </div>
-
-            <div className="w-full aspect-video rounded-xl overflow-hidden border border-[#3a3b3c] bg-black relative shadow-inner">
-              <iframe
-                key={`${activeSlide.id}-${JSON.stringify(currentColors)}`}
-                src={`/${activeSlide.id}`}
-                className="w-full h-full border-0 pointer-events-none transform scale-[1.0] origin-top-left"
-                title={`Preview of Slide ${activeSlide.id}`}
-              />
-              <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-md px-2 py-1 rounded text-[10px] font-bold text-neutral-300 border border-white/10">
-                Live Preview
+              
+              {/* Preview Backdrop Modes */}
+              <div className="flex items-center gap-1 bg-[#18191a] p-1 rounded-xl border border-[#3a3b3c] self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setBgMode('dark')}
+                  className={`px-2 py-0.5 text-[10px] font-black uppercase rounded-lg transition ${
+                    bgMode === 'dark' ? 'bg-[#242526] text-white shadow' : 'text-[#b0b3b8] hover:text-white'
+                  }`}
+                  title="Studio canvas dark background"
+                >
+                  Canvas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBgMode('transparent')}
+                  className={`px-2 py-0.5 text-[10px] font-black uppercase rounded-lg transition ${
+                    bgMode === 'transparent' ? 'bg-[#242526] text-white shadow' : 'text-[#b0b3b8] hover:text-white'
+                  }`}
+                  title="OBS Transparent Checkerboard"
+                >
+                  OBS Grid
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBgMode('stream')}
+                  className={`px-2 py-0.5 text-[10px] font-black uppercase rounded-lg transition ${
+                    bgMode === 'stream' ? 'bg-[#242526] text-white shadow' : 'text-[#b0b3b8] hover:text-white'
+                  }`}
+                  title="Simulated Game Stage"
+                >
+                  Stage
+                </button>
               </div>
             </div>
+
+            {/* Direct Scaled 1920x1080 Real-Time Canvas Stage */}
+            <BroadcastPreviewStage
+              activeSlideId={activeSlide.id}
+              currentColors={currentColors}
+              bgMode={bgMode}
+            />
 
             <div className="mt-4 pt-4 border-t border-[#3a3b3c] space-y-3">
               <div className="p-3 rounded-xl bg-[#18191a] border border-[#3a3b3c] text-xs space-y-1">
                 <div className="flex items-center justify-between font-bold text-white">
                   <span>vMix / OBS Browser Input:</span>
-                  <span className="text-emerald-400 font-mono text-[11px]">Active</span>
+                  <span className="text-emerald-400 font-mono text-[11px]">Real-Time Synced</span>
                 </div>
                 <p className="text-[11px] text-[#b0b3b8] leading-relaxed">
-                  Add <code className="text-yellow-400 font-mono">/{activeSlide.id}</code> in vMix as a Browser Source with 1920x1080 resolution. Any color changed here updates immediately on stream!
+                  Add <code className="text-yellow-400 font-mono">/{activeSlide.id}</code> in OBS/vMix Browser Source (1920x1080). Any color changed here updates instantly without lag!
                 </p>
               </div>
 
@@ -695,14 +806,14 @@ export default function AdminPalettePage() {
                   target="_blank"
                   className="flex-1 py-2.5 rounded-xl bg-[#1877f2] hover:bg-[#166fe5] text-white text-xs font-black uppercase tracking-wider text-center transition shadow"
                 >
-                  Open Clean Window
+                  Open Clean OBS Window ↗
                 </Link>
                 <button
                   type="button"
                   onClick={() => copyObsUrl(activeSlide.id)}
                   className="px-4 py-2.5 rounded-xl bg-[#3a3b3c] hover:bg-[#4e4f50] text-white text-xs font-bold transition"
                 >
-                  {copiedKey === `obs-${activeSlide.id}` ? 'Copied!' : 'Copy Link'}
+                  {copiedKey === `obs-${activeSlide.id}` ? '✓ Copied' : 'Copy Link'}
                 </button>
               </div>
             </div>
