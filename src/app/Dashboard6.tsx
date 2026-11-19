@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import {
   Radar,
@@ -11,13 +12,56 @@ import {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-export default function MVPStats() {
+const DEFAULT_COLORS = {
+  radarFill: '#692fb2',
+  badgeBg: '#000000',
+  badgeBorder: '#692fb2',
+  badgeText: '#ffffff',
+  gridStroke: '#333333',
+};
+
+export default function MVPStats({ overrideColors }: { overrideColors?: any } = {}) {
+  const [colors, setColors] = useState(overrideColors || DEFAULT_COLORS);
+
+  const { data: themeData } = useSWR('/api/theme', fetcher, {
+    refreshInterval: 3000,
+  });
+
+  useEffect(() => {
+    if (overrideColors) {
+      setColors({ ...DEFAULT_COLORS, ...overrideColors });
+      return;
+    }
+    if (themeData?.themes?.dashboard6) {
+      setColors({ ...DEFAULT_COLORS, ...themeData.themes.dashboard6 });
+      return;
+    }
+    const load = () => {
+      try {
+        const saved = localStorage.getItem('rtb_colors_dashboard6');
+        if (saved) setColors({ ...DEFAULT_COLORS, ...JSON.parse(saved) });
+      } catch (e) {}
+    };
+    load();
+    window.addEventListener('storage', load);
+    return () => window.removeEventListener('storage', load);
+  }, [overrideColors, themeData]);
+
   const { data, error, isLoading } = useSWR('/api/sheet6', fetcher, {
     refreshInterval: 5000,
   });
 
-  if (isLoading) return null;
-  if (error || !data?.mvpData) return <div className="flex h-screen items-center justify-center text-red-500">Error loading data.</div>;
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center text-white/60">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 border-3 border-purple-500 border-t-transparent rounded-full animate-spin" />
+          <span className="text-2xl font-black tracking-widest uppercase">Loading MVP Data...</span>
+        </div>
+      </div>
+    );
+  }
+  if (error || !data?.mvpData) return <div className="flex h-screen items-center justify-center text-red-500 font-bold text-xl">Error loading data.</div>;
 
   const mvpData = data.mvpData;
 
@@ -77,17 +121,17 @@ export default function MVPStats() {
           width={110} 
           height={60} 
           rx={8} 
-          fill="#000000" 
+          fill={colors.badgeBg} 
           filter="drop-shadow(0px 4px 6px rgba(0,0,0,0.3))"
-          stroke="#692fb2"
+          stroke={colors.badgeBorder}
           strokeWidth="2"
         />
         {/* Value Text */}
-        <text x={0} y={0} textAnchor="middle" fill="#ffffff" fontSize={26} fontWeight="900">
+        <text x={0} y={0} textAnchor="middle" fill={colors.badgeText} fontSize={26} fontWeight="900">
           {stat?.valRaw}
         </text>
         {/* Label Text */}
-        <text x={0} y={18} textAnchor="middle" fill="#692fb2" fontSize={11} fontWeight="800" className="tracking-widest">
+        <text x={0} y={18} textAnchor="middle" fill={colors.badgeBorder} fontSize={11} fontWeight="800" className="tracking-widest">
           {payload.value}
         </text>
       </g>
@@ -107,7 +151,7 @@ export default function MVPStats() {
           >
             <PolarGrid 
               gridType="polygon" 
-              stroke="#000000" 
+              stroke={colors.gridStroke} 
               strokeWidth={1}
             />
             
@@ -119,13 +163,13 @@ export default function MVPStats() {
             <Radar
               name="MVP"
               dataKey="valNorm"
-              stroke="#692fb2" // Purple line
+              stroke={colors.radarFill} 
               strokeWidth={2}
-              fill="#692fb2" // Purple fill
+              fill={colors.radarFill} 
               fillOpacity={0.6}
               isAnimationActive={true}
               animationDuration={3000}
-              dot={{ r: 6, fill: '#692fb2', stroke: '#000000', strokeWidth: 2 }} // Dots at corners
+              dot={{ r: 6, fill: colors.radarFill, stroke: '#000000', strokeWidth: 2 }} 
               className="animate-pulse"
             />
           </RadarChart>

@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import {
   ComposedChart,
@@ -15,49 +16,78 @@ import {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-const COLORS = {
+const DEFAULT_COLORS = {
+  bgColor: '#18191a',
   barFill: '#ffffff',
   lineStroke: '#ffc600',
   lineLabel: '#000000',
-  barLabel: '#000000'
+  barLabel: '#000000',
+  axisText: '#ffffff',
 };
 
-export default function Dashboard() {
+export default function Dashboard({ overrideColors }: { overrideColors?: any } = {}) {
+  const [colors, setColors] = useState(overrideColors || DEFAULT_COLORS);
+
+  const { data: themeData } = useSWR('/api/theme', fetcher, {
+    refreshInterval: 3000,
+  });
+
+  useEffect(() => {
+    if (overrideColors) {
+      setColors({ ...DEFAULT_COLORS, ...overrideColors });
+      return;
+    }
+    if (themeData?.themes?.dashboard1) {
+      setColors({ ...DEFAULT_COLORS, ...themeData.themes.dashboard1 });
+      return;
+    }
+    const load = () => {
+      try {
+        const saved = localStorage.getItem('rtb_colors_dashboard1');
+        if (saved) setColors({ ...DEFAULT_COLORS, ...JSON.parse(saved) });
+      } catch (e) {}
+    };
+    load();
+    window.addEventListener('storage', load);
+    return () => window.removeEventListener('storage', load);
+  }, [overrideColors, themeData]);
+
   const { data, error, isLoading } = useSWR('/api/sheet', fetcher, {
     refreshInterval: 5000,
   });
 
-  if (isLoading) return null;
-  if (error) return <div className="flex h-screen items-center justify-center text-red-500">Error loading data.</div>;
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center text-white/60">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 border-3 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+          <span className="text-2xl font-black tracking-widest uppercase">Loading Overlay Data...</span>
+        </div>
+      </div>
+    );
+  }
+  if (error) return <div className="flex h-screen items-center justify-center text-red-500 font-bold text-xl">Error loading data.</div>;
 
-  // Process data for the chart directly from the API response
   const chartData = (data?.data || [])
     .filter((row: any) => row.TeamName && row.TeamName.trim() !== '')
     .map((row: any) => {
       return {
-        name: row.TeamName.trim(), // The original team name from sheet
-        logo: row.LogoUrl, // The dynamic Logo URL matched from Google Drive or fallback
+        name: row.TeamName.trim(),
+        logo: row.LogoUrl,
         elims: parseInt(row.Kill) || 0,
         damage: parseInt(row.Damage) || 0,
       };
     });
 
-  // Sort by Elims (descending) so highest is on the left
   chartData.sort((a: any, b: any) => b.elims - a.elims);
 
   const CustomXAxisTick = ({ x, y, payload }: any) => {
-    // Find the team data safely from our chartData array using the tick value (name)
     const teamData = chartData.find((d: any) => d.name === payload.value) || {};
-
-    const words = teamData.name ? teamData.name.split(' ') : [];
-    const line1 = words[0] || '';
-    const line2 = words.slice(1).join(' ') || '';
-
     return (
       <g transform={`translate(${x},${y})`}>
         <image
           href={teamData.logo}
-          x={-25} // Shifted left a bit more to center 50x50 logo
+          x={-25}
           y={0}
           height="50"
           width="50"
@@ -72,18 +102,18 @@ export default function Dashboard() {
   const CustomBar = (props: any) => {
     const { x, y, width, height, payload } = props;
     const value = payload.elims;
-    if (value === 0) return null; // No box for 0 kills
+    if (value === 0) return null;
 
     const finalHeight = Math.max(height, 30);
     const bottom = y + height;
     const finalY = bottom - finalHeight;
 
-    return <Rectangle x={x} y={finalY} width={width} height={finalHeight} fill={COLORS.barFill} radius={[4, 4, 0, 0]} />;
+    return <Rectangle x={x} y={finalY} width={width} height={finalHeight} fill={colors.barFill} radius={[4, 4, 0, 0]} />;
   };
 
   const CustomBarLabel = (props: any) => {
     const { x, y, width, height, value } = props;
-    if (value === 0) return null; // Don't show 0
+    if (value === 0) return null;
     
     const finalHeight = Math.max(height, 30);
     const bottom = y + height;
@@ -93,7 +123,7 @@ export default function Dashboard() {
       <text
         x={x + width / 2}
         y={finalY + 20}
-        fill={COLORS.barLabel}
+        fill={colors.barLabel}
         textAnchor="middle"
         fontSize={16}
         fontWeight="bold"
@@ -105,14 +135,15 @@ export default function Dashboard() {
 
   const CustomLineLabel = (props: any) => {
     const { x, y, value } = props;
-    if (value === 0) return null; // Don't show 0
+    if (!value || value === 0) return null;
     return (
       <text
         x={x}
-        y={y - 15}
-        fill={COLORS.lineLabel}
+        y={y - 12}
+        fill={colors.lineLabel}
         textAnchor="middle"
-        fontSize={12}
+        fontSize={14}
+        fontWeight="bold"
       >
         {value}
       </text>
@@ -120,72 +151,73 @@ export default function Dashboard() {
   };
 
   return (
-    <div 
-      className="w-full min-h-screen p-8 flex flex-col items-center justify-center relative overflow-hidden bg-transparent" 
-    >
-      <div className="w-full max-w-6xl h-[600px] z-10 relative">
+    <div className="w-full min-h-screen p-8 flex flex-col justify-end bg-transparent">
+      <div className="w-full h-[550px] relative">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart
             data={chartData}
-            margin={{ top: 60, right: 20, bottom: 80, left: 20 }}
+            margin={{ top: 40, right: 30, left: 20, bottom: 60 }}
           >
-            <CartesianGrid stroke="#ffffff10" vertical={false} />
+            <CartesianGrid vertical={false} horizontal={false} />
             
-            <YAxis 
-              yAxisId="left" 
-              label={{ value: 'ELIMS', angle: -90, position: 'insideLeft', fill: '#ffffff', fontWeight: 'bold', offset: -10 }} 
-              tick={{fill: '#ffffff80', fontSize: 14}}
-              tickFormatter={(value) => String(Math.round(value))}
+            <XAxis
+              dataKey="name"
+              interval={0}
+              tick={<CustomXAxisTick />}
               axisLine={false}
               tickLine={false}
-              domain={[0, (dataMax: number) => Math.max(dataMax * 2, 30)]}
-            />
-            
-            <YAxis 
-              yAxisId="right" 
-              orientation="right" 
-              label={{ value: 'DAMAGE', angle: 90, position: 'insideRight', fill: COLORS.lineStroke, fontWeight: 'bold', offset: -10 }} 
-              tick={{fill: COLORS.lineStroke, fontSize: 14}}
-              tickFormatter={(value) => String(Math.round(value))}
-              axisLine={false}
-              tickLine={false}
-              domain={[0, (dataMax: number) => dataMax * 1.1]}
-            />
-            
-            <XAxis 
-              dataKey="name" 
-              tick={<CustomXAxisTick />} 
-              interval={0} 
-              axisLine={{ stroke: '#ffffff30' }}
-              tickLine={false}
-            />
-            
-            <Tooltip 
-              cursor={{fill: '#ffffff10'}}
-              contentStyle={{ backgroundColor: '#111111ee', borderColor: '#444', color: '#fff', borderRadius: '8px' }}
             />
 
-            <Bar 
-              yAxisId="left" 
-              dataKey="elims" 
-              barSize={40} 
+            <YAxis
+              yAxisId="left"
+              orientation="left"
+              hide={true}
+              domain={[0, (dataMax: number) => Math.max(dataMax + 2, 5)]}
+            />
+
+            <YAxis
+              yAxisId="right"
+              orientation="right"
+              hide={true}
+              domain={[0, (dataMax: number) => Math.max(dataMax + 500, 1000)]}
+            />
+
+            <Tooltip
+              content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  const d = payload[0].payload;
+                  return (
+                    <div className="bg-[#18191a] border border-[#3a3b3c] p-3 rounded-lg shadow-xl text-white">
+                      <p className="font-bold text-yellow-400">{d.name}</p>
+                      <p className="text-sm">Elims: <span className="font-semibold">{d.elims}</span></p>
+                      <p className="text-sm">Damage: <span className="font-semibold">{d.damage}</span></p>
+                    </div>
+                  );
+                }
+                return null;
+              }}
+            />
+
+            <Bar
+              yAxisId="left"
+              dataKey="elims"
               shape={<CustomBar />}
               label={<CustomBarLabel />}
+              barSize={55}
               isAnimationActive={true}
-              animationDuration={3000}
+              animationDuration={1500}
             />
-            
-            <Line 
-              yAxisId="right" 
-              type="monotone" 
-              dataKey="damage" 
-              stroke={COLORS.lineStroke} 
-              strokeWidth={3} 
-              dot={{ r: 5, fill: COLORS.lineStroke, stroke: '#000', strokeWidth: 2 }}
-              activeDot={{ r: 8, fill: '#fff', stroke: COLORS.lineStroke }}
+
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="damage"
+              stroke={colors.lineStroke}
+              strokeWidth={3}
+              dot={{ r: 5, fill: colors.lineStroke, stroke: '#000000', strokeWidth: 1 }}
               label={<CustomLineLabel />}
               isAnimationActive={true}
-              animationDuration={3000}
+              animationDuration={2000}
             />
           </ComposedChart>
         </ResponsiveContainer>

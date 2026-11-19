@@ -1,9 +1,17 @@
 'use client';
 
-import useSWR from 'swr';
 import React, { useEffect, useState } from 'react';
+import useSWR from 'swr';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+const DEFAULT_COLORS = {
+  player1Color: '#000000',
+  player2Color: '#692fb2',
+  borderColor: '#004b87',
+  textColor: '#ffffff',
+  labelColor: '#ffffff',
+};
 
 const AnimatedNumber = ({ value }: { value: number }) => {
   const [count, setCount] = useState(0);
@@ -35,9 +43,17 @@ const AnimatedNumber = ({ value }: { value: number }) => {
   return <>{count}</>;
 };
 
-
-
-const StatBar = ({ label, val1, val2 }: { label: string, val1: number, val2: number }) => {
+const StatBar = ({ 
+  label, 
+  val1, 
+  val2, 
+  colors 
+}: { 
+  label: string; 
+  val1: number; 
+  val2: number; 
+  colors: typeof DEFAULT_COLORS;
+}) => {
   const [animated, setAnimated] = useState(false);
 
   useEffect(() => {
@@ -51,29 +67,43 @@ const StatBar = ({ label, val1, val2 }: { label: string, val1: number, val2: num
 
   return (
     <div className="flex flex-col items-center w-full my-6 relative">
+      {/* Label */}
+      <span 
+        className="font-black text-sm uppercase tracking-widest mb-1" 
+        style={{ color: colors.labelColor }}
+      >
+        {label}
+      </span>
       {/* Bar Container */}
       <div 
-        className="w-full flex h-14 bg-gray-900 border-2 border-[#004b87] shadow-2xl relative overflow-hidden"
+        className="w-full flex h-14 bg-gray-900 border-2 shadow-2xl relative overflow-hidden"
         style={{
+          borderColor: colors.borderColor,
           clipPath: 'polygon(1% 0, 100% 0, 99% 100%, 0 100%)'
         }}
       >
-        {/* Left Bar (Black) */}
+        {/* Left Bar */}
         <div 
-          className="h-full bg-black flex items-center px-4 transition-all duration-[3000ms] ease-out"
-          style={{ width: animated ? `${p1Width}%` : '50%' }}
+          className="h-full flex items-center px-4 transition-all duration-[3000ms] ease-out"
+          style={{ 
+            width: animated ? `${p1Width}%` : '50%',
+            backgroundColor: colors.player1Color
+          }}
         >
-          <span className="text-white font-black text-3xl">
+          <span className="font-black text-3xl" style={{ color: colors.textColor }}>
             <AnimatedNumber value={val1} />
           </span>
         </div>
 
-        {/* Right Bar (#692fb2) */}
+        {/* Right Bar */}
         <div 
-          className="h-full bg-[#692fb2] flex items-center justify-end px-4 transition-all duration-[3000ms] ease-out"
-          style={{ width: animated ? `${p2Width}%` : '50%' }}
+          className="h-full flex items-center justify-end px-4 transition-all duration-[3000ms] ease-out"
+          style={{ 
+            width: animated ? `${p2Width}%` : '50%',
+            backgroundColor: colors.player2Color
+          }}
         >
-          <span className="text-white font-black text-3xl">
+          <span className="font-black text-3xl" style={{ color: colors.textColor }}>
             <AnimatedNumber value={val2} />
           </span>
         </div>
@@ -91,13 +121,48 @@ const StatBar = ({ label, val1, val2 }: { label: string, val1: number, val2: num
   );
 };
 
-export default function HeadToHead() {
+export default function HeadToHead({ overrideColors }: { overrideColors?: any } = {}) {
+  const [colors, setColors] = useState(overrideColors || DEFAULT_COLORS);
+
+  const { data: themeData } = useSWR('/api/theme', fetcher, {
+    refreshInterval: 3000,
+  });
+
+  useEffect(() => {
+    if (overrideColors) {
+      setColors({ ...DEFAULT_COLORS, ...overrideColors });
+      return;
+    }
+    if (themeData?.themes?.dashboard7) {
+      setColors({ ...DEFAULT_COLORS, ...themeData.themes.dashboard7 });
+      return;
+    }
+    const load = () => {
+      try {
+        const saved = localStorage.getItem('rtb_colors_dashboard7');
+        if (saved) setColors({ ...DEFAULT_COLORS, ...JSON.parse(saved) });
+      } catch (e) {}
+    };
+    load();
+    window.addEventListener('storage', load);
+    return () => window.removeEventListener('storage', load);
+  }, [overrideColors, themeData]);
+
   const { data, error, isLoading } = useSWR('/api/sheet7', fetcher, {
     refreshInterval: 5000,
   });
 
-  if (isLoading) return null;
-  if (error || !data?.player1 || !data?.player2) return <div className="flex h-screen items-center justify-center text-red-500">Error loading data.</div>;
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center text-white/60">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          <span className="text-2xl font-black tracking-widest uppercase">Loading 1v1 Data...</span>
+        </div>
+      </div>
+    );
+  }
+  if (error || !data?.player1 || !data?.player2) return <div className="flex h-screen items-center justify-center text-red-500 font-bold text-xl">Error loading data.</div>;
 
   const p1 = data.player1;
   const p2 = data.player2;
@@ -114,18 +179,30 @@ export default function HeadToHead() {
       
       {/* Players Header */}
       <div className="w-full max-w-4xl flex justify-between items-center mb-8 px-4">
-        <div className="text-4xl font-black text-black bg-white px-6 py-2 rounded shadow-xl uppercase border-4 border-black">
+        <div 
+          className="text-4xl font-black px-6 py-2 rounded shadow-xl uppercase border-4 border-black"
+          style={{ 
+            backgroundColor: colors.player1Color === '#000000' ? '#ffffff' : colors.player1Color,
+            color: colors.player1Color === '#000000' ? '#000000' : '#ffffff'
+          }}
+        >
           {p1[2]}
         </div>
         <div className="text-3xl font-black text-white italic">VS</div>
-        <div className="text-4xl font-black text-black bg-[#692fb2] px-6 py-2 rounded shadow-xl uppercase border-4 border-black">
+        <div 
+          className="text-4xl font-black px-6 py-2 rounded shadow-xl uppercase border-4 border-black"
+          style={{ 
+            backgroundColor: colors.player2Color,
+            color: colors.textColor
+          }}
+        >
           {p2[2]}
         </div>
       </div>
 
       <div className="w-full max-w-4xl flex flex-col items-center z-10 px-8 py-6 rounded-xl bg-gradient-to-b from-[#00000000] to-[#00000000]">
         {stats.map((s, i) => (
-          <StatBar key={i} label={s.label} val1={s.val1} val2={s.val2} />
+          <StatBar key={i} label={s.label} val1={s.val1} val2={s.val2} colors={colors} />
         ))}
       </div>
     </div>
