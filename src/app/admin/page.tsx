@@ -418,6 +418,19 @@ export default function AdminPalettePage() {
   const activeSlide = SLIDES.find((s) => s.id === activeSlideId) || SLIDES[0];
   const currentColors = colorState[activeSlide.storageKey] || activeSlide.defaults;
 
+  const syncServerTheme = (colors: any) => {
+    try {
+      const slideKey = activeSlide.storageKey.replace('rtb_colors_', '');
+      fetch('/api/theme', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slideKey, colors }),
+      }).catch(console.error);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const handleColorChange = (key: string, value: string) => {
     const updated = {
       ...currentColors,
@@ -430,6 +443,7 @@ export default function AdminPalettePage() {
     try {
       localStorage.setItem(activeSlide.storageKey, JSON.stringify(updated));
       window.dispatchEvent(new Event('storage'));
+      syncServerTheme(updated);
       triggerToast(`Saved ${key} color!`);
     } catch (e) {
       console.error(e);
@@ -448,20 +462,23 @@ export default function AdminPalettePage() {
     try {
       localStorage.setItem(activeSlide.storageKey, JSON.stringify(updated));
       window.dispatchEvent(new Event('storage'));
-      triggerToast('Applied theme preset!');
+      syncServerTheme(updated);
+      triggerToast('Applied theme preset (Synced to vMix/OBS)!');
     } catch (e) {
       console.error(e);
     }
   };
 
   const resetToDefault = () => {
+    const defaults = { ...activeSlide.defaults };
     setColorState((prev) => ({
       ...prev,
-      [activeSlide.storageKey]: { ...activeSlide.defaults },
+      [activeSlide.storageKey]: defaults,
     }));
     try {
       localStorage.removeItem(activeSlide.storageKey);
       window.dispatchEvent(new Event('storage'));
+      syncServerTheme(defaults);
       triggerToast('Reset to defaults!');
     } catch (e) {
       console.error(e);
