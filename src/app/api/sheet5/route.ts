@@ -1,65 +1,47 @@
+import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
-
-export const dynamic = 'force-dynamic';
-
-const SHEET_ID = process.env.GOOGLE_SHEET_ID || '1c8ZAYnqkLaJdPXIJthoD3ub7AwkqIM1XlhPoICia8IE';
-
-function parseCsv(t: string): string[][] {
-  const rows: string[][] = [];
-  let cur: string[] = [];
-  let val = '';
-  let inQuotes = false;
-  for (let i = 0; i < t.length; i++) {
-    const c = t[i];
-    if (c === '"') {
-      if (inQuotes && t[i + 1] === '"') {
-        val += '"';
-        i++;
-      } else {
-        inQuotes = !inQuotes;
-      }
-    } else if (c === ',' && !inQuotes) {
-      cur.push(val.trim());
-      val = '';
-    } else if ((c === '\r' || c === '\n') && !inQuotes) {
-      if (c === '\r' && t[i + 1] === '\n') i++;
-      cur.push(val.trim());
-      if (cur.some((x) => x !== '')) rows.push(cur);
-      cur = [];
-      val = '';
-    } else {
-      val += c;
-    }
-  }
-  if (val || cur.length > 0) {
-    cur.push(val.trim());
-    if (cur.some((x) => x !== '')) rows.push(cur);
-  }
-  return rows;
-}
 
 export async function GET() {
   try {
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Vmix`;
-    const res = await fetch(url, {
-      next: { revalidate: 3 },
-      headers: { 'User-Agent': 'Mozilla/5.0' },
+    const auth = new google.auth.GoogleAuth({
+      credentials: {
+        client_email: process.env.GOOGLE_CLIENT_EMAIL,
+        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      },
+      scopes: [
+        'https://www.googleapis.com/auth/spreadsheets.readonly',
+        'https://www.googleapis.com/auth/drive.readonly' // Access to Drive
+      ],
     });
 
-    if (!res.ok) {
-      throw new Error(`Failed to fetch sheet: HTTP ${res.status}`);
+    const sheets = google.sheets({ version: 'v4', auth });
+    const drive = google.drive({ version: 'v3', auth });
+    
+    // 1. Fetch data from Google Sheets
+    const sheetResponse = await sheets.spreadsheets.values.get({
+      spreadsheetId: process.env.GOOGLE_SHEET_ID,
+      range: 'Vmix!K45:AO46', 
+    });
+
+    // 2. Fetch all images from the specific Google Drive folder
+    const driveResponse = await drive.files.list({
+      q: `'${process.env.GOOGLE_DRIVE_FOLDER_ID}' in parents and trashed = false`,
+      fields: 'files(id, name)',
+    });
+    const driveFiles = driveResponse.data.files || [];
+
+    const rows = sheetResponse.data.values;
+    if (!rows || rows.length < 2) {
+      return NextResponse.json({ data: [] });
     }
-
-    const text = await res.text();
-    const rows = parseCsv(text);
-
-    // Row 40 and 41 have the active H2H Team Comparison data
-    const team1Data = rows[39]?.slice(10, 42) || [];
-    const team2Data = rows[40]?.slice(10, 42) || [];
+    
+    // row 45 and row 46
+    const team1Data = rows[0];
+    const team2Data = rows[1];
 
     return NextResponse.json({ data: [team1Data, team2Data] });
   } catch (error) {
-    console.error('Error fetching sheet5 data:', error);
+    console.error('Error fetching sheet data:', error);
     return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
   }
 }

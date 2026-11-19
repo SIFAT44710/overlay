@@ -1,6 +1,5 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import {
   LineChart,
@@ -13,47 +12,19 @@ import {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-const DEFAULT_COLORS = {
+const COLORS = {
   team1: '#000000', // Black
   team2: '#692fb2', // Purple
   lineStroke: '#6b7280', // Gray line connecting the dots
-  textColor: '#ffffff',
 };
 
-export default function Dashboard5({ overrideColors }: { overrideColors?: any } = {}) {
-  const [colors, setColors] = useState(overrideColors || DEFAULT_COLORS);
-
-  useEffect(() => {
-    if (overrideColors) {
-      setColors({ ...DEFAULT_COLORS, ...overrideColors });
-      return;
-    }
-    const load = () => {
-      try {
-        const saved = localStorage.getItem('rtb_colors_dashboard5');
-        if (saved) setColors({ ...DEFAULT_COLORS, ...JSON.parse(saved) });
-      } catch (e) {}
-    };
-    load();
-    window.addEventListener('storage', load);
-    return () => window.removeEventListener('storage', load);
-  }, [overrideColors]);
-
+export default function Dashboard5() {
   const { data, error, isLoading } = useSWR('/api/sheet5', fetcher, {
     refreshInterval: 5000,
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center text-white/60">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 border-3 border-indigo-400 border-t-transparent rounded-full animate-spin" />
-          <span className="text-2xl font-black tracking-widest uppercase">Loading Progression Data...</span>
-        </div>
-      </div>
-    );
-  }
-  if (error || !data?.data || data.data.length < 2) return <div className="flex h-screen items-center justify-center text-red-500 font-bold text-xl">Error loading data.</div>;
+  if (isLoading) return null;
+  if (error || !data?.data || data.data.length < 2) return <div className="flex h-screen items-center justify-center text-red-500">Error loading data.</div>;
 
   const team1Row = data.data[0];
   const team2Row = data.data[1];
@@ -72,8 +43,8 @@ export default function Dashboard5({ overrideColors }: { overrideColors?: any } 
     knockDown: parseInt(team1Row[4]) || 0,
     damage: parseInt(team1Row[7]) || 0,
     headshots: parseInt(team1Row[30]) || 0,
-    color: colors.team1,
-    textColor: colors.textColor,
+    color: COLORS.team1,
+    textColor: '#ffffff'
   };
 
   const team2 = {
@@ -83,8 +54,8 @@ export default function Dashboard5({ overrideColors }: { overrideColors?: any } 
     knockDown: parseInt(team2Row[4]) || 0,
     damage: parseInt(team2Row[7]) || 0,
     headshots: parseInt(team2Row[30]) || 0,
-    color: colors.team2,
-    textColor: colors.textColor,
+    color: COLORS.team2,
+    textColor: '#ffffff'
   };
 
   // Map values to a specific vertical band to enforce the 'V' shape
@@ -201,11 +172,11 @@ export default function Dashboard5({ overrideColors }: { overrideColors?: any } 
             <XAxis dataKey="name" hide={true} />
             <YAxis domain={[0, 100]} hide={true} />
             
-            {/* Team 1 Line */}
+            {/* Team 1 Line (Purple) */}
             <Line 
               type="linear" 
               dataKey="team1" 
-              stroke={colors.lineStroke} 
+              stroke={COLORS.lineStroke} 
               strokeWidth={3} 
               dot={(props) => (
                 <CustomDot 
@@ -219,11 +190,11 @@ export default function Dashboard5({ overrideColors }: { overrideColors?: any } 
               animationDuration={3000}
             />
             
-            {/* Team 2 Line */}
+            {/* Team 2 Line (Yellow) */}
             <Line 
               type="linear" 
               dataKey="team2" 
-              stroke={colors.lineStroke} 
+              stroke={COLORS.lineStroke} 
               strokeWidth={3} 
               dot={(props) => (
                 <CustomDot 

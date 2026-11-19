@@ -1,6 +1,5 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import {
   BarChart,
@@ -10,65 +9,40 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  ReferenceLine,
 } from 'recharts';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-const DEFAULT_COLORS = {
-  bgColor: '#18191a',
-  primaryBar: '#000000',
-  secondaryBar: '#692fb2',
+const COLORS = {
+  primaryBar: '#000000', // Black Bar (Kills)
+  secondaryBar: '#692fb2', // Purple Bar (Damage)
   barText: '#ffffff',
   axisText: '#000000',
   axisLine: '#000000',
 };
 
-export default function Dashboard2({ overrideColors }: { overrideColors?: any } = {}) {
-  const [colors, setColors] = useState(overrideColors || DEFAULT_COLORS);
-
-  useEffect(() => {
-    if (overrideColors) {
-      setColors({ ...DEFAULT_COLORS, ...overrideColors });
-      return;
-    }
-    const load = () => {
-      try {
-        const saved = localStorage.getItem('rtb_colors_dashboard2');
-        if (saved) setColors({ ...DEFAULT_COLORS, ...JSON.parse(saved) });
-      } catch (e) {}
-    };
-    load();
-    window.addEventListener('storage', load);
-    return () => window.removeEventListener('storage', load);
-  }, [overrideColors]);
-
+export default function Dashboard2() {
   const { data, error, isLoading } = useSWR('/api/sheet', fetcher, {
     refreshInterval: 5000,
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center text-white/60">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 border-3 border-purple-500 border-t-transparent rounded-full animate-spin" />
-          <span className="text-2xl font-black tracking-widest uppercase">Loading Overlay Data...</span>
-        </div>
-      </div>
-    );
-  }
-  if (error) return <div className="flex h-screen items-center justify-center text-red-500 font-bold text-xl">Error loading data.</div>;
+  if (isLoading) return null;
+  if (error) return <div className="flex h-screen items-center justify-center text-red-500">Error loading data.</div>;
 
+  // Process data for the chart directly from the API response
   const chartData = (data?.data || [])
     .filter((row: any) => row.TeamName && row.TeamName.trim() !== '')
     .map((row: any) => {
       return {
         name: row.TeamName.trim(), 
         logo: row.LogoUrl, 
-        elims: parseInt(row.Kill) || 0,
-        damage: parseInt(row.Damage) || 0,
+        elims: parseInt(row.Kill) || 0, // Primary Bar
+        damage: parseInt(row.Damage) || 0, // Secondary Bar
       };
     });
 
+  // Sort by Elims (descending) 
   chartData.sort((a: any, b: any) => b.elims - a.elims);
 
   const CustomXAxisTick = ({ x, y, payload }: any) => {
@@ -76,8 +50,10 @@ export default function Dashboard2({ overrideColors }: { overrideColors?: any } 
 
     return (
       <g transform={`translate(${x},${y})`}>
-        <rect x={-25} y={5} width="50" height="50" fill={colors.primaryBar} />
-        <rect x={-23} y={7} width="46" height="46" fill="#000000" />
+        {/* Cyan Box Background */}
+        <rect x={-25} y={5} width="50" height="50" fill={COLORS.primaryBar} />
+        {/* Inner black border/box */}
+        <rect x={-23} y={7} width="46" height="46" fill={COLORS.secondaryBar} />
         <image
           href={teamData.logo}
           x={-20}
@@ -92,17 +68,18 @@ export default function Dashboard2({ overrideColors }: { overrideColors?: any } 
     );
   };
 
-  const CustomLabel = (props: any) => {
-    const { x, y, width, height, value } = props;
-    if (value === 0) return null;
-
+  const CustomBarLabel = (props: any) => {
+    const { x, y, width, height, value, textColor, customFontSize } = props;
+    const bottomY = y + height - 5; 
+    const size = customFontSize || 12;
+    
     return (
       <text
         x={x + width / 2}
-        y={y + 20}
-        fill={colors.barText}
+        y={bottomY} 
+        fill={textColor} 
         textAnchor="middle"
-        fontSize={13}
+        fontSize={size}
         fontWeight="bold"
       >
         {value}
@@ -110,75 +87,88 @@ export default function Dashboard2({ overrideColors }: { overrideColors?: any } 
     );
   };
 
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div style={{ backgroundColor: '#111', padding: '12px', border: `1px solid ${COLORS.primaryBar}`, borderRadius: '8px' }}>
+          <p style={{ color: '#fff', fontWeight: 'bold', fontSize: '16px', marginBottom: '8px' }}>{label}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} style={{ color: '#ffffff', margin: '4px 0', fontSize: '14px' }}>
+              {entry.name} : {entry.value}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
-    <div className="w-full min-h-screen p-8 flex flex-col justify-end bg-transparent">
-      <div className="w-full h-[550px] relative">
+    <div 
+      className="w-full min-h-screen p-8 flex flex-col items-center justify-center relative overflow-hidden bg-transparent" 
+    >
+      <div className="w-full max-w-[1600px] h-[85vh] min-h-[700px] z-10 relative">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
             data={chartData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-            barGap={0} 
+            margin={{ top: 60, right: 20, bottom: 80, left: 20 }}
+            barGap={0}
           >
-            <CartesianGrid vertical={false} horizontal={false} />
+            <CartesianGrid stroke="#e0e0e0" vertical={false} />
             
-            <XAxis
-              dataKey="name"
-              interval={0}
-              tick={<CustomXAxisTick />}
-              axisLine={{ stroke: colors.axisLine, strokeWidth: 2 }}
-              tickLine={false}
-            />
-
-            <YAxis
+            <YAxis 
               yAxisId="left"
               orientation="left"
-              hide={true}
-              domain={[0, (dataMax: number) => Math.max(dataMax + 2, 5)]}
+              axisLine={false}
+              tickLine={false}
+              tick={{fill: COLORS.axisText, fontWeight: 'bold'}}
+              tickFormatter={(value) => String(Math.round(value))}
+              domain={[0, (dataMax: number) => Math.max(dataMax * 1.5, 30)]}
             />
 
-            <YAxis
+            <YAxis 
               yAxisId="right"
               orientation="right"
-              hide={true}
-              domain={[0, (dataMax: number) => Math.max(dataMax + 500, 1000)]}
+              axisLine={false}
+              tickLine={false}
+              tick={{fill: COLORS.axisText, fontWeight: 'bold'}}
+              tickFormatter={(value) => String(Math.round(value))}
+              domain={[0, (dataMax: number) => dataMax * 1.1]}
+            />
+            
+            <XAxis 
+              dataKey="name" 
+              tick={<CustomXAxisTick />} 
+              interval={0} 
+              axisLine={{ stroke: COLORS.axisLine, strokeWidth: 2 }}
+              tickLine={false}
+            />
+            
+            <Tooltip 
+              cursor={{fill: '#f5f5f5'}}
+              content={<CustomTooltip />}
             />
 
-            <Tooltip
-              content={({ active, payload }) => {
-                if (active && payload && payload.length) {
-                  const d = payload[0].payload;
-                  return (
-                    <div className="bg-[#18191a] border border-[#3a3b3c] p-3 rounded-lg shadow-xl text-white">
-                      <p className="font-bold text-yellow-400">{d.name}</p>
-                      <p className="text-sm">Elims: <span className="font-semibold">{d.elims}</span></p>
-                      <p className="text-sm">Damage: <span className="font-semibold">{d.damage}</span></p>
-                    </div>
-                  );
-                }
-                return null;
-              }}
-            />
-
-            <Bar
+            {/* Primary Bar (Kills) */}
+            <Bar 
               yAxisId="left"
-              dataKey="elims"
-              fill={colors.primaryBar}
-              label={<CustomLabel />}
-              barSize={28}
-              radius={[4, 4, 0, 0]}
+              dataKey="elims" 
+              name="Kills"
+              fill={COLORS.primaryBar} 
+              label={<CustomBarLabel textColor={COLORS.barText} />}
               isAnimationActive={true}
-              animationDuration={1500}
+              animationDuration={3000}
             />
-
-            <Bar
+            
+            {/* Secondary Bar (Damage) */}
+            <Bar 
               yAxisId="right"
-              dataKey="damage"
-              fill={colors.secondaryBar}
-              label={<CustomLabel />}
-              barSize={28}
-              radius={[4, 4, 0, 0]}
+              dataKey="damage" 
+              name="Damage"
+              fill={COLORS.secondaryBar} 
+              label={<CustomBarLabel textColor={COLORS.barText} customFontSize={10} />}
               isAnimationActive={true}
-              animationDuration={1500}
+              animationDuration={3000}
             />
           </BarChart>
         </ResponsiveContainer>

@@ -1,62 +1,35 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import {
   Radar,
   RadarChart,
+  PolarGrid,
   PolarAngleAxis,
   ResponsiveContainer,
 } from 'recharts';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-const DEFAULT_COLORS = {
-  bgColor: '#18191a',
+const COLORS = {
   team1: '#1f2937', // Black
   team2: '#692fb2', // Purple
   radarTick: '#692fb2',
   radarGrid: '#1f2937',
 };
 
-export default function Dashboard4({ overrideColors }: { overrideColors?: any } = {}) {
-  const [colors, setColors] = useState(overrideColors || DEFAULT_COLORS);
-
-  useEffect(() => {
-    if (overrideColors) {
-      setColors({ ...DEFAULT_COLORS, ...overrideColors });
-      return;
-    }
-    const load = () => {
-      try {
-        const saved = localStorage.getItem('rtb_colors_dashboard4');
-        if (saved) setColors({ ...DEFAULT_COLORS, ...JSON.parse(saved) });
-      } catch (e) {}
-    };
-    load();
-    window.addEventListener('storage', load);
-    return () => window.removeEventListener('storage', load);
-  }, [overrideColors]);
-
+export default function Dashboard4() {
   const { data, error, isLoading } = useSWR('/api/sheet4', fetcher, {
     refreshInterval: 5000,
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center text-white/60">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 border-3 border-purple-500 border-t-transparent rounded-full animate-spin" />
-          <span className="text-2xl font-black tracking-widest uppercase">Loading Radar Data...</span>
-        </div>
-      </div>
-    );
-  }
-  if (error || !data?.data || data.data.length < 2) return <div className="flex h-screen items-center justify-center text-red-500 font-bold text-xl">Error loading data.</div>;
+  if (isLoading) return null;
+  if (error || !data?.data || data.data.length < 2) return <div className="flex h-screen items-center justify-center text-red-500">Error loading data.</div>;
 
   const team1Row = data.data[0];
   const team2Row = data.data[1];
 
+  // Extract Team Names from index 0 (e.g. "C:\Team Logo\X2.png" -> "X2")
   const extractTeamName = (path: string) => {
     if (!path) return 'TEAM';
     const parts = path.split('\\');
@@ -70,7 +43,7 @@ export default function Dashboard4({ overrideColors }: { overrideColors?: any } 
     assist: parseInt(team1Row[3]) || 0,
     knockDown: parseInt(team1Row[4]) || 0,
     damage: parseInt(team1Row[7]) || 0,
-    color: colors.team1,
+    color: COLORS.team1,
   };
 
   const team2 = {
@@ -79,11 +52,12 @@ export default function Dashboard4({ overrideColors }: { overrideColors?: any } 
     assist: parseInt(team2Row[3]) || 0,
     knockDown: parseInt(team2Row[4]) || 0,
     damage: parseInt(team2Row[7]) || 0,
-    color: colors.team2,
+    color: COLORS.team2,
   };
 
+  // Normalize data for Radar Chart (0 to 100)
   const getNormalized = (val1: number, val2: number) => {
-    const max = Math.max(val1, val2) * 1.1;
+    const max = Math.max(val1, val2) * 1.1; // 10% headroom
     if (max === 0) return { n1: 0, n2: 0 };
     return { n1: (val1 / max) * 100, n2: (val2 / max) * 100 };
   };
@@ -114,10 +88,12 @@ export default function Dashboard4({ overrideColors }: { overrideColors?: any } 
 
   const CustomRadarTick = (props: any) => {
     const { payload, x, y, cx, cy, textAnchor } = props;
+    // Calculate direction from center to the tick
     const dx = x - cx;
     const dy = y - cy;
     const length = Math.sqrt(dx * dx + dy * dy);
     
+    // Push the text further out by 35 pixels
     const pushOut = 35;
     const nx = x + (dx / length) * pushOut;
     const ny = y + (dy / length) * pushOut;
@@ -127,7 +103,7 @@ export default function Dashboard4({ overrideColors }: { overrideColors?: any } 
         x={nx}
         y={ny}
         textAnchor={textAnchor || "middle"}
-        fill={colors.radarTick}
+        fill={COLORS.radarTick}
         fontSize={18}
         fontWeight="900"
       >
@@ -137,8 +113,11 @@ export default function Dashboard4({ overrideColors }: { overrideColors?: any } 
   };
 
   return (
-    <div className="w-full min-h-screen p-8 flex flex-col items-center justify-center bg-transparent overflow-hidden">
+    <div className="w-full min-h-screen p-8 flex items-center justify-center bg-transparent overflow-hidden">
+      
+      {/* Container for the 3 columns (Left Stats, Radar, Right Stats) */}
       <div className="w-full max-w-7xl flex items-center justify-between z-10 relative px-12">
+        
         {/* Left Team Stats */}
         <div className="flex flex-col items-end w-64 text-right">
           <div 
@@ -160,13 +139,15 @@ export default function Dashboard4({ overrideColors }: { overrideColors?: any } 
         <div className="w-[700px] h-[600px]">
           <ResponsiveContainer width="100%" height="100%">
             <RadarChart cx="50%" cy="50%" outerRadius="52%" data={radarData} margin={{ top: 20, right: 80, bottom: 20, left: 80 }}>
-              <Radar dataKey="max" stroke={colors.radarGrid} fill="none" strokeWidth={2} isAnimationActive={true} animationDuration={3000} />
-              
+              {/* Outer boundary box */}
+              <Radar dataKey="max" stroke="#1f2937" fill="none" strokeWidth={2} isAnimationActive={true} animationDuration={3000} />
+              {/* The labels (KILL PTS, DAMAGE, etc.) at the 4 corners pushed further out */}
               <PolarAngleAxis 
                 dataKey="subject" 
                 tick={<CustomRadarTick />}
               />
               
+              {/* Radar for Team 1 */}
               <Radar
                 name={team1.name}
                 dataKey="A"
@@ -179,6 +160,7 @@ export default function Dashboard4({ overrideColors }: { overrideColors?: any } 
                 animationDuration={3000}
               />
               
+              {/* Radar for Team 2 */}
               <Radar
                 name={team2.name}
                 dataKey="B"
@@ -210,6 +192,7 @@ export default function Dashboard4({ overrideColors }: { overrideColors?: any } 
             <p>{team2.knockDown}</p>
           </div>
         </div>
+
       </div>
     </div>
   );
