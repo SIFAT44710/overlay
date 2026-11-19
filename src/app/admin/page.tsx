@@ -22,6 +22,12 @@ interface ColorFieldDef {
   desc: string;
 }
 
+interface PresetDef {
+  name: string;
+  desc?: string;
+  colors: Record<string, string>;
+}
+
 interface SlideConfig {
   id: number;
   name: string;
@@ -30,8 +36,140 @@ interface SlideConfig {
   storageKey: string;
   defaults: Record<string, string>;
   fields: ColorFieldDef[];
-  presets: { name: string; colors: Record<string, string> }[];
+  presets: PresetDef[];
 }
+
+interface MasterPalette {
+  id: string;
+  name: string;
+  tag: string;
+  swatches: string[];
+  slideThemes: Record<number, Record<string, string>>;
+}
+
+// 8 Professional Tournament Master Color Palettes (গ্লোবাল কালার প্লেটসমূহ)
+const MASTER_PALETTES: MasterPalette[] = [
+  {
+    id: 'demo_bd',
+    name: 'Demo-Graph BD Signature',
+    tag: 'Classic Esports',
+    swatches: ['#111827', '#6225A6', '#F5B700', '#00DF82', '#EC008C'],
+    slideThemes: {
+      1: { bgColor: '#18191a', barFill: '#ffffff', lineStroke: '#ffc600', lineLabel: '#000000', barLabel: '#000000', axisText: '#ffffff' },
+      2: { bgColor: '#18191a', primaryBar: '#000000', secondaryBar: '#692fb2', barText: '#ffffff', axisText: '#000000', axisLine: '#000000' },
+      3: { bgColor: '#18191a', killPoints: '#00ffa3', survivalScore: '#ffea00', damage: '#ff00a0', axisTextLeft: '#ffffff80', axisTextRight: '#ff00a0' },
+      4: { bgColor: '#18191a', team1: '#1f2937', team2: '#692fb2', radarTick: '#692fb2', radarGrid: '#1f2937' },
+      5: { bgColor: '#18191a', team1: '#000000', team2: '#692fb2', lineStroke: '#6b7280', textColor: '#ffffff' },
+      6: { bgColor: '#18191a', radarFill: '#692fb2', badgeBg: '#000000', badgeBorder: '#692fb2', badgeText: '#ffffff', gridStroke: '#333333' },
+      7: { bgColor: '#18191a', player1Color: '#000000', player2Color: '#692fb2', borderColor: '#004b87', textColor: '#ffffff', labelColor: '#ffffff' },
+      8: { col1: '#F5B700', colDark: '#111827', colPurple: '#6225A6', borderCol: '#000000', textNum: '#000000' },
+      9: { team1: '#F5B700', team2: '#6225A6', team3: '#00DF82', team4: '#EC008C', axisColor: '#6225A6', gridColor: '#000000' },
+      10: { teamABg: '#111827', teamBBg: '#6225A6', vsBadge: '#F5B700', labelColor: '#6225A6', accentGold: '#F5B700', accentMint: '#00DF82' },
+      11: { p1Plate: '#ffffff', p2Plate: '#6225A6', gaugeDark: '#111827', gaugePurple: '#6225A6', accentGold: '#F5B700', labelColor: '#6225A6' },
+      12: { w1Color: '#6225A6', w2Color: '#EC008C', w3Color: '#F5B700', w4Color: '#00DF82', w5Color: '#111827' },
+    },
+  },
+  {
+    id: 'ffws_official',
+    name: 'FFWS World Series',
+    tag: 'Official Championship',
+    swatches: ['#0B0F19', '#E11D48', '#F59E0B', '#06B6D4', '#7C3AED'],
+    slideThemes: {
+      1: { bgColor: '#0b0f19', barFill: '#e11d48', lineStroke: '#f59e0b', lineLabel: '#ffffff', barLabel: '#ffffff', axisText: '#06b6d4' },
+      2: { bgColor: '#0b0f19', primaryBar: '#e11d48', secondaryBar: '#06b6d4', barText: '#ffffff', axisText: '#ffffff', axisLine: '#f59e0b' },
+      3: { bgColor: '#0b0f19', killPoints: '#e11d48', survivalScore: '#f59e0b', damage: '#06b6d4', axisTextLeft: '#ffffff', axisTextRight: '#f59e0b' },
+      4: { bgColor: '#0b0f19', team1: '#e11d48', team2: '#06b6d4', radarTick: '#f59e0b', radarGrid: '#1e293b' },
+      5: { bgColor: '#0b0f19', team1: '#e11d48', team2: '#06b6d4', lineStroke: '#475569', textColor: '#ffffff' },
+      6: { bgColor: '#0b0f19', radarFill: '#e11d48', badgeBg: '#0f172a', badgeBorder: '#f59e0b', badgeText: '#ffffff', gridStroke: '#334155' },
+      7: { bgColor: '#0b0f19', player1Color: '#e11d48', player2Color: '#06b6d4', borderColor: '#f59e0b', textColor: '#ffffff', labelColor: '#ffffff' },
+      8: { col1: '#F59E0B', colDark: '#0B0F19', colPurple: '#E11D48', borderCol: '#000000', textNum: '#000000' },
+      9: { team1: '#F59E0B', team2: '#E11D48', team3: '#06B6D4', team4: '#7C3AED', axisColor: '#06B6D4', gridColor: '#000000' },
+      10: { teamABg: '#0B0F19', teamBBg: '#E11D48', vsBadge: '#F59E0B', labelColor: '#06B6D4', accentGold: '#F59E0B', accentMint: '#06B6D4' },
+      11: { p1Plate: '#ffffff', p2Plate: '#E11D48', gaugeDark: '#0B0F19', gaugePurple: '#E11D48', accentGold: '#F59E0B', labelColor: '#E11D48' },
+      12: { w1Color: '#F59E0B', w2Color: '#E11D48', w3Color: '#06B6D4', w4Color: '#7C3AED', w5Color: '#0B0F19' },
+    },
+  },
+  {
+    id: 'cyber_neon',
+    name: 'Cyberpunk Neo-Tokyo',
+    tag: 'Ultra High Contrast',
+    swatches: ['#0D0221', '#00F0FF', '#FF007F', '#FFE600', '#7122FA'],
+    slideThemes: {
+      1: { bgColor: '#0d0221', barFill: '#00f0ff', lineStroke: '#ff007f', lineLabel: '#ffe600', barLabel: '#000000', axisText: '#ffffff' },
+      2: { bgColor: '#0d0221', primaryBar: '#00f0ff', secondaryBar: '#ff007f', barText: '#000000', axisText: '#ffffff', axisLine: '#ffe600' },
+      3: { bgColor: '#0d0221', killPoints: '#00f0ff', survivalScore: '#ffe600', damage: '#ff007f', axisTextLeft: '#00f0ff', axisTextRight: '#ff007f' },
+      4: { bgColor: '#0d0221', team1: '#00f0ff', team2: '#ff007f', radarTick: '#ffe600', radarGrid: '#2d1b69' },
+      5: { bgColor: '#0d0221', team1: '#00f0ff', team2: '#ff007f', lineStroke: '#7122fa', textColor: '#ffffff' },
+      6: { bgColor: '#0d0221', radarFill: '#ff007f', badgeBg: '#180738', badgeBorder: '#00f0ff', badgeText: '#ffe600', gridStroke: '#2d1b69' },
+      7: { bgColor: '#0d0221', player1Color: '#00f0ff', player2Color: '#ff007f', borderColor: '#ffe600', textColor: '#ffffff', labelColor: '#00f0ff' },
+      8: { col1: '#FFE600', colDark: '#0D0221', colPurple: '#7122FA', borderCol: '#000000', textNum: '#000000' },
+      9: { team1: '#00F0FF', team2: '#FF007F', team3: '#FFE600', team4: '#7122FA', axisColor: '#00F0FF', gridColor: '#000000' },
+      10: { teamABg: '#0D0221', teamBBg: '#7122FA', vsBadge: '#00F0FF', labelColor: '#FF007F', accentGold: '#FFE600', accentMint: '#00F0FF' },
+      11: { p1Plate: '#ffffff', p2Plate: '#7122FA', gaugeDark: '#0D0221', gaugePurple: '#FF007F', accentGold: '#00F0FF', labelColor: '#FF007F' },
+      12: { w1Color: '#00F0FF', w2Color: '#FF007F', w3Color: '#FFE600', w4Color: '#7122FA', w5Color: '#0D0221' },
+    },
+  },
+  {
+    id: 'booyah_gold',
+    name: 'Booyah Gold Champion',
+    tag: 'Winner Crown',
+    swatches: ['#0F172A', '#F59E0B', '#D97706', '#FDE047', '#F8FAFC'],
+    slideThemes: {
+      1: { bgColor: '#0f172a', barFill: '#f59e0b', lineStroke: '#fde047', lineLabel: '#000000', barLabel: '#000000', axisText: '#ffffff' },
+      2: { bgColor: '#0f172a', primaryBar: '#f59e0b', secondaryBar: '#d97706', barText: '#ffffff', axisText: '#ffffff', axisLine: '#fde047' },
+      3: { bgColor: '#0f172a', killPoints: '#f59e0b', survivalScore: '#d97706', damage: '#fde047', axisTextLeft: '#fde047', axisTextRight: '#f59e0b' },
+      4: { bgColor: '#0f172a', team1: '#f59e0b', team2: '#d97706', radarTick: '#fde047', radarGrid: '#334155' },
+      5: { bgColor: '#0f172a', team1: '#f59e0b', team2: '#d97706', lineStroke: '#64748b', textColor: '#ffffff' },
+      6: { bgColor: '#0f172a', radarFill: '#f59e0b', badgeBg: '#1e293b', badgeBorder: '#fde047', badgeText: '#ffffff', gridStroke: '#334155' },
+      7: { bgColor: '#0f172a', player1Color: '#f59e0b', player2Color: '#d97706', borderColor: '#fde047', textColor: '#ffffff', labelColor: '#ffffff' },
+      8: { col1: '#FDE047', colDark: '#0F172A', colPurple: '#D97706', borderCol: '#000000', textNum: '#000000' },
+      9: { team1: '#FDE047', team2: '#F59E0B', team3: '#D97706', team4: '#B45309', axisColor: '#D97706', gridColor: '#000000' },
+      10: { teamABg: '#0F172A', teamBBg: '#D97706', vsBadge: '#FDE047', labelColor: '#D97706', accentGold: '#FDE047', accentMint: '#F59E0B' },
+      11: { p1Plate: '#ffffff', p2Plate: '#D97706', gaugeDark: '#0F172A', gaugePurple: '#D97706', accentGold: '#FDE047', labelColor: '#D97706' },
+      12: { w1Color: '#FDE047', w2Color: '#F59E0B', w3Color: '#D97706', w4Color: '#B45309', w5Color: '#0F172A' },
+    },
+  },
+  {
+    id: 'toxic_matrix',
+    name: 'Toxic Matrix Emerald',
+    tag: 'Bio Energy',
+    swatches: ['#051A14', '#00FF88', '#10B981', '#FACC15', '#064E3B'],
+    slideThemes: {
+      1: { bgColor: '#051a14', barFill: '#00ff88', lineStroke: '#facc15', lineLabel: '#000000', barLabel: '#000000', axisText: '#ffffff' },
+      2: { bgColor: '#051a14', primaryBar: '#00ff88', secondaryBar: '#10b981', barText: '#000000', axisText: '#ffffff', axisLine: '#facc15' },
+      3: { bgColor: '#051a14', killPoints: '#00ff88', survivalScore: '#10b981', damage: '#facc15', axisTextLeft: '#00ff88', axisTextRight: '#facc15' },
+      4: { bgColor: '#051a14', team1: '#00ff88', team2: '#10b981', radarTick: '#00ff88', radarGrid: '#064e3b' },
+      5: { bgColor: '#051a14', team1: '#00ff88', team2: '#10b981', lineStroke: '#047857', textColor: '#ffffff' },
+      6: { bgColor: '#051a14', radarFill: '#10b981', badgeBg: '#022c22', badgeBorder: '#00ff88', badgeText: '#ffffff', gridStroke: '#064e3b' },
+      7: { bgColor: '#051a14', player1Color: '#00ff88', player2Color: '#10b981', borderColor: '#facc15', textColor: '#ffffff', labelColor: '#00ff88' },
+      8: { col1: '#00FF88', colDark: '#051A14', colPurple: '#10B981', borderCol: '#000000', textNum: '#000000' },
+      9: { team1: '#00FF88', team2: '#10B981', team3: '#34D399', team4: '#FACC15', axisColor: '#10B981', gridColor: '#000000' },
+      10: { teamABg: '#051A14', teamBBg: '#10B981', vsBadge: '#00FF88', labelColor: '#10B981', accentGold: '#FACC15', accentMint: '#00FF88' },
+      11: { p1Plate: '#ffffff', p2Plate: '#10B981', gaugeDark: '#051A14', gaugePurple: '#10B981', accentGold: '#00FF88', labelColor: '#10B981' },
+      12: { w1Color: '#00FF88', w2Color: '#10B981', w3Color: '#34D399', w4Color: '#FACC15', w5Color: '#051A14' },
+    },
+  },
+  {
+    id: 'blood_inferno',
+    name: 'Bloodline Inferno',
+    tag: 'Aggressive Strike',
+    swatches: ['#180808', '#FF2E00', '#FF9900', '#FFD700', '#450A0A'],
+    slideThemes: {
+      1: { bgColor: '#180808', barFill: '#ff2e00', lineStroke: '#ffd700', lineLabel: '#000000', barLabel: '#ffffff', axisText: '#ffffff' },
+      2: { bgColor: '#180808', primaryBar: '#ff2e00', secondaryBar: '#ff9900', barText: '#ffffff', axisText: '#ffffff', axisLine: '#ffd700' },
+      3: { bgColor: '#180808', killPoints: '#ff2e00', survivalScore: '#ff9900', damage: '#ffd700', axisTextLeft: '#ff9900', axisTextRight: '#ffd700' },
+      4: { bgColor: '#180808', team1: '#ff2e00', team2: '#ff9900', radarTick: '#ffd700', radarGrid: '#450a0a' },
+      5: { bgColor: '#180808', team1: '#ff2e00', team2: '#ff9900', lineStroke: '#7f1d1d', textColor: '#ffffff' },
+      6: { bgColor: '#180808', radarFill: '#ff2e00', badgeBg: '#2a0a0a', badgeBorder: '#ffd700', badgeText: '#ffffff', gridStroke: '#450a0a' },
+      7: { bgColor: '#180808', player1Color: '#ff2e00', player2Color: '#ff9900', borderColor: '#ffd700', textColor: '#ffffff', labelColor: '#ff9900' },
+      8: { col1: '#FFD700', colDark: '#180808', colPurple: '#FF2E00', borderCol: '#000000', textNum: '#000000' },
+      9: { team1: '#FFD700', team2: '#FF2E00', team3: '#FF9900', team4: '#B91C1C', axisColor: '#FF2E00', gridColor: '#000000' },
+      10: { teamABg: '#180808', teamBBg: '#FF2E00', vsBadge: '#FFD700', labelColor: '#FF2E00', accentGold: '#FFD700', accentMint: '#FF9900' },
+      11: { p1Plate: '#ffffff', p2Plate: '#FF2E00', gaugeDark: '#180808', gaugePurple: '#FF2E00', accentGold: '#FFD700', labelColor: '#FF2E00' },
+      12: { w1Color: '#FFD700', w2Color: '#FF2E00', w3Color: '#FF9900', w4Color: '#B91C1C', w5Color: '#180808' },
+    },
+  },
+];
 
 const SLIDES: SlideConfig[] = [
   {
@@ -59,15 +197,28 @@ const SLIDES: SlideConfig[] = [
     presets: [
       {
         name: 'Classic Gold',
+        desc: 'White bars with gold damage curve',
         colors: { bgColor: '#18191a', barFill: '#ffffff', lineStroke: '#ffc600', lineLabel: '#000000', barLabel: '#000000', axisText: '#ffffff' },
       },
       {
         name: 'RTB Esports Blue',
+        desc: 'Cobalt blue and electric cyan',
         colors: { bgColor: '#0b0e14', barFill: '#1877f2', lineStroke: '#00e5ff', lineLabel: '#00e5ff', barLabel: '#ffffff', axisText: '#e4e6eb' },
       },
       {
         name: 'Toxic Neon',
+        desc: 'Acid green and cyber pink',
         colors: { bgColor: '#101712', barFill: '#00ff88', lineStroke: '#ff007f', lineLabel: '#ff007f', barLabel: '#000000', axisText: '#ffffff' },
+      },
+      {
+        name: 'Inferno Flame',
+        desc: 'Tactical red and flame yellow',
+        colors: { bgColor: '#180808', barFill: '#ef4444', lineStroke: '#f59e0b', lineLabel: '#ffffff', barLabel: '#000000', axisText: '#ffffff' },
+      },
+      {
+        name: 'Royal Purple',
+        desc: 'Deep violet and amber gold',
+        colors: { bgColor: '#0f0c20', barFill: '#8b5cf6', lineStroke: '#f59e0b', lineLabel: '#ffffff', barLabel: '#000000', axisText: '#e2e8f0' },
       },
     ],
   },
@@ -96,15 +247,23 @@ const SLIDES: SlideConfig[] = [
     presets: [
       {
         name: 'Classic Black & Purple',
+        desc: 'Signature demo-graph-bd theme',
         colors: { bgColor: '#18191a', primaryBar: '#000000', secondaryBar: '#692fb2', barText: '#ffffff', axisText: '#000000', axisLine: '#000000' },
       },
       {
         name: 'RTB Blue & Gold',
+        desc: 'Esports blue and gold highlight',
         colors: { bgColor: '#0b0e14', primaryBar: '#1877f2', secondaryBar: '#ffd700', barText: '#ffffff', axisText: '#ffffff', axisLine: '#ffffff40' },
       },
       {
         name: 'Cyber Cyan & Violet',
+        desc: 'Neon cyan with electric purple',
         colors: { bgColor: '#0b0e14', primaryBar: '#00e5ff', secondaryBar: '#a855f7', barText: '#000000', axisText: '#e4e6eb', axisLine: '#3a3b3c' },
+      },
+      {
+        name: 'Crimson & Sky',
+        desc: 'Tactical crimson with ice blue',
+        colors: { bgColor: '#0f172a', primaryBar: '#e11d48', secondaryBar: '#38bdf8', barText: '#ffffff', axisText: '#f8fafc', axisLine: '#475569' },
       },
     ],
   },
@@ -133,11 +292,18 @@ const SLIDES: SlideConfig[] = [
     presets: [
       {
         name: 'Default Tri-Color',
+        desc: 'Cyan, gold and hot magenta lines',
         colors: { bgColor: '#18191a', killPoints: '#00ffa3', survivalScore: '#ffea00', damage: '#ff00a0', axisTextLeft: '#ffffff80', axisTextRight: '#ff00a0' },
       },
       {
         name: 'RGB Laser',
+        desc: 'Cyan, yellow and laser red',
         colors: { bgColor: '#0b0e14', killPoints: '#00ffff', survivalScore: '#ffff00', damage: '#ff0055', axisTextLeft: '#e4e6eb', axisTextRight: '#ff0055' },
+      },
+      {
+        name: 'Fire & Ice',
+        desc: 'Electric ice blue with fiery orange',
+        colors: { bgColor: '#0b0e14', killPoints: '#00e5ff', survivalScore: '#ffffff', damage: '#ff4500', axisTextLeft: '#ffffff', axisTextRight: '#ff4500' },
       },
     ],
   },
@@ -164,11 +330,18 @@ const SLIDES: SlideConfig[] = [
     presets: [
       {
         name: 'Slate & Royal Purple',
+        desc: 'Dark slate polygon vs royal purple',
         colors: { bgColor: '#18191a', team1: '#1f2937', team2: '#692fb2', radarTick: '#692fb2', radarGrid: '#1f2937' },
       },
       {
         name: 'Cyber Strike',
+        desc: 'Neon cyan vs hot magenta',
         colors: { bgColor: '#0b0e14', team1: '#00e5ff', team2: '#ec4899', radarTick: '#00e5ff', radarGrid: '#374151' },
+      },
+      {
+        name: 'Gold vs Emerald',
+        desc: 'Booyah gold with toxic emerald',
+        colors: { bgColor: '#121411', team1: '#ffd700', team2: '#00ff88', radarTick: '#ffffff', radarGrid: '#2c3329' },
       },
     ],
   },
@@ -195,11 +368,18 @@ const SLIDES: SlideConfig[] = [
     presets: [
       {
         name: 'Default Black & Violet',
+        desc: 'Dark charcoal and purple trend line',
         colors: { bgColor: '#18191a', team1: '#000000', team2: '#692fb2', lineStroke: '#6b7280', textColor: '#ffffff' },
       },
       {
         name: 'Gold vs Crimson',
+        desc: 'Championship gold vs combat crimson',
         colors: { bgColor: '#0b0e14', team1: '#ffd700', team2: '#ef4444', lineStroke: '#4b5563', textColor: '#f3f4f6' },
+      },
+      {
+        name: 'Cyan vs Rose',
+        desc: 'Electric cyan and rose magenta',
+        colors: { bgColor: '#061325', team1: '#06b6d4', team2: '#f43f5e', lineStroke: '#334155', textColor: '#f8fafc' },
       },
     ],
   },
@@ -228,11 +408,18 @@ const SLIDES: SlideConfig[] = [
     presets: [
       {
         name: 'Dark Violet',
+        desc: 'Royal violet with black badges',
         colors: { bgColor: '#18191a', radarFill: '#692fb2', badgeBg: '#000000', badgeBorder: '#692fb2', badgeText: '#ffffff', gridStroke: '#333333' },
       },
       {
         name: 'Matrix Mint',
+        desc: 'Acid green polygon with emerald borders',
         colors: { bgColor: '#0a0f0d', radarFill: '#10b981', badgeBg: '#022c22', badgeBorder: '#34d399', badgeText: '#ffffff', gridStroke: '#064e3b' },
+      },
+      {
+        name: 'Golden Booyah',
+        desc: 'Peak gold fill with amber badge',
+        colors: { bgColor: '#121008', radarFill: '#f59e0b', badgeBg: '#1c1917', badgeBorder: '#d97706', badgeText: '#ffffff', gridStroke: '#44403c' },
       },
     ],
   },
@@ -261,11 +448,18 @@ const SLIDES: SlideConfig[] = [
     presets: [
       {
         name: 'Classic Duel',
+        desc: 'Dark charcoal vs signature purple',
         colors: { bgColor: '#18191a', player1Color: '#000000', player2Color: '#692fb2', borderColor: '#004b87', textColor: '#ffffff', labelColor: '#ffffff' },
       },
       {
         name: 'Crimson vs Cyan',
+        desc: 'Tactical red vs electric cyan',
         colors: { bgColor: '#0b0e14', player1Color: '#ef4444', player2Color: '#06b6d4', borderColor: '#f59e0b', textColor: '#ffffff', labelColor: '#f3f4f6' },
+      },
+      {
+        name: 'Gold vs Emerald',
+        desc: 'Booyah gold vs toxic green',
+        colors: { bgColor: '#141410', player1Color: '#ffd700', player2Color: '#00ff88', borderColor: '#3b3b24', textColor: '#ffffff', labelColor: '#ffffff' },
       },
     ],
   },
@@ -292,11 +486,28 @@ const SLIDES: SlideConfig[] = [
     presets: [
       {
         name: 'Demo-Graph-BD Signature',
+        desc: 'Championship gold with dark & purple columns',
         colors: { col1: '#F5B700', colDark: '#111827', colPurple: '#6225A6', borderCol: '#000000', textNum: '#000000' },
       },
       {
+        name: 'FFWS Championship',
+        desc: 'Gold peak with carbon & tactical crimson',
+        colors: { col1: '#F59E0B', colDark: '#0B0F19', colPurple: '#E11D48', borderCol: '#000000', textNum: '#000000' },
+      },
+      {
         name: 'Cyber Cyan & Violet',
+        desc: 'Electric mint peak with slate & violet',
         colors: { col1: '#00DF82', colDark: '#0f172a', colPurple: '#7c3aed', borderCol: '#000000', textNum: '#000000' },
+      },
+      {
+        name: 'Toxic Matrix',
+        desc: 'Neon mint with bio dark and emerald',
+        colors: { col1: '#00FF88', colDark: '#051A14', colPurple: '#10B981', borderCol: '#000000', textNum: '#000000' },
+      },
+      {
+        name: 'Bloodline Inferno',
+        desc: 'Flame gold with obsidian and blaze red',
+        colors: { col1: '#FFD700', colDark: '#180808', colPurple: '#FF2E00', borderCol: '#000000', textNum: '#000000' },
       },
     ],
   },
@@ -325,11 +536,23 @@ const SLIDES: SlideConfig[] = [
     presets: [
       {
         name: 'Demo-Graph-BD Palette',
+        desc: 'Gold, purple, mint, and hot pink',
         colors: { team1: '#F5B700', team2: '#6225A6', team3: '#00DF82', team4: '#EC008C', axisColor: '#6225A6', gridColor: '#000000' },
       },
       {
+        name: 'FFWS Official 4',
+        desc: 'Booyah gold, crimson, cyan and violet',
+        colors: { team1: '#F59E0B', team2: '#E11D48', team3: '#06B6D4', team4: '#7C3AED', axisColor: '#06B6D4', gridColor: '#000000' },
+      },
+      {
         name: 'Neon Laser',
+        desc: 'Cyan, magenta, yellow and toxic green',
         colors: { team1: '#00ffff', team2: '#ff007f', team3: '#ffea00', team4: '#00ff88', axisColor: '#00ffff', gridColor: '#000000' },
+      },
+      {
+        name: 'Golden Champion',
+        desc: 'Tonal gold and amber progression',
+        colors: { team1: '#F59E0B', team2: '#D97706', team3: '#B45309', team4: '#FBBF24', axisColor: '#F59E0B', gridColor: '#000000' },
       },
     ],
   },
@@ -358,11 +581,23 @@ const SLIDES: SlideConfig[] = [
     presets: [
       {
         name: 'Signature BD Clash',
+        desc: 'Obsidian carbon vs signature purple',
         colors: { teamABg: '#111827', teamBBg: '#6225A6', vsBadge: '#F5B700', labelColor: '#6225A6', accentGold: '#F5B700', accentMint: '#00DF82' },
       },
       {
+        name: 'FFWS Fire vs Ice',
+        desc: 'Midnight carbon vs tactical crimson with gold VS',
+        colors: { teamABg: '#0B0F19', teamBBg: '#E11D48', vsBadge: '#F59E0B', labelColor: '#06B6D4', accentGold: '#F59E0B', accentMint: '#06B6D4' },
+      },
+      {
         name: 'Crimson vs Cyan',
+        desc: 'Tactical red vs electric cyan clash',
         colors: { teamABg: '#1e1b4b', teamBBg: '#dc2626', vsBadge: '#06b6d4', labelColor: '#06b6d4', accentGold: '#06b6d4', accentMint: '#f59e0b' },
+      },
+      {
+        name: 'Emerald vs Amber',
+        desc: 'Bio void dark vs matrix emerald',
+        colors: { teamABg: '#051A14', teamBBg: '#10B981', vsBadge: '#F59E0B', labelColor: '#10B981', accentGold: '#F59E0B', accentMint: '#34D399' },
       },
     ],
   },
@@ -391,11 +626,23 @@ const SLIDES: SlideConfig[] = [
     presets: [
       {
         name: 'Signature 1v1 Clash',
+        desc: 'White vs purple plates with gold contact dot',
         colors: { p1Plate: '#ffffff', p2Plate: '#6225A6', gaugeDark: '#111827', gaugePurple: '#6225A6', accentGold: '#F5B700', labelColor: '#6225A6' },
       },
       {
+        name: 'FFWS Official Duel',
+        desc: 'White plate vs tactical crimson with gold gauge',
+        colors: { p1Plate: '#ffffff', p2Plate: '#E11D48', gaugeDark: '#0B0F19', gaugePurple: '#E11D48', accentGold: '#F59E0B', labelColor: '#E11D48' },
+      },
+      {
         name: 'Gold & Obsidian',
+        desc: 'White plate vs amber gold with dark gauge',
         colors: { p1Plate: '#ffffff', p2Plate: '#d97706', gaugeDark: '#111827', gaugePurple: '#d97706', accentGold: '#f59e0b', labelColor: '#d97706' },
+      },
+      {
+        name: 'Cyan vs Magenta',
+        desc: 'White plate vs neon cyan and magenta gauge',
+        colors: { p1Plate: '#ffffff', p2Plate: '#06B6D4', gaugeDark: '#111827', gaugePurple: '#EC008C', accentGold: '#F59E0B', labelColor: '#06B6D4' },
       },
     ],
   },
@@ -422,11 +669,23 @@ const SLIDES: SlideConfig[] = [
     presets: [
       {
         name: 'Default Meta Weapons',
+        desc: 'Purple, pink, gold, mint, and dark navy',
         colors: { w1Color: '#6225A6', w2Color: '#EC008C', w3Color: '#F5B700', w4Color: '#00DF82', w5Color: '#111827' },
       },
       {
+        name: 'FFWS Weapon Meta',
+        desc: 'Gold, crimson, cyan, violet, and emerald',
+        colors: { w1Color: '#F59E0B', w2Color: '#E11D48', w3Color: '#06B6D4', w4Color: '#7C3AED', w5Color: '#10B981' },
+      },
+      {
         name: 'Cyberpunk Neon',
+        desc: 'Cyan, hot magenta, laser yellow, and neon green',
         colors: { w1Color: '#00ffff', w2Color: '#ff007f', w3Color: '#ffff00', w4Color: '#39ff14', w5Color: '#1e1b4b' },
+      },
+      {
+        name: 'Golden Arsenal',
+        desc: 'Championship gold with amber and bronze rings',
+        colors: { w1Color: '#F59E0B', w2Color: '#D97706', w3Color: '#B45309', w4Color: '#FBBF24', w5Color: '#78350F' },
       },
     ],
   },
@@ -515,8 +774,14 @@ export default function AdminPage() {
   const [bgMode, setBgMode] = useState<'dark' | 'transparent' | 'stream'>('dark');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [isSavedSync, setIsSavedSync] = useState(true);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   const activeSlide = SLIDES[activeSlideIndex] || SLIDES[0];
+
+  const triggerToast = (msg: string) => {
+    setToastMsg(msg);
+    setTimeout(() => setToastMsg(null), 2500);
+  };
 
   // Load colors when active slide changes
   useEffect(() => {
@@ -541,10 +806,8 @@ export default function AdminPage() {
       localStorage.setItem(activeSlide.storageKey, JSON.stringify(updated));
     } catch {}
 
-    // Broadcast change across tabs
     window.dispatchEvent(new Event('storage'));
 
-    // POST to /api/theme for cross-machine broadcast
     fetch('/api/theme', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -557,7 +820,7 @@ export default function AdminPage() {
       .catch(() => setIsSavedSync(true));
   };
 
-  const applyPreset = (presetColors: Record<string, string>) => {
+  const applyPreset = (presetColors: Record<string, string>, name?: string) => {
     const updated = { ...currentColors, ...presetColors };
     setCurrentColors(updated);
     setIsSavedSync(false);
@@ -576,25 +839,76 @@ export default function AdminPage() {
         colors: updated,
       }),
     })
-      .then(() => setIsSavedSync(true))
+      .then(() => {
+        setIsSavedSync(true);
+        if (name) triggerToast(`Applied: ${name}`);
+      })
       .catch(() => setIsSavedSync(true));
   };
 
+  // Apply a Master Tournament Palette across ALL 12 slides
+  const applyMasterPaletteToAll = (palette: MasterPalette) => {
+    setIsSavedSync(false);
+    const themesToPost: Record<string, any> = {};
+
+    SLIDES.forEach((slide) => {
+      const colorsForSlide = palette.slideThemes[slide.id] || slide.defaults;
+      try {
+        localStorage.setItem(slide.storageKey, JSON.stringify(colorsForSlide));
+      } catch {}
+      themesToPost[`dashboard${slide.id}`] = colorsForSlide;
+    });
+
+    // Update active slide state immediately
+    if (palette.slideThemes[activeSlide.id]) {
+      setCurrentColors(palette.slideThemes[activeSlide.id]);
+    }
+
+    window.dispatchEvent(new Event('storage'));
+
+    fetch('/api/theme', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ themes: themesToPost }),
+    })
+      .then(() => {
+        setIsSavedSync(true);
+        triggerToast(`⚡ Synced "${palette.name}" to all 12 overlays!`);
+      })
+      .catch(() => setIsSavedSync(true));
+  };
+
+  // Apply Master Palette to Active Slide Only
+  const applyMasterPaletteToActive = (palette: MasterPalette) => {
+    if (palette.slideThemes[activeSlide.id]) {
+      applyPreset(palette.slideThemes[activeSlide.id], `${palette.name} on Slide ${activeSlide.id}`);
+    }
+  };
+
   const resetToDefault = () => {
-    applyPreset(activeSlide.defaults);
+    applyPreset(activeSlide.defaults, `Reset Slide ${activeSlide.id}`);
   };
 
   const copyObsUrl = (id: number) => {
     const url = `${window.location.origin}/${id}`;
     navigator.clipboard.writeText(url);
     setCopiedKey(`obs-${id}`);
+    triggerToast(`Copied OBS URL for Slide ${id}`);
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
   return (
-    <main className="min-h-screen bg-[#18191a] text-[#e4e6eb] p-4 sm:p-6 lg:p-8 font-sans">
+    <main className="min-h-screen bg-[#18191a] text-[#e4e6eb] p-3 sm:p-6 lg:p-8 font-sans">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header Bar */}
+        {/* Toast Notification */}
+        {toastMsg && (
+          <div className="fixed top-5 right-5 z-50 px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs shadow-2xl flex items-center gap-2 animate-bounce">
+            <span>✓</span>
+            <span>{toastMsg}</span>
+          </div>
+        )}
+
+        {/* Top Header Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-[#242526] border border-[#3a3b3c] shadow-lg">
           <div>
             <div className="flex items-center gap-3">
@@ -610,7 +924,7 @@ export default function AdminPage() {
 
           <div className="flex items-center gap-3">
             <span
-              className={`text-xs px-2.5 py-1 rounded-full font-bold border transition ${
+              className={`text-xs px-3 py-1 rounded-full font-bold border transition ${
                 isSavedSync
                   ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800'
                   : 'bg-amber-950/60 text-amber-400 border-amber-800 animate-pulse'
@@ -624,6 +938,75 @@ export default function AdminPage() {
             >
               ← Overlays Directory
             </Link>
+          </div>
+        </div>
+
+        {/* ==================== GLOBAL MASTER COLOR PALETTES (কালার প্লেটসমূহ) ==================== */}
+        <div className="p-5 rounded-2xl bg-[#242526] border border-[#3a3b3c] shadow-lg space-y-3.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-base">🎨</span>
+                <h2 className="text-sm sm:text-base font-black uppercase tracking-wider text-white">
+                  Master Tournament Color Palettes (গ্লোবাল কালার প্লেট)
+                </h2>
+              </div>
+              <p className="text-[11px] text-[#b0b3b8] mt-0.5">
+                Click any palette to recolor the active slide, or click "Apply to All" to theme the entire broadcast!
+              </p>
+            </div>
+          </div>
+
+          {/* Master Palette Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+            {MASTER_PALETTES.map((pal) => (
+              <div
+                key={pal.id}
+                className="p-3.5 rounded-xl bg-[#18191a] border border-[#3a3b3c] hover:border-[#1877f2] transition flex flex-col justify-between gap-2.5 shadow group"
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-title text-xs font-bold text-white group-hover:text-amber-400 transition">
+                      {pal.name}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-[#b0b3b8] block mt-0.5">
+                    {pal.tag}
+                  </span>
+
+                  {/* 5-Color Swatch Plate (কালার প্লেট বার) */}
+                  <div className="flex items-center gap-1.5 mt-2">
+                    {pal.swatches.map((color, sIdx) => (
+                      <span
+                        key={sIdx}
+                        className="flex-1 h-5 rounded-md border border-black/60 shadow-sm"
+                        style={{ backgroundColor: color }}
+                        title={color}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 pt-2 border-t border-[#3a3b3c]/60">
+                  <button
+                    type="button"
+                    onClick={() => applyMasterPaletteToActive(pal)}
+                    className="flex-1 py-1 px-2 rounded-lg bg-[#242526] hover:bg-[#3a3b3c] text-white text-[10px] font-bold transition text-center"
+                    title={`Apply ${pal.name} to Slide ${activeSlide.id}`}
+                  >
+                    Slide {activeSlide.id}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => applyMasterPaletteToAll(pal)}
+                    className="py-1 px-2 rounded-lg bg-[#1877f2] hover:bg-[#166fe5] text-white text-[10px] font-black transition"
+                    title={`Apply ${pal.name} across ALL 12 slides simultaneously`}
+                  >
+                    All 12 ⚡
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -668,32 +1051,68 @@ export default function AdminPage() {
                 </button>
               </div>
 
-              {/* Quick Presets */}
+              {/* Slide Color Palettes (স্লাইডের কালার প্লেট কার্ডস) */}
               {activeSlide.presets.length > 0 && (
-                <div className="space-y-2">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#b0b3b8]">
-                    Esports Color Presets:
-                  </span>
-                  <div className="flex flex-wrap gap-2">
-                    {activeSlide.presets.map((p) => (
-                      <button
-                        key={p.name}
-                        type="button"
-                        onClick={() => applyPreset(p.colors)}
-                        className="px-3.5 py-1.5 rounded-xl bg-[#18191a] hover:bg-[#2f3031] border border-[#3a3b3c] text-xs font-bold text-white transition hover:border-[#1877f2]"
-                      >
-                        ⚡ {p.name}
-                      </button>
-                    ))}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#b0b3b8]">
+                      Slide {activeSlide.id} Color Palettes (কালার প্লেটসমূহ):
+                    </span>
+                    <span className="text-[10px] text-amber-400 font-num">
+                      {activeSlide.presets.length} Palettes Available
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {activeSlide.presets.map((p) => {
+                      const swatchList = Object.values(p.colors);
+                      return (
+                        <button
+                          key={p.name}
+                          type="button"
+                          onClick={() => applyPreset(p.colors, p.name)}
+                          className="p-3 rounded-xl bg-[#18191a] hover:bg-[#202224] border border-[#3a3b3c] hover:border-[#1877f2] transition flex flex-col justify-between gap-2 text-left group"
+                        >
+                          <div className="flex items-center justify-between w-full">
+                            <span className="font-title text-xs font-bold text-white group-hover:text-[#1877f2] transition">
+                              ⚡ {p.name}
+                            </span>
+                            <span className="text-[9px] text-[#b0b3b8] font-num">Click to apply</span>
+                          </div>
+
+                          {p.desc && (
+                            <span className="text-[10px] text-[#b0b3b8] leading-tight">
+                              {p.desc}
+                            </span>
+                          )}
+
+                          {/* Visual Color Swatches Strip (কালার প্লেট) */}
+                          <div className="flex items-center gap-1.5 w-full pt-1">
+                            {swatchList.slice(0, 6).map((color, cIdx) => (
+                              <span
+                                key={cIdx}
+                                className="flex-1 h-4 rounded-md border border-black/50 shadow-sm"
+                                style={{ backgroundColor: color }}
+                                title={color}
+                              />
+                            ))}
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
-              {/* Color Fields */}
-              <div className="space-y-4">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#b0b3b8]">
-                  Custom Element Colors:
-                </span>
+              {/* Individual Element Color Pickers */}
+              <div className="space-y-4 pt-2 border-t border-[#3a3b3c]">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#b0b3b8]">
+                    Fine-Tune Element Colors (কাস্টম কালার নির্বাচন):
+                  </span>
+                  <span className="text-[10px] text-[#b0b3b8]">Click color box to open picker</span>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {activeSlide.fields.map((f) => {
                     const currentVal = currentColors[f.key] || f.defaultVal;
