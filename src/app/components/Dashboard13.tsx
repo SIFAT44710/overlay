@@ -53,7 +53,6 @@ const DEFAULT_COLORS = {
 export default function Dashboard13({ overrideColors }: { overrideColors?: any } = {}) {
   const [colors, setColors] = useState(overrideColors || DEFAULT_COLORS);
   const [wipeKey, setWipeKey] = useState(0);
-  const [isObs, setIsObs] = useState(false);
 
   // Poll Google Sheet DayStanding API every 2 seconds for instant updates
   const { data: sheetData } = useSWR('/api/daystanding', fetcher, {
@@ -64,15 +63,6 @@ export default function Dashboard13({ overrideColors }: { overrideColors?: any }
   const { data: themeData } = useSWR('/api/theme', fetcher, {
     refreshInterval: 3000,
   });
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const p = new URLSearchParams(window.location.search);
-      if (p.get('obs') === '1' || p.get('clean') === '1') {
-        setIsObs(true);
-      }
-    }
-  }, []);
 
   useEffect(() => {
     if (overrideColors) {
@@ -97,7 +87,7 @@ export default function Dashboard13({ overrideColors }: { overrideColors?: any }
     return DEFAULT_STANDING;
   }, [sheetData]);
 
-  // Re-trigger entrance wipe on tab visibility change or manual replay
+  // Re-trigger entrance wipe on tab visibility change or OBS source show
   useEffect(() => {
     const handleVisChange = () => {
       if (!document.hidden) {
@@ -105,36 +95,15 @@ export default function Dashboard13({ overrideColors }: { overrideColors?: any }
       }
     };
     document.addEventListener('visibilitychange', handleVisChange);
-    return () => document.removeEventListener('visibilitychange', handleVisChange);
+    window.addEventListener('obsSourceVisibleChanged', handleVisChange as any);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisChange);
+      window.removeEventListener('obsSourceVisibleChanged', handleVisChange as any);
+    };
   }, []);
-
-  const replayWipe = () => {
-    setWipeKey((k) => k + 1);
-  };
 
   return (
     <div className="w-full min-h-screen flex flex-col justify-center items-center p-3 sm:p-5 bg-transparent select-none">
-      {/* Replay Control Bar (Auto hidden in OBS) */}
-      {!isObs && (
-        <div className="w-full max-w-4xl flex items-center justify-between mb-2 px-1">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-[11px] font-black font-num text-emerald-400 tracking-wider uppercase">
-              Live DayStanding Synced (2s)
-            </span>
-          </div>
-
-          <button
-            type="button"
-            onClick={replayWipe}
-            className="px-4 py-1 rounded-full text-black font-bold font-num text-xs border-2 border-black shadow-[3px_3px_0px_#000] cursor-pointer transition hover:scale-105"
-            style={{ backgroundColor: colors.headerGold }}
-          >
-            ↻ Replay Wipe
-          </button>
-        </div>
-      )}
-
       {/* Main Transparent Overlay Stage */}
       <div key={wipeKey} className="w-full max-w-4xl relative">
         {/* FFWS Purple Starburst Stinger Flash */}
