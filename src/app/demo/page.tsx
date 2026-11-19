@@ -151,6 +151,13 @@ export default function FFWSDemoShowcase() {
             </div>
 
             <Link
+              href="/clash"
+              className="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-white transition shadow-sm bg-gradient-to-r from-violet-600 to-teal-500 hover:opacity-90"
+            >
+              ⚡ Semi-Circle Clash
+            </Link>
+
+            <Link
               href="/admin"
               className="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider text-white transition shadow-sm"
               style={{ backgroundColor: theme.accentBlue }}
