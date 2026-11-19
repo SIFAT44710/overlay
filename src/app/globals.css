@@ -124,3 +124,55 @@ body {
   stroke-dasharray: 44 356;
   animation: energyFlow 3.1s linear infinite;
 }
+
+
+.skew-tag {
+  transform: skewX(-14deg);
+}
+
+.unskew-tag {
+  transform: skewX(14deg);
+}
+
+/* FFWS Exact Left-to-Right Diagonal Wipe Cascade */
+@keyframes ffwsWipeIn {
+  0% {
+    clip-path: polygon(0 0, 0 0, 0 100%, 0 100%);
+    transform: translateX(-28px);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.ffws-row {
+  opacity: 0;
+  clip-path: polygon(0 0, 0 0, 0 100%, 0 100%);
+  animation: ffwsWipeIn 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* FFWS Purple Starburst Stinger Flash */
+@keyframes stingerBurst {
+  0% {
+    transform: scale(0.2) rotate(-18deg);
+    opacity: 0.95;
+  }
+  50% {
+    transform: scale(1.35) rotate(8deg);
+    opacity: 0.65;
+  }
+  100% {
+    transform: scale(1.8) rotate(18deg);
+    opacity: 0;
+  }
+}
+
+.stinger-flash {
+  animation: stingerBurst 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

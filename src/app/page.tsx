@@ -109,6 +109,14 @@ const SLIDES: SlideItem[] = [
     tag: 'Weapons Meta',
     color: '#00DF82',
   },
+  {
+    id: 13,
+    badge: 'Slide 13',
+    title: 'FFWS Wipe Standing — Top 12 Teams',
+    desc: 'Diagonal wipe cascade leaderboard with skewed tags, dynamic rank deltas, and live DayStanding sheet sync.',
+    tag: 'FFWS Wipe Standing',
+    color: '#F5B700',
+  },
 ];
 
 export default function Home() {
@@ -136,7 +144,7 @@ export default function Home() {
                 Free Fire Tournament Overlays
               </h1>
               <p className="text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed">
-                12 transparent, broadcast-ready overlays engineered for OBS Studio and vMix. Synced in real time with Google Sheets and customizable on the fly.
+                13 transparent, broadcast-ready overlays engineered for OBS Studio and vMix. Synced in real time with Google Sheets and customizable on the fly.
               </p>
             </div>
 

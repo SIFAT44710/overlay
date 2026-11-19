@@ -14,6 +14,7 @@ import Dashboard9 from '../components/Dashboard9';
 import Dashboard10 from '../components/Dashboard10';
 import Dashboard11 from '../components/Dashboard11';
 import Dashboard12 from '../components/Dashboard12';
+import Dashboard13 from '../components/Dashboard13';
 
 interface ColorFieldDef {
   key: string;
@@ -67,6 +68,7 @@ const MASTER_PALETTES: MasterPalette[] = [
       10: { teamABg: '#111827', teamBBg: '#6225A6', vsBadge: '#F5B700', labelColor: '#6225A6', accentGold: '#F5B700', accentMint: '#00DF82' },
       11: { p1Plate: '#ffffff', p2Plate: '#6225A6', gaugeDark: '#111827', gaugePurple: '#6225A6', accentGold: '#F5B700', labelColor: '#6225A6' },
       12: { w1Color: '#6225A6', w2Color: '#EC008C', w3Color: '#F5B700', w4Color: '#00DF82', w5Color: '#111827' },
+      13: { headerGold: '#F5B700', headerPurple: '#6225A6', headerDark: '#2E0E56', totalPtsGold: '#F5B700', accentMint: '#00DF82', accentCrimson: '#FF3B5C' },
     },
   },
   {
@@ -87,6 +89,7 @@ const MASTER_PALETTES: MasterPalette[] = [
       10: { teamABg: '#0B0F19', teamBBg: '#E11D48', vsBadge: '#F59E0B', labelColor: '#06B6D4', accentGold: '#F59E0B', accentMint: '#06B6D4' },
       11: { p1Plate: '#ffffff', p2Plate: '#E11D48', gaugeDark: '#0B0F19', gaugePurple: '#E11D48', accentGold: '#F59E0B', labelColor: '#E11D48' },
       12: { w1Color: '#F59E0B', w2Color: '#E11D48', w3Color: '#06B6D4', w4Color: '#7C3AED', w5Color: '#0B0F19' },
+      13: { headerGold: '#F59E0B', headerPurple: '#E11D48', headerDark: '#0B0F19', totalPtsGold: '#F59E0B', accentMint: '#06B6D4', accentCrimson: '#E11D48' },
     },
   },
   {
@@ -107,6 +110,7 @@ const MASTER_PALETTES: MasterPalette[] = [
       10: { teamABg: '#0D0221', teamBBg: '#7122FA', vsBadge: '#00F0FF', labelColor: '#FF007F', accentGold: '#FFE600', accentMint: '#00F0FF' },
       11: { p1Plate: '#ffffff', p2Plate: '#7122FA', gaugeDark: '#0D0221', gaugePurple: '#FF007F', accentGold: '#00F0FF', labelColor: '#FF007F' },
       12: { w1Color: '#00F0FF', w2Color: '#FF007F', w3Color: '#FFE600', w4Color: '#7122FA', w5Color: '#0D0221' },
+      13: { headerGold: '#FFE600', headerPurple: '#7122FA', headerDark: '#0D0221', totalPtsGold: '#FFE600', accentMint: '#00F0FF', accentCrimson: '#FF007F' },
     },
   },
   {
@@ -127,6 +131,7 @@ const MASTER_PALETTES: MasterPalette[] = [
       10: { teamABg: '#0F172A', teamBBg: '#D97706', vsBadge: '#FDE047', labelColor: '#D97706', accentGold: '#FDE047', accentMint: '#F59E0B' },
       11: { p1Plate: '#ffffff', p2Plate: '#D97706', gaugeDark: '#0F172A', gaugePurple: '#D97706', accentGold: '#FDE047', labelColor: '#D97706' },
       12: { w1Color: '#FDE047', w2Color: '#F59E0B', w3Color: '#D97706', w4Color: '#B45309', w5Color: '#0F172A' },
+      13: { headerGold: '#FDE047', headerPurple: '#D97706', headerDark: '#0F172A', totalPtsGold: '#FDE047', accentMint: '#F59E0B', accentCrimson: '#B45309' },
     },
   },
   {
@@ -147,6 +152,7 @@ const MASTER_PALETTES: MasterPalette[] = [
       10: { teamABg: '#051A14', teamBBg: '#10B981', vsBadge: '#00FF88', labelColor: '#10B981', accentGold: '#FACC15', accentMint: '#00FF88' },
       11: { p1Plate: '#ffffff', p2Plate: '#10B981', gaugeDark: '#051A14', gaugePurple: '#10B981', accentGold: '#00FF88', labelColor: '#10B981' },
       12: { w1Color: '#00FF88', w2Color: '#10B981', w3Color: '#34D399', w4Color: '#FACC15', w5Color: '#051A14' },
+      13: { headerGold: '#00FF88', headerPurple: '#10B981', headerDark: '#051A14', totalPtsGold: '#FACC15', accentMint: '#00FF88', accentCrimson: '#EF4444' },
     },
   },
   {
@@ -167,6 +173,7 @@ const MASTER_PALETTES: MasterPalette[] = [
       10: { teamABg: '#180808', teamBBg: '#FF2E00', vsBadge: '#FFD700', labelColor: '#FF2E00', accentGold: '#FFD700', accentMint: '#FF9900' },
       11: { p1Plate: '#ffffff', p2Plate: '#FF2E00', gaugeDark: '#180808', gaugePurple: '#FF2E00', accentGold: '#FFD700', labelColor: '#FF2E00' },
       12: { w1Color: '#FFD700', w2Color: '#FF2E00', w3Color: '#FF9900', w4Color: '#B91C1C', w5Color: '#180808' },
+      13: { headerGold: '#FFD700', headerPurple: '#FF2E00', headerDark: '#180808', totalPtsGold: '#FFD700', accentMint: '#FF9900', accentCrimson: '#DC2626' },
     },
   },
 ];
@@ -689,6 +696,79 @@ const SLIDES: SlideConfig[] = [
       },
     ],
   },
+  {
+    id: 13,
+    name: 'Slide 13',
+    title: 'FFWS Wipe Standing — Top 12 Teams',
+    desc: 'Diagonal wipe cascade leaderboard with skewed tags, dynamic rank deltas, and live DayStanding sheet sync',
+    storageKey: 'rtb_colors_dashboard13',
+    defaults: {
+      headerGold: '#F5B700',
+      headerPurple: '#6225A6',
+      headerDark: '#2E0E56',
+      totalPtsGold: '#F5B700',
+      accentMint: '#00DF82',
+      accentCrimson: '#FF3B5C',
+    },
+    fields: [
+      { key: 'headerGold', label: 'Booyah Gold Accent', defaultVal: '#F5B700', desc: 'Main header crown & #1 highlight' },
+      { key: 'headerPurple', label: 'Primary Brand Purple', defaultVal: '#6225A6', desc: 'Secondary angled header block' },
+      { key: 'headerDark', label: 'Obsidian Header Base', defaultVal: '#2E0E56', desc: 'Base dark angled background' },
+      { key: 'totalPtsGold', label: 'Total Points Column Accent', defaultVal: '#F5B700', desc: 'Pts score text & gold glow' },
+      { key: 'accentMint', label: 'Rank Up Indicator', defaultVal: '#00DF82', desc: '▲ Delta rank gain badge' },
+      { key: 'accentCrimson', label: 'Rank Drop Indicator', defaultVal: '#FF3B5C', desc: '▼ Delta rank loss badge' },
+    ],
+    presets: [
+      {
+        name: 'Demo-Graph BD Signature',
+        desc: 'Gold, purple, obsidian, and neon accents',
+        colors: {
+          headerGold: '#F5B700',
+          headerPurple: '#6225A6',
+          headerDark: '#2E0E56',
+          totalPtsGold: '#F5B700',
+          accentMint: '#00DF82',
+          accentCrimson: '#FF3B5C',
+        },
+      },
+      {
+        name: 'FFWS World Series',
+        desc: 'Booyah gold with tactical crimson and electric cyan',
+        colors: {
+          headerGold: '#F59E0B',
+          headerPurple: '#E11D48',
+          headerDark: '#0B0F19',
+          totalPtsGold: '#F59E0B',
+          accentMint: '#06B6D4',
+          accentCrimson: '#E11D48',
+        },
+      },
+      {
+        name: 'Cyberpunk Neon',
+        desc: 'Laser yellow, neon purple, and neon cyan',
+        colors: {
+          headerGold: '#FFE600',
+          headerPurple: '#7122FA',
+          headerDark: '#0D0221',
+          totalPtsGold: '#FFE600',
+          accentMint: '#00F0FF',
+          accentCrimson: '#FF007F',
+        },
+      },
+      {
+        name: 'Toxic Matrix',
+        desc: 'Neon mint with bio dark and emerald',
+        colors: {
+          headerGold: '#00FF88',
+          headerPurple: '#10B981',
+          headerDark: '#051A14',
+          totalPtsGold: '#FACC15',
+          accentMint: '#00FF88',
+          accentCrimson: '#EF4444',
+        },
+      },
+    ],
+  },
 ];
 
 interface PreviewStageProps {
@@ -763,6 +843,7 @@ function BroadcastPreviewStage({ activeSlideId, currentColors, bgMode }: Preview
         {activeSlideId === 10 && <Dashboard10 overrideColors={currentColors} />}
         {activeSlideId === 11 && <Dashboard11 overrideColors={currentColors} />}
         {activeSlideId === 12 && <Dashboard12 overrideColors={currentColors} />}
+        {activeSlideId === 13 && <Dashboard13 overrideColors={currentColors} />}
       </div>
     </div>
   );

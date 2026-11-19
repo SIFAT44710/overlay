@@ -93,6 +93,20 @@ let broadcastThemes: Record<string, any> = {
     w4Color: '#00DF82',
     w5Color: '#111827',
   },
+  dashboard13: {
+    headerGold: '#F5B700',
+    headerPurple: '#6225A6',
+    headerDark: '#2E0E56',
+    rank1GradStart: '#1e0b36',
+    rank1GradMid: '#3b136b',
+    rank1GradEnd: '#6225A6',
+    rowGradStart: 'rgba(22,10,42,0.94)',
+    rowGradMid: 'rgba(46,14,86,0.92)',
+    rowGradEnd: 'rgba(98,37,166,0.88)',
+    totalPtsGold: '#F5B700',
+    accentMint: '#00DF82',
+    accentCrimson: '#FF3B5C',
+  },
 };
 
 export async function GET() {
