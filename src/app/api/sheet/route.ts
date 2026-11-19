@@ -77,15 +77,31 @@ function getLogoUrl(teamName: string, idx: number): string {
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(initials)}&background=${bg}&color=fff&size=128&bold=true`;
 }
 
+let memoryCache: { data: any; timestamp: number } | null = null;
+const CACHE_TTL_MS = 2500; // 2.5s cache for ultra-low latency & 0ms overhead on live streams
+
 export async function GET() {
+  const now = Date.now();
+  if (memoryCache && now - memoryCache.timestamp < CACHE_TTL_MS) {
+    return NextResponse.json(memoryCache.data, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=2, stale-while-revalidate=5',
+        'X-Cache-Status': 'HIT',
+      },
+    });
+  }
+
   try {
     const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Vmix`;
     const res = await fetch(url, {
-      next: { revalidate: 3 },
+      next: { revalidate: 2 },
       headers: { 'User-Agent': 'Mozilla/5.0' },
     });
 
     if (!res.ok) {
+      if (memoryCache) {
+        return NextResponse.json(memoryCache.data, { headers: { 'X-Cache-Status': 'STALE-FALLBACK' } });
+      }
       throw new Error(`Failed to fetch sheet: HTTP ${res.status}`);
     }
 
@@ -110,9 +126,20 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json({ data: teams });
+    const responsePayload = { data: teams };
+    memoryCache = { data: responsePayload, timestamp: now };
+
+    return NextResponse.json(responsePayload, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=2, stale-while-revalidate=5',
+        'X-Cache-Status': 'MISS',
+      },
+    });
   } catch (error) {
     console.error('Error fetching sheet data:', error);
+    if (memoryCache) {
+      return NextResponse.json(memoryCache.data, { headers: { 'X-Cache-Status': 'ERROR-FALLBACK' } });
+    }
     return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
   }
 }

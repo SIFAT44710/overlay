@@ -26,6 +26,29 @@ export default function Home() {
           </p>
         </div>
 
+        {/* FFWS Pro Demo Showcase Banner */}
+        <Link
+          href="/demo"
+          className="flex items-center justify-between p-5 bg-gradient-to-r from-amber-500/15 via-blue-500/10 to-transparent hover:from-amber-500/25 border-2 border-amber-500/40 rounded-2xl transition duration-150 group shadow-lg"
+        >
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 bg-amber-500 text-black text-[10px] font-black uppercase rounded">
+                NEW DEMO
+              </span>
+              <span className="text-lg font-black text-white group-hover:text-amber-400 transition">
+                FFWS Esports Broadcast Showcase (Light/Dark Demos)
+              </span>
+            </div>
+            <p className="text-xs text-[#b0b3b8]">
+              Featuring Frag Dominance Split Bar, Point Trajectory Momentum, and 4-Player Squad HUD using Palette E5.
+            </p>
+          </div>
+          <span className="px-4 py-2 bg-amber-500 text-black text-xs font-black uppercase rounded-xl tracking-wider shadow">
+            Launch Showcase ↗
+          </span>
+        </Link>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
           {overlays.map((ov) => (
             <Link
