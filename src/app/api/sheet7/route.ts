@@ -1,6 +1,9 @@
 import { google } from 'googleapis';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET() {
   try {
     const auth = new google.auth.GoogleAuth({
@@ -32,7 +35,14 @@ export async function GET() {
     const player1 = rows[1];
     const player2 = rows[2];
 
-    return NextResponse.json({ headers, player1, player2 });
+    return NextResponse.json(
+      { headers, player1, player2 },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        },
+      }
+    );
   } catch (error) {
     console.error('Error fetching sheet data:', error);
     return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
