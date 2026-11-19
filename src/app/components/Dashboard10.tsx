@@ -40,7 +40,8 @@ export default function Dashboard10({ overrideColors }: { overrideColors?: any }
   const [numbersB, setNumbersB] = useState<number[]>(new Array(6).fill(0));
 
   const { data: themeData } = useSWR('/api/theme', fetcher, { refreshInterval: 3000 });
-  const { data: sheetData } = useSWR('/api/sheet', fetcher, { refreshInterval: 5000 });
+  const { data: dayData } = useSWR('/api/daystanding', fetcher, { refreshInterval: 2000 });
+  const { data: sheetData } = useSWR('/api/sheet', fetcher, { refreshInterval: 2000 });
 
   useEffect(() => {
     if (overrideColors) {
@@ -59,14 +60,45 @@ export default function Dashboard10({ overrideColors }: { overrideColors?: any }
 
   // Extract top 2 teams from live sheet or fallback
   const h2h = React.useMemo(() => {
+    if (dayData?.success && dayData.data && dayData.data.length >= 2) {
+      const t1 = dayData.data[0];
+      const t2 = dayData.data[1];
+      const t1Total = typeof t1.total === 'number' ? t1.total : parseInt(t1.total, 10) || 0;
+      const t1Kill = typeof t1.elims === 'number' ? t1.elims : parseInt(t1.elims, 10) || 0;
+      const t2Total = typeof t2.total === 'number' ? t2.total : parseInt(t2.total, 10) || 0;
+      const t2Kill = typeof t2.elims === 'number' ? t2.elims : parseInt(t2.elims, 10) || 0;
+      return {
+        a: {
+          name: t1.name || DEFAULT_H2H.a.name,
+          tag: t1.tag || (t1.name ? t1.name.slice(0, 3).toUpperCase() : 'TOP'),
+          total: t1Total,
+          kills: t1Kill,
+          surv: typeof t1.place === 'number' ? t1.place : Math.max(0, t1Total - t1Kill),
+          damage: typeof t1.damage === 'number' ? t1.damage : parseInt(t1.damage, 10) || DEFAULT_H2H.a.damage,
+          hs: Math.round(t1Kill * 0.9) || DEFAULT_H2H.a.hs,
+          gloo: Math.round(t1Kill * 3.1) || DEFAULT_H2H.a.gloo,
+        },
+        b: {
+          name: t2.name || DEFAULT_H2H.b.name,
+          tag: t2.tag || (t2.name ? t2.name.slice(0, 3).toUpperCase() : 'EXE'),
+          total: t2Total,
+          kills: t2Kill,
+          surv: typeof t2.place === 'number' ? t2.place : Math.max(0, t2Total - t2Kill),
+          damage: typeof t2.damage === 'number' ? t2.damage : parseInt(t2.damage, 10) || DEFAULT_H2H.b.damage,
+          hs: Math.round(t2Kill * 0.9) || DEFAULT_H2H.b.hs,
+          gloo: Math.round(t2Kill * 3.4) || DEFAULT_H2H.b.gloo,
+        },
+      };
+    }
+
     const raw = sheetData?.data || [];
     if (raw.length >= 2) {
       const t1 = raw[0];
       const t2 = raw[1];
       const t1Kill = parseInt(t1.Kill, 10) || 0;
-      const t1Pts = parseInt(t1.TotalPoints || t1.Pts || t1.Kill, 10) || t1Kill;
+      const t1Pts = parseInt(t1.Total || t1.TotalPoints || t1.Pts || t1.Kill, 10) || t1Kill;
       const t2Kill = parseInt(t2.Kill, 10) || 0;
-      const t2Pts = parseInt(t2.TotalPoints || t2.Pts || t2.Kill, 10) || t2Kill;
+      const t2Pts = parseInt(t2.Total || t2.TotalPoints || t2.Pts || t2.Kill, 10) || t2Kill;
       return {
         a: {
           name: t1.TeamName?.trim() || DEFAULT_H2H.a.name,
@@ -91,7 +123,7 @@ export default function Dashboard10({ overrideColors }: { overrideColors?: any }
       };
     }
     return DEFAULT_H2H;
-  }, [sheetData]);
+  }, [dayData, sheetData]);
 
   const pctA = Math.round((h2h.a.total / (h2h.a.total + h2h.b.total)) * 100) || 50;
   const pctB = 100 - pctA;

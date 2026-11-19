@@ -43,6 +43,7 @@ export default function Dashboard11({ overrideColors }: { overrideColors?: any }
   const [valsB, setValsB] = useState<number[]>([0, 0, 0, 0]);
 
   const { data: themeData } = useSWR('/api/theme', fetcher, { refreshInterval: 3000 });
+  const { data: duelData } = useSWR('/api/sheet7', fetcher, { refreshInterval: 2000 });
   const { data: sheetData } = useSWR('/api/sheet4', fetcher, { refreshInterval: 5000 });
 
   useEffect(() => {
@@ -61,6 +62,31 @@ export default function Dashboard11({ overrideColors }: { overrideColors?: any }
   }, [overrideColors, themeData]);
 
   const duel = React.useMemo(() => {
+    if (duelData?.player1 && duelData?.player2) {
+      const p1 = duelData.player1;
+      const p2 = duelData.player2;
+      return {
+        p1: {
+          name: p1[2] || DEFAULT_DUEL.p1.name,
+          team: p1[0] || DEFAULT_DUEL.p1.team,
+          tag: (p1[0] || 'TOP').slice(0, 3).toUpperCase(),
+          kills: parseInt(p1[3], 10) || 0,
+          damage: parseInt(p1[4], 10) || 0,
+          assist: parseInt(p1[5], 10) || 0,
+          hs: parseInt(p1[8], 10) || 0,
+        },
+        p2: {
+          name: p2[2] || DEFAULT_DUEL.p2.name,
+          team: p2[0] || DEFAULT_DUEL.p2.team,
+          tag: (p2[0] || 'EXE').slice(0, 3).toUpperCase(),
+          kills: parseInt(p2[3], 10) || 0,
+          damage: parseInt(p2[4], 10) || 0,
+          assist: parseInt(p2[5], 10) || 0,
+          hs: parseInt(p2[8], 10) || 0,
+        },
+      };
+    }
+
     const raw = sheetData?.data || [];
     if (raw.length >= 2) {
       const p1 = raw[0];
@@ -87,7 +113,7 @@ export default function Dashboard11({ overrideColors }: { overrideColors?: any }
       };
     }
     return DEFAULT_DUEL;
-  }, [sheetData]);
+  }, [duelData, sheetData]);
 
   const s1 = duel.p1.kills * 100 + duel.p1.damage * 0.1 + duel.p1.hs * 40;
   const s2 = duel.p2.kills * 100 + duel.p2.damage * 0.1 + duel.p2.hs * 40;

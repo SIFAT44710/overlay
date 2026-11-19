@@ -46,7 +46,8 @@ export default function Dashboard8({ overrideColors }: { overrideColors?: any } 
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
 
   const { data: themeData } = useSWR('/api/theme', fetcher, { refreshInterval: 3000 });
-  const { data: sheetData } = useSWR('/api/sheet', fetcher, { refreshInterval: 5000 });
+  const { data: dayData } = useSWR('/api/daystanding', fetcher, { refreshInterval: 2000 });
+  const { data: sheetData } = useSWR('/api/sheet', fetcher, { refreshInterval: 2000 });
 
   useEffect(() => {
     if (overrideColors) {
@@ -63,15 +64,28 @@ export default function Dashboard8({ overrideColors }: { overrideColors?: any } 
     } catch {}
   }, [overrideColors, themeData]);
 
-  // Merge live Google Sheet data if available
+  // Merge live Google Sheet data (DayStanding priority, Vmix fallback)
   const teams: TeamItem[] = React.useMemo(() => {
+    if (dayData?.success && dayData.data && dayData.data.length > 0) {
+      return dayData.data.slice(0, 12).map((r: any, idx: number): TeamItem => ({
+        tag: r.tag || (r.name ? r.name.slice(0, 3).toUpperCase() : `T${idx + 1}`),
+        name: r.name,
+        pts: typeof r.total === 'number' ? r.total : parseInt(r.total, 10) || 0,
+        surv: typeof r.place === 'number' ? r.place : parseInt(r.place, 10) || 0,
+        kill: typeof r.elims === 'number' ? r.elims : parseInt(r.elims, 10) || 0,
+        dmg: typeof r.damage === 'number' ? r.damage : parseInt(r.damage, 10) || 0,
+        col: idx === 0 ? colors.col1 : idx % 2 === 0 ? colors.colDark : colors.colPurple,
+        textDark: idx === 0,
+      }));
+    }
+
     const raw = sheetData?.data || [];
     if (!raw.length) return DEFAULT_TEAMS;
     const mapped = raw
       .filter((r: any) => r.TeamName && r.TeamName.trim() !== '')
       .map((r: any, idx: number): TeamItem => {
         const kill = parseInt(r.Kill, 10) || 0;
-        const pts = parseInt(r.TotalPoints || r.TotalPts || r.Pts || r.Kill, 10) || kill;
+        const pts = parseInt(r.Total || r.TotalPoints || r.TotalPts || r.Pts || r.Kill, 10) || kill;
         const dmg = parseInt(r.Damage, 10) || 0;
         const name = r.TeamName.trim();
         const tag = name.split(/\s+/).map((w: string) => w[0]).join('').slice(0, 3).toUpperCase();
@@ -82,12 +96,12 @@ export default function Dashboard8({ overrideColors }: { overrideColors?: any } 
           surv: Math.max(0, pts - kill),
           kill,
           dmg,
-          col: idx === 0 ? '#F5B700' : idx % 2 === 0 ? '#111827' : '#6225A6',
+          col: idx === 0 ? colors.col1 : idx % 2 === 0 ? colors.colDark : colors.colPurple,
           textDark: idx === 0,
         };
       });
     return mapped.length >= 6 ? mapped.slice(0, 12) : DEFAULT_TEAMS;
-  }, [sheetData]);
+  }, [dayData, sheetData, colors]);
 
   const maxPts = Math.max(140, ...teams.map((t: TeamItem) => t.pts));
 

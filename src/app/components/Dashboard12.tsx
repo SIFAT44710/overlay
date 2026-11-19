@@ -29,6 +29,7 @@ export default function Dashboard12({ overrideColors }: { overrideColors?: any }
   const [killsCounts, setKillsCounts] = useState<number[]>(new Array(5).fill(0));
 
   const { data: themeData } = useSWR('/api/theme', fetcher, { refreshInterval: 3000 });
+  const { data: weaponsData } = useSWR('/api/weapons', fetcher, { refreshInterval: 2000 });
 
   useEffect(() => {
     if (overrideColors) {
@@ -53,11 +54,18 @@ export default function Dashboard12({ overrideColors }: { overrideColors?: any }
     colors.w5Color,
   ];
 
-  const maxK = 256;
+  const weapons = React.useMemo(() => {
+    if (weaponsData?.success && weaponsData.weapons && weaponsData.weapons.length > 0) {
+      return weaponsData.weapons.slice(0, 5);
+    }
+    return DEFAULT_WEAPONS;
+  }, [weaponsData]);
+
+  const maxK = Math.max(100, ...weapons.map((w: any) => w.kills));
 
   useEffect(() => {
     // Initial full circ offsets
-    const initialOffsets = DEFAULT_WEAPONS.map((_, i) => 2 * Math.PI * (132 - i * 22));
+    const initialOffsets = weapons.map((_: any, i: number) => 2 * Math.PI * (132 - i * 22));
     setRingOffsets(initialOffsets);
     setBarWidths(new Array(5).fill(0));
     setCardVisible(new Array(5).fill(false));
@@ -65,7 +73,7 @@ export default function Dashboard12({ overrideColors }: { overrideColors?: any }
 
     const timers: NodeJS.Timeout[] = [];
 
-    DEFAULT_WEAPONS.forEach((w, i) => {
+    weapons.forEach((w: any, i: number) => {
       const r = 132 - i * 22;
       const circ = 2 * Math.PI * r;
       const frac = Math.max(0.16, (w.kills / maxK) * 0.78);
@@ -108,7 +116,7 @@ export default function Dashboard12({ overrideColors }: { overrideColors?: any }
     });
 
     return () => timers.forEach(clearTimeout);
-  }, []);
+  }, [weapons, maxK]);
 
   return (
     <div className="w-full min-h-screen flex items-center justify-center p-4 bg-transparent select-none">
@@ -116,7 +124,7 @@ export default function Dashboard12({ overrideColors }: { overrideColors?: any }
         {/* Left: Concentric Progress Rings */}
         <div className="flex justify-center">
           <svg viewBox="0 0 320 320" className="w-full max-w-[300px] overflow-visible">
-            {DEFAULT_WEAPONS.map((w, i) => {
+            {weapons.map((w: any, i: number) => {
               const r = 132 - i * 22;
               const circ = 2 * Math.PI * r;
               const col = activeColors[i];
@@ -162,7 +170,7 @@ export default function Dashboard12({ overrideColors }: { overrideColors?: any }
 
         {/* Right: Weapon Stat Cards */}
         <div className="space-y-4">
-          {DEFAULT_WEAPONS.map((w, i) => {
+          {weapons.map((w: any, i: number) => {
             const col = activeColors[i];
             const isVis = cardVisible[i];
             return (

@@ -5,6 +5,15 @@ import useSWR from 'swr';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
+interface RadarTeam {
+  name: string;
+  tag: string;
+  color: string;
+  kills: number;
+  dmg: number;
+  vals: number[];
+}
+
 const DEFAULT_RADAR = {
   axes: ['KILLS', 'KNOCKDOWN', 'ASSIST', 'HEADSHOTS', 'DAMAGE'],
   teams: [
@@ -31,6 +40,7 @@ export default function Dashboard9({ overrideColors }: { overrideColors?: any } 
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
 
   const { data: themeData } = useSWR('/api/theme', fetcher, { refreshInterval: 3000 });
+  const { data: dayData } = useSWR('/api/daystanding', fetcher, { refreshInterval: 2000 });
 
   useEffect(() => {
     if (overrideColors) {
@@ -64,6 +74,39 @@ export default function Dashboard9({ overrideColors }: { overrideColors?: any } 
   const axes = DEFAULT_RADAR.axes;
 
   const teamColors = [colors.team1, colors.team2, colors.team3, colors.team4];
+
+  // Derive live top 4 teams from sheet
+  const radarTeams: RadarTeam[] = React.useMemo(() => {
+    if (dayData?.success && dayData.data && dayData.data.length >= 4) {
+      const top4 = dayData.data.slice(0, 4);
+      const maxKills = Math.max(1, ...top4.map((t: any) => t.elims || 0));
+      const maxDmg = Math.max(1, ...top4.map((t: any) => t.damage || 0));
+      const maxPts = Math.max(1, ...top4.map((t: any) => t.total || 0));
+
+      return top4.map((t: any, idx: number): RadarTeam => {
+        const kPct = Math.min(100, Math.round(((t.elims || 0) / maxKills) * 100));
+        const dPct = Math.min(100, Math.round(((t.damage || 0) / maxDmg) * 100));
+        const pPct = Math.min(100, Math.round(((t.total || 0) / maxPts) * 100));
+        const sPct = Math.min(100, Math.round(((t.place || 0) / 40) * 100));
+        const bPct = Math.min(100, Math.round(((t.booyah || 0) / 2) * 100));
+        return {
+          name: t.name,
+          tag: t.tag || t.name.slice(0, 3).toUpperCase(),
+          color: teamColors[idx] || DEFAULT_RADAR.teams[idx]?.color || '#F5B700',
+          kills: t.elims || 0,
+          dmg: t.damage || 0,
+          vals: [
+            Math.max(25, kPct),
+            Math.max(25, sPct),
+            Math.max(25, bPct),
+            Math.max(25, pPct),
+            Math.max(25, dPct),
+          ],
+        };
+      });
+    }
+    return DEFAULT_RADAR.teams;
+  }, [dayData, teamColors]);
 
   useEffect(() => {
     setActiveTeams([false, false, false, false]);
@@ -158,7 +201,7 @@ export default function Dashboard9({ overrideColors }: { overrideColors?: any } 
           })}
 
           {/* Team Radar Polygons */}
-          {DEFAULT_RADAR.teams.map((t, i) => {
+          {radarTeams.map((t: RadarTeam, i: number) => {
             const col = teamColors[i] || t.color;
             const isShown = activeTeams[i];
             return (
@@ -194,7 +237,7 @@ export default function Dashboard9({ overrideColors }: { overrideColors?: any } 
                   stroke={col}
                   strokeWidth="3"
                 />
-                {t.vals.map((v, ai) => {
+                {t.vals.map((v: number, ai: number) => {
                   const [dx, dy] = ptAt(ai, v);
                   return (
                     <g key={ai}>
@@ -223,7 +266,7 @@ export default function Dashboard9({ overrideColors }: { overrideColors?: any } 
 
         {/* Legend */}
         <div className="flex flex-wrap justify-center gap-4 mt-6">
-          {DEFAULT_RADAR.teams.map((t, i) => (
+          {radarTeams.map((t: RadarTeam, i: number) => (
             <div key={i} className="flex items-center gap-2">
               <span
                 className="w-3.5 h-3.5 rounded-sm border-2 border-black"
