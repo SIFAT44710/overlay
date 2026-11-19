@@ -557,10 +557,10 @@ export default function AdminPalettePage() {
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight uppercase">
-            Free Fire Overlay Manager
+            Demo Graph • Broadcast Studio
           </h1>
           <p className="text-xs sm:text-sm text-[#b0b3b8] font-medium mt-1">
-            Customize the color palette for each graph independently. Changes apply live to vMix &amp; OBS overlays in real time!
+            Demo Graph Overlay Manager — Customize the color palette live for vMix &amp; OBS in real time!
           </p>
         </div>
 

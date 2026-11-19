@@ -112,7 +112,7 @@ export default function FFWSDemoShowcase() {
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              Free Fire Esports Broadcast Showcase
+              Demo Graph • Free Fire Esports Broadcast Showcase
             </h1>
             <p className="text-xs sm:text-sm font-medium mt-0.5" style={{ color: theme.muted }}>
               Live Google Sheet Integration • 0ms Latency • No AI Glitches
