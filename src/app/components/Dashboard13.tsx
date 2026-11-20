@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import useSWR from 'swr';
-import FlameEffect from './FlameEffect';
+import RealFireCanvas from './RealFireCanvas';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -13,48 +13,13 @@ const DEFAULT_LINE_DATA = {
   damage: [74334, 67724, 60618, 75983, 71677],
 };
 
-const DEFAULT_COLORS = {
-  killsColor: '#F5B700',
-  damageColor: '#38BDF8',
-  fireColor: '#8B5CF6',
-  cardBg: 'rgba(9, 11, 18, 0.75)',
-};
-
 export default function Dashboard13({ overrideColors }: { overrideColors?: any } = {}) {
-  const [colors, setColors] = useState(overrideColors || DEFAULT_COLORS);
   const [animated, setAnimated] = useState(false);
-  const [hoveredPoint, setHoveredPoint] = useState<{
-    x: number;
-    y: number;
-    match: string;
-    kills: number;
-    damage: number;
-  } | null>(null);
+  const [fireActive, setFireActive] = useState(false);
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
-  const { data: themeData } = useSWR('/api/theme', fetcher, { refreshInterval: 3000 });
   const { data: sheetData } = useSWR('/api/sheet', fetcher, { refreshInterval: 2000 });
 
-  useEffect(() => {
-    if (overrideColors) {
-      setColors({ ...DEFAULT_COLORS, ...overrideColors });
-      return;
-    }
-    if (themeData?.themes?.dashboard13) {
-      setColors({ ...DEFAULT_COLORS, ...themeData.themes.dashboard13 });
-      return;
-    }
-    try {
-      const saved = localStorage.getItem('rtb_colors_dashboard13');
-      if (saved) setColors({ ...DEFAULT_COLORS, ...JSON.parse(saved) });
-    } catch {}
-  }, [overrideColors, themeData]);
-
-  useEffect(() => {
-    const t = setTimeout(() => setAnimated(true), 200);
-    return () => clearTimeout(t);
-  }, []);
-
-  // Compute live match points if sheet provides multiple matches or fallback
   const lineData = React.useMemo(() => {
     if (sheetData?.history && Array.isArray(sheetData.history) && sheetData.history.length >= 2) {
       const k = sheetData.history.map((m: any) => m.kills || 100);
@@ -64,29 +29,39 @@ export default function Dashboard13({ overrideColors }: { overrideColors?: any }
     return DEFAULT_LINE_DATA;
   }, [sheetData]);
 
-  // Dimensions for SVG Line Chart
-  const W = 800;
+  useEffect(() => {
+    const tAnim = setTimeout(() => setAnimated(true), 200);
+    const tFire = setTimeout(() => setFireActive(true), 500);
+    return () => {
+      clearTimeout(tAnim);
+      clearTimeout(tFire);
+    };
+  }, []);
+
+  const W = 820;
   const H = 340;
-  const PAD_X = 70;
+  const PAD_X = 65;
   const PAD_TOP = 40;
-  const PAD_BOTTOM = 50;
+  const PAD_BOTTOM = 55;
   const PLOT_W = W - PAD_X * 2;
   const PLOT_H = H - PAD_TOP - PAD_BOTTOM;
 
-  const minKills = 80;
-  const maxKills = 145;
-  const minDmg = 50000;
-  const maxDmg = 85000;
+  const minK = 80;
+  const maxK = 145;
+  const minD = 50000;
+  const maxD = 85000;
 
   const getKillsY = (v: number) =>
-    PAD_TOP + PLOT_H * (1 - (v - minKills) / (maxKills - minKills));
+    PAD_TOP + PLOT_H * (1 - (v - minK) / (maxK - minK));
   const getDmgY = (v: number) =>
-    PAD_TOP + PLOT_H * (1 - (v - minDmg) / (maxDmg - minDmg));
+    PAD_TOP + PLOT_H * (1 - (v - minD) / (maxD - minD));
   const getX = (idx: number) =>
     PAD_X + (idx / (MATCH_LABELS.length - 1)) * PLOT_W;
 
-  // Build SVG path with Catmull-Rom or cubic spline
-  const buildSmoothPath = (pts: [number, number][]) => {
+  const killsPts: [number, number][] = lineData.kills.map((k: number, i: number) => [getX(i), getKillsY(k)]);
+  const dmgPts: [number, number][] = lineData.damage.map((d: number, i: number) => [getX(i), getDmgY(d)]);
+
+  const buildSpline = (pts: [number, number][]) => {
     if (pts.length === 0) return '';
     let d = `M ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
     for (let i = 0; i < pts.length - 1; i++) {
@@ -94,94 +69,66 @@ export default function Dashboard13({ overrideColors }: { overrideColors?: any }
       const p1 = pts[i];
       const p2 = pts[i + 1];
       const p3 = pts[Math.min(pts.length - 1, i + 2)];
-
       const cp1x = p1[0] + (p2[0] - p0[0]) / 6;
       const cp1y = p1[1] + (p2[1] - p0[1]) / 6;
       const cp2x = p2[0] - (p3[0] - p1[0]) / 6;
       const cp2y = p2[1] - (p3[1] - p1[1]) / 6;
-
       d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`;
     }
     return d;
   };
 
-  const killPts: [number, number][] = lineData.kills.map((v: number, i: number) => [
-    getX(i),
-    getKillsY(v),
-  ]);
-  const dmgPts: [number, number][] = lineData.damage.map((v: number, i: number) => [
-    getX(i),
-    getDmgY(v),
-  ]);
+  const killsPath = buildSpline(killsPts);
+  const dmgPath = buildSpline(dmgPts);
 
-  const killLinePath = buildSmoothPath(killPts);
-  const dmgLinePath = buildSmoothPath(dmgPts);
-
-  const killAreaPath = `${killLinePath} L ${getX(MATCH_LABELS.length - 1)} ${
-    PAD_TOP + PLOT_H
-  } L ${getX(0)} ${PAD_TOP + PLOT_H} Z`;
-  const dmgAreaPath = `${dmgLinePath} L ${getX(MATCH_LABELS.length - 1)} ${
-    PAD_TOP + PLOT_H
-  } L ${getX(0)} ${PAD_TOP + PLOT_H} Z`;
+  const killsArea = `${killsPath} L ${getX(MATCH_LABELS.length - 1)} ${PAD_TOP + PLOT_H} L ${getX(0)} ${PAD_TOP + PLOT_H} Z`;
+  const dmgArea = `${dmgPath} L ${getX(MATCH_LABELS.length - 1)} ${PAD_TOP + PLOT_H} L ${getX(0)} ${PAD_TOP + PLOT_H} Z`;
 
   return (
-    <div className="relative w-full h-full min-h-[580px] flex flex-col items-center justify-center p-4 bg-transparent select-none font-sans overflow-hidden">
-      {/* Dynamic Background Flame */}
-      <div className="absolute inset-0 pointer-events-none flex items-center justify-center -z-10 opacity-75">
-        <FlameEffect color={colors.fireColor || '#8B5CF6'} height={480} opacity={0.65} />
-      </div>
-
-      <div className="w-full max-w-4xl flex flex-col items-center">
-        {/* Header Badges */}
-        <div className="w-full flex items-center justify-between mb-4 px-2">
-          <div className="flex items-center gap-3">
-            <span
-              className="px-4 py-1 rounded-full font-hud text-xs font-black text-black tracking-widest uppercase shadow-lg"
-              style={{ backgroundColor: colors.killsColor }}
-            >
-              TOTAL KILLS (L)
-            </span>
-            <span
-              className="px-4 py-1 rounded-full font-hud text-xs font-black text-black tracking-widest uppercase shadow-lg"
-              style={{ backgroundColor: colors.damageColor }}
-            >
-              TOTAL DAMAGE (R)
-            </span>
+    <div className="broadcast-stage w-full min-h-screen flex items-center justify-center p-2 sm:p-4 bg-transparent select-none font-sans">
+      <div className="w-full max-w-4xl space-y-3">
+        {/* Peak Match Top Pill */}
+        <div className="flex justify-center">
+          <div
+            className={`transition-all duration-500 px-4 py-1.5 rounded-xl bg-transparent border border-purple-400 font-hud text-xs sm:text-sm font-extrabold text-white flex items-center gap-2.5 relative ${
+              fireActive ? 'top1-hero-glow top1-scale opacity-100' : 'opacity-0'
+            }`}
+            style={{ isolation: 'isolate' }}
+          >
+            {fireActive && (
+              <div
+                className="pointer-events-none absolute -inset-x-2 -top-6 bottom-0 transition-opacity duration-500 opacity-100"
+                style={{ zIndex: -1 }}
+              >
+                <RealFireCanvas opts={{ light: true }} />
+              </div>
+            )}
+            <span className="relative z-10 text-amber-400">#1 PEAK MATCH • M4</span>
+            <span className="relative z-10 text-amber-300">129 KILLS</span>
+            <span className="relative z-10 text-slate-500">|</span>
+            <span className="relative z-10 text-sky-300">75,983 DMG</span>
           </div>
-
-          <span className="font-hud text-xs font-bold text-slate-400 tracking-wider">
-            MATCH 1–5 PROGRESSION
-          </span>
         </div>
 
-        {/* Chart Canvas Card */}
-        <div
-          className="relative w-full rounded-2xl p-6 backdrop-blur-md border shadow-2xl overflow-hidden"
-          style={{
-            backgroundColor: colors.cardBg,
-            borderColor: 'rgba(148, 163, 184, 0.2)',
-          }}
-        >
-          <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto overflow-visible">
+        {/* Dual Line SVG Chart */}
+        <div className="hud-card rounded-2xl p-4 sm:p-6 relative">
+          <svg viewBox={`0 0 ${W} ${H}`} className="w-full overflow-visible">
             <defs>
-              {/* Kills Gradient Fill */}
-              <linearGradient id="kill-fill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={colors.killsColor} stopOpacity="0.32" />
-                <stop offset="100%" stopColor={colors.killsColor} stopOpacity="0.0" />
+              <linearGradient id="killsGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#F5B700" stopOpacity="0.35" />
+                <stop offset="100%" stopColor="#F5B700" stopOpacity="0" />
               </linearGradient>
-
-              {/* Damage Gradient Fill */}
-              <linearGradient id="dmg-fill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={colors.damageColor} stopOpacity="0.25" />
-                <stop offset="100%" stopColor={colors.damageColor} stopOpacity="0.0" />
+              <linearGradient id="dmgGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#38BDF8" stopOpacity="0.30" />
+                <stop offset="100%" stopColor="#38BDF8" stopOpacity="0" />
               </linearGradient>
             </defs>
 
             {/* Horizontal Grid lines */}
-            {[0, 0.25, 0.5, 0.75, 1].map((p, i) => {
-              const y = PAD_TOP + PLOT_H * p;
-              const kVal = Math.round(maxKills - p * (maxKills - minKills));
-              const dVal = Math.round(maxDmg - p * (maxDmg - minDmg));
+            {[0, 0.25, 0.5, 0.75, 1].map((pct, i) => {
+              const y = PAD_TOP + PLOT_H * pct;
+              const kVal = Math.round(maxK - pct * (maxK - minK));
+              const dVal = Math.round(maxD - pct * (maxD - minD));
               return (
                 <g key={i}>
                   <line
@@ -189,32 +136,30 @@ export default function Dashboard13({ overrideColors }: { overrideColors?: any }
                     y1={y}
                     x2={W - PAD_X}
                     y2={y}
-                    stroke="rgba(226, 232, 240, 0.12)"
+                    stroke="rgba(148,163,184,0.18)"
                     strokeDasharray="4 4"
                   />
-                  {/* Left Axis Tick (Kills) */}
                   <text
-                    x={PAD_X - 12}
+                    x={PAD_X - 10}
                     y={y + 4}
                     textAnchor="end"
-                    fill={colors.killsColor}
-                    fontSize="11"
-                    fontWeight="800"
+                    fill="#F5B700"
+                    fontSize="10"
+                    fontWeight="700"
                     className="font-hud"
                   >
                     {kVal}
                   </text>
-                  {/* Right Axis Tick (Damage) */}
                   <text
-                    x={W - PAD_X + 12}
+                    x={W - PAD_X + 10}
                     y={y + 4}
                     textAnchor="start"
-                    fill={colors.damageColor}
-                    fontSize="11"
-                    fontWeight="800"
+                    fill="#38BDF8"
+                    fontSize="10"
+                    fontWeight="700"
                     className="font-hud"
                   >
-                    {dVal.toLocaleString()}
+                    {(dVal / 1000).toFixed(0)}K
                   </text>
                 </g>
               );
@@ -222,141 +167,162 @@ export default function Dashboard13({ overrideColors }: { overrideColors?: any }
 
             {/* Area Fills */}
             <path
-              d={dmgAreaPath}
-              fill="url(#dmg-fill)"
+              d={killsArea}
+              fill="url(#killsGrad)"
               style={{
                 opacity: animated ? 1 : 0,
-                transition: 'opacity 1.2s ease 0.3s',
+                transition: 'opacity 1.5s ease',
               }}
             />
             <path
-              d={killAreaPath}
-              fill="url(#kill-fill)"
+              d={dmgArea}
+              fill="url(#dmgGrad)"
               style={{
                 opacity: animated ? 1 : 0,
-                transition: 'opacity 1.2s ease',
+                transition: 'opacity 1.5s ease',
               }}
             />
 
-            {/* Damage Line (Sky Blue) */}
+            {/* Main Lines */}
             <path
-              d={dmgLinePath}
+              d={killsPath}
               fill="none"
-              stroke={colors.damageColor}
+              stroke="#F5B700"
               strokeWidth="3.5"
               strokeLinecap="round"
-              className={animated ? 'draw-line' : ''}
+              className="draw-line"
               style={{
-                strokeDasharray: 2000,
-                strokeDashoffset: animated ? 0 : 2000,
-                transition: 'stroke-dashoffset 1.8s cubic-bezier(0.16, 1, 0.3, 1)',
+                filter: 'drop-shadow(0 0 8px rgba(245,183,0,0.6))',
+                opacity: animated ? 1 : 0,
+                transition: 'opacity 1s ease',
               }}
             />
-
-            {/* Kills Line (Gold) */}
             <path
-              d={killLinePath}
+              d={killsPath}
               fill="none"
-              stroke={colors.killsColor}
-              strokeWidth="4"
-              strokeLinecap="round"
-              className={animated ? 'draw-line' : ''}
-              style={{
-                strokeDasharray: 2000,
-                strokeDashoffset: animated ? 0 : 2000,
-                transition: 'stroke-dashoffset 1.8s cubic-bezier(0.16, 1, 0.3, 1) 0.1s',
-              }}
+              stroke="#FACC15"
+              strokeWidth="2.5"
+              className="wire-flow"
             />
 
-            {/* Interactive Data Nodes */}
-            {MATCH_LABELS.map((m, idx) => {
-              const [kx, ky] = killPts[idx];
-              const [dx, dy] = dmgPts[idx];
-              const kVal = lineData.kills[idx];
-              const dVal = lineData.damage[idx];
+            <path
+              d={dmgPath}
+              fill="none"
+              stroke="#38BDF8"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              className="draw-line"
+              style={{
+                filter: 'drop-shadow(0 0 8px rgba(56,189,248,0.6))',
+                opacity: animated ? 1 : 0,
+                transition: 'opacity 1s ease',
+              }}
+            />
+            <path
+              d={dmgPath}
+              fill="none"
+              stroke="#7DD3FC"
+              strokeWidth="2.5"
+              className="wire-flow"
+              style={{ animationDelay: '1.2s' }}
+            />
 
+            {/* X Axis Labels */}
+            {MATCH_LABELS.map((lbl, i) => {
+              const x = getX(i);
               return (
-                <g key={m}>
-                  {/* Bottom X Label */}
+                <g key={lbl}>
+                  <rect
+                    x={x - 22}
+                    y={H - 32}
+                    width="44"
+                    height="20"
+                    rx="5"
+                    fill="rgba(88,28,135,0.28)"
+                    stroke="rgba(192,132,252,0.45)"
+                  />
                   <text
-                    x={kx}
-                    y={H - 14}
+                    x={x}
+                    y={H - 18}
                     textAnchor="middle"
-                    fill="#e2e8f0"
-                    fontSize="13"
-                    fontWeight="900"
+                    fill="#2dd4bf"
+                    fontSize="11"
+                    fontWeight="700"
                     className="font-hud"
                   >
-                    {m}
+                    {lbl}
                   </text>
+                </g>
+              );
+            })}
 
-                  {/* Damage Node */}
-                  <circle
-                    cx={dx}
-                    cy={dy}
-                    r="6"
-                    fill={colors.damageColor}
-                    stroke="#090b10"
-                    strokeWidth="2.5"
-                    className="cursor-pointer transition-transform hover:scale-150"
-                    onMouseEnter={(e) => {
-                      const rect = (e.target as SVGElement).getBoundingClientRect();
-                      setHoveredPoint({
-                        x: rect.left + rect.width / 2,
-                        y: rect.top,
-                        match: m,
-                        kills: kVal,
-                        damage: dVal,
-                      });
-                    }}
-                    onMouseLeave={() => setHoveredPoint(null)}
-                  />
+            {/* Data Points */}
+            {MATCH_LABELS.map((_, i) => {
+              const [kx, ky] = killsPts[i];
+              const [dx, dy] = dmgPts[i];
+              const isHovered = hoveredIdx === i;
 
-                  {/* Kills Node */}
+              return (
+                <g key={i}>
+                  {/* Vertical guide line on hover */}
+                  {isHovered && (
+                    <line
+                      x1={kx}
+                      y1={PAD_TOP}
+                      x2={kx}
+                      y2={PAD_TOP + PLOT_H}
+                      stroke="#fbbf24"
+                      strokeWidth="1.5"
+                      strokeDasharray="4 4"
+                    />
+                  )}
+
+                  {/* Kills Point */}
                   <circle
                     cx={kx}
                     cy={ky}
-                    r="6.5"
-                    fill={colors.killsColor}
+                    r={isHovered ? 7.5 : 5.5}
+                    fill="#F5B700"
                     stroke="#090b10"
-                    strokeWidth="2.5"
-                    className="cursor-pointer transition-transform hover:scale-150"
-                    onMouseEnter={(e) => {
-                      const rect = (e.target as SVGElement).getBoundingClientRect();
-                      setHoveredPoint({
-                        x: rect.left + rect.width / 2,
-                        y: rect.top,
-                        match: m,
-                        kills: kVal,
-                        damage: dVal,
-                      });
-                    }}
-                    onMouseLeave={() => setHoveredPoint(null)}
+                    strokeWidth="2"
+                    className="cursor-pointer transition-all"
+                    onMouseEnter={() => setHoveredIdx(i)}
+                    onMouseLeave={() => setHoveredIdx(null)}
+                  />
+
+                  {/* Damage Point */}
+                  <circle
+                    cx={dx}
+                    cy={dy}
+                    r={isHovered ? 7.5 : 5.5}
+                    fill="#38BDF8"
+                    stroke="#090b10"
+                    strokeWidth="2"
+                    className="cursor-pointer transition-all"
+                    onMouseEnter={() => setHoveredIdx(i)}
+                    onMouseLeave={() => setHoveredIdx(null)}
                   />
                 </g>
               );
             })}
           </svg>
+
+          {/* Interactive Hover Readout */}
+          {hoveredIdx !== null && (
+            <div className="absolute top-4 right-6 px-3.5 py-1.5 rounded-lg bg-slate-950/95 border border-purple-400/40 text-white font-hud text-xs shadow-xl pointer-events-none">
+              <span className="text-amber-400 font-bold mr-2">
+                {MATCH_LABELS[hoveredIdx]}:
+              </span>
+              <span className="text-amber-300 font-extrabold mr-2">
+                {lineData.kills[hoveredIdx]} KILLS
+              </span>
+              <span className="text-sky-300 font-extrabold">
+                {lineData.damage[hoveredIdx].toLocaleString()} DMG
+              </span>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Floating Point Tooltip */}
-      {hoveredPoint && (
-        <div
-          className="fixed pointer-events-none z-50 px-3 py-2 rounded-xl bg-slate-900/95 border border-white/20 text-white font-hud text-xs font-bold shadow-2xl -translate-x-1/2 -translate-y-full"
-          style={{ left: hoveredPoint.x, top: hoveredPoint.y - 12 }}
-        >
-          <div className="text-[10px] text-slate-400 font-extrabold uppercase">
-            MATCH {hoveredPoint.match}
-          </div>
-          <div className="flex items-center gap-3 mt-1">
-            <span style={{ color: colors.killsColor }}>{hoveredPoint.kills} Kills</span>
-            <span style={{ color: colors.damageColor }}>
-              {hoveredPoint.damage.toLocaleString()} DMG
-            </span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

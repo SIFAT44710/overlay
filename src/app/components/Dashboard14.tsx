@@ -2,245 +2,234 @@
 
 import React, { useState, useEffect } from 'react';
 import useSWR from 'swr';
-import FlameEffect from './FlameEffect';
+import RealFireCanvas from './RealFireCanvas';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-const ROLES = [
-  { name: 'Rusher', color: '#38BDF8' },
-  { name: 'Support', color: '#E11D48' },
-  { name: 'Sniper', color: '#F5B700' },
-  { name: 'Bomber', color: '#A78BFA' },
+interface RolePolarData {
+  role: string;
+  color: string;
+  kills: number;
+  damage: number;
+}
+
+const ROLES_DATA: RolePolarData[] = [
+  { role: 'Rusher',  color: '#EF4444', kills: 10.3, damage: 6037 },
+  { role: 'Support', color: '#22C55E', kills: 10.3, damage: 6207 },
+  { role: 'Sniper',  color: '#A855F7', kills: 10.4, damage: 9175 },
+  { role: 'Bomber',  color: '#FACC15', kills: 11.7, damage: 6545 },
 ];
 
-const DEFAULT_KILLS = [10.3, 10.3, 10.4, 11.7];
-const DEFAULT_DAMAGE = [6037, 6207, 9175, 6545];
-
-const DEFAULT_COLORS = {
-  headerKills: '#2DD4BF', // Teal
-  headerDamage: '#F59E0B', // Amber
-  fireColor: '#8B5CF6',
-  cardBg: 'rgba(9, 11, 18, 0.78)',
-};
-
 export default function Dashboard14({ overrideColors }: { overrideColors?: any } = {}) {
-  const [colors, setColors] = useState(overrideColors || DEFAULT_COLORS);
   const [animated, setAnimated] = useState(false);
-  const [activeTooltip, setActiveTooltip] = useState<{
-    x: number;
-    y: number;
-    title: string;
-    value: string;
-  } | null>(null);
+  const [fireActiveA, setFireActiveA] = useState(false);
+  const [fireActiveB, setFireActiveB] = useState(false);
+  const [hoveredRoleA, setHoveredRoleA] = useState<RolePolarData | null>(null);
+  const [hoveredRoleB, setHoveredRoleB] = useState<RolePolarData | null>(null);
 
   const { data: themeData } = useSWR('/api/theme', fetcher, { refreshInterval: 3000 });
 
   useEffect(() => {
-    if (overrideColors) {
-      setColors({ ...DEFAULT_COLORS, ...overrideColors });
-      return;
-    }
-    if (themeData?.themes?.dashboard14) {
-      setColors({ ...DEFAULT_COLORS, ...themeData.themes.dashboard14 });
-      return;
-    }
-    try {
-      const saved = localStorage.getItem('rtb_colors_dashboard14');
-      if (saved) setColors({ ...DEFAULT_COLORS, ...JSON.parse(saved) });
-    } catch {}
-  }, [overrideColors, themeData]);
+    const tAnim = setTimeout(() => setAnimated(true), 150);
+    const tFireA = setTimeout(() => setFireActiveA(true), 380);
+    const tFireB = setTimeout(() => setFireActiveB(true), 550);
 
-  useEffect(() => {
-    const t = setTimeout(() => setAnimated(true), 180);
-    return () => clearTimeout(t);
+    return () => {
+      clearTimeout(tAnim);
+      clearTimeout(tFireA);
+      clearTimeout(tFireB);
+    };
   }, []);
 
-  // Polar coordinates builder for 4 equal quadrants (90 deg each)
   const CX = 140;
   const CY = 140;
-  const maxR = 105;
+  const MAX_R = 105;
+  const maxK = 13;
+  const maxD = 10500;
 
-  const renderPolarWedges = (
-    values: number[],
-    maxValue: number,
-    isKills: boolean
+  // Polar wedge helper for 4 equal 90-deg quadrants
+  const renderWedges = (
+    valKey: 'kills' | 'damage',
+    maxVal: number,
+    onHover: (r: RolePolarData | null) => void
   ) => {
-    const angleStep = (2 * Math.PI) / 4; // 4 roles
-    return values.map((val, idx) => {
-      const role = ROLES[idx];
-      const radiusPct = val / maxValue;
-      const targetR = maxR * (0.35 + 0.65 * radiusPct);
-      const r = animated ? targetR : 10;
+    const stepAngle = (2 * Math.PI) / 4;
+    return ROLES_DATA.map((r, i) => {
+      const val = r[valKey];
+      const radiusPct = val / maxVal;
+      const targetR = MAX_R * (0.35 + 0.65 * radiusPct);
+      const radius = animated ? targetR : 12;
 
-      const startAngle = idx * angleStep - Math.PI / 2;
-      const endAngle = (idx + 1) * angleStep - Math.PI / 2;
+      const startAngle = i * stepAngle - Math.PI / 2;
+      const endAngle = (i + 1) * stepAngle - Math.PI / 2;
 
-      const x1 = CX + r * Math.cos(startAngle);
-      const y1 = CY + r * Math.sin(startAngle);
-      const x2 = CX + r * Math.cos(endAngle);
-      const y2 = CY + r * Math.sin(endAngle);
+      const x1 = CX + radius * Math.cos(startAngle);
+      const y1 = CY + radius * Math.sin(startAngle);
+      const x2 = CX + radius * Math.cos(endAngle);
+      const y2 = CY + radius * Math.sin(endAngle);
 
-      // SVG pie sector path
-      const path = `M ${CX} ${CY} L ${x1.toFixed(1)} ${y1.toFixed(1)} A ${r.toFixed(
+      const path = `M ${CX} ${CY} L ${x1.toFixed(1)} ${y1.toFixed(1)} A ${radius.toFixed(
         1
-      )} ${r.toFixed(1)} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)} Z`;
+      )} ${radius.toFixed(1)} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)} Z`;
 
-      // Label coordinate outside sector
-      const midAngle = startAngle + angleStep / 2;
-      const labelR = targetR * 0.62;
-      const lx = CX + labelR * Math.cos(midAngle);
-      const ly = CY + labelR * Math.sin(midAngle);
+      const midAngle = startAngle + stepAngle / 2;
+      const lx = CX + radius * 0.62 * Math.cos(midAngle);
+      const ly = CY + radius * 0.62 * Math.sin(midAngle);
 
       return (
         <g
-          key={role.name}
-          className="cursor-pointer transition-all duration-700 hover:opacity-90"
-          onMouseEnter={(e) => {
-            const rect = (e.target as SVGElement).getBoundingClientRect();
-            setActiveTooltip({
-              x: rect.left + rect.width / 2,
-              y: rect.top,
-              title: `${role.name} (${isKills ? 'Avg Kills' : 'Avg Damage'})`,
-              value: isKills ? `${val.toFixed(1)} Kills` : `${val.toLocaleString()} DMG`,
-            });
-          }}
-          onMouseLeave={() => setActiveTooltip(null)}
+          key={r.role}
+          className="cursor-pointer transition-all duration-700"
+          onMouseEnter={() => onHover(r)}
+          onMouseLeave={() => onHover(null)}
         >
           <path
             d={path}
-            fill={`${role.color}cc`}
-            stroke="#0f172a"
-            strokeWidth="2.5"
+            fill={`${r.color}d9`}
+            stroke="rgba(255,255,255,0.25)"
+            strokeWidth="1.5"
             style={{
-              transition: `all 1.4s cubic-bezier(0.16, 1, 0.3, 1) ${idx * 0.1}s`,
+              transition: 'd 1.5s cubic-bezier(0.22, 1, 0.36, 1)',
             }}
           />
-          {animated && (
-            <text
-              x={lx}
-              y={ly + 4}
-              textAnchor="middle"
-              fill="#ffffff"
-              fontSize="11"
-              fontWeight="900"
-              className="font-hud pointer-events-none drop-shadow"
-            >
-              {isKills ? val.toFixed(1) : `${Math.round(val / 1000)}k`}
-            </text>
-          )}
+          <text
+            x={lx}
+            y={ly + 3}
+            textAnchor="middle"
+            fill="#ffffff"
+            fontSize="10"
+            fontWeight="800"
+            className="font-hud pointer-events-none"
+            style={{
+              paintOrder: 'stroke',
+              stroke: '#090b10',
+              strokeWidth: '3px',
+            }}
+          >
+            {valKey === 'kills' ? val : (val / 1000).toFixed(1) + 'K'}
+          </text>
         </g>
       );
     });
   };
 
   return (
-    <div className="relative w-full h-full min-h-[580px] flex flex-col items-center justify-center p-4 bg-transparent select-none font-sans overflow-hidden">
-      {/* Background Fire Flame */}
-      <div className="absolute inset-0 pointer-events-none flex items-center justify-center -z-10 opacity-75">
-        <FlameEffect color={colors.fireColor || '#8B5CF6'} height={480} opacity={0.65} />
-      </div>
-
-      <div className="w-full max-w-4xl space-y-6">
-        {/* Role Legend Bar */}
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          {ROLES.map((r) => (
-            <div
-              key={r.name}
-              className="flex items-center gap-2 px-3.5 py-1 rounded-full text-xs font-black text-white font-hud shadow-lg border border-black/30"
-              style={{ backgroundColor: r.color }}
-            >
-              <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-              <span>{r.name.toUpperCase()}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* 2 Polar Canvas Grids */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Left Chart: AVG KILLS */}
+    <div className="broadcast-stage w-full min-h-screen flex items-center justify-center p-2 sm:p-4 bg-transparent select-none font-sans">
+      <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+        {/* Left Polar Chart: AVG KILLS */}
+        <div className="hud-card rounded-2xl p-5 flex flex-col items-center">
+          {/* Top Badge */}
           <div
-            className="hud-card rounded-2xl p-6 flex flex-col items-center backdrop-blur-md border shadow-2xl"
-            style={{
-              backgroundColor: colors.cardBg,
-              borderColor: 'rgba(148, 163, 184, 0.2)',
-            }}
+            className={`mb-3 px-3.5 py-1 rounded-xl bg-transparent border border-purple-400 font-hud text-xs font-extrabold text-white flex items-center gap-2 relative transition-all duration-500 ${
+              fireActiveA ? 'top1-hero-glow top1-scale opacity-100' : 'opacity-0'
+            }`}
+            style={{ isolation: 'isolate' }}
           >
-            <div
-              className="font-hud text-xs font-black tracking-widest mb-3 uppercase"
-              style={{ color: colors.headerKills }}
-            >
-              ROLE AVERAGE KILLS
-            </div>
-
-            <div className="relative w-72 h-72 flex items-center justify-center">
-              <svg viewBox="0 0 280 280" className="w-full h-full overflow-visible">
-                {/* Concentric Guide Circles */}
-                {[0.25, 0.5, 0.75, 1].map((s) => (
-                  <circle
-                    key={s}
-                    cx={CX}
-                    cy={CY}
-                    r={maxR * s}
-                    fill="none"
-                    stroke="rgba(226,232,240,0.14)"
-                    strokeWidth="1"
-                    strokeDasharray="4 4"
-                  />
-                ))}
-                {renderPolarWedges(DEFAULT_KILLS, 12, true)}
-              </svg>
-            </div>
+            {fireActiveA && (
+              <div
+                className="pointer-events-none absolute -inset-x-2 -top-6 bottom-0 transition-opacity duration-500 opacity-100"
+                style={{ zIndex: -1 }}
+              >
+                <RealFireCanvas opts={{ light: true }} />
+              </div>
+            )}
+            <span className="relative z-10 text-yellow-400">#1 AVG KILLS</span>
+            <span className="relative z-10">BOMBER • 11.7</span>
           </div>
 
-          {/* Right Chart: AVG DAMAGE */}
-          <div
-            className="hud-card rounded-2xl p-6 flex flex-col items-center backdrop-blur-md border shadow-2xl"
-            style={{
-              backgroundColor: colors.cardBg,
-              borderColor: 'rgba(148, 163, 184, 0.2)',
-            }}
-          >
-            <div
-              className="font-hud text-xs font-black tracking-widest mb-3 uppercase"
-              style={{ color: colors.headerDamage }}
-            >
-              ROLE AVERAGE DAMAGE
-            </div>
+          {/* Polar SVG */}
+          <div className="relative w-full max-w-[280px]">
+            <svg viewBox="0 0 280 280" className="w-full overflow-visible">
+              {/* Background circular rings */}
+              {[30, 60, 90, 115].map((r) => (
+                <circle
+                  key={r}
+                  cx={CX}
+                  cy={CY}
+                  r={r}
+                  fill="none"
+                  stroke="rgba(226,232,240,0.18)"
+                  strokeWidth="1"
+                />
+              ))}
 
-            <div className="relative w-72 h-72 flex items-center justify-center">
-              <svg viewBox="0 0 280 280" className="w-full h-full overflow-visible">
-                {/* Concentric Guide Circles */}
-                {[0.25, 0.5, 0.75, 1].map((s) => (
-                  <circle
-                    key={s}
-                    cx={CX}
-                    cy={CY}
-                    r={maxR * s}
-                    fill="none"
-                    stroke="rgba(226,232,240,0.14)"
-                    strokeWidth="1"
-                    strokeDasharray="4 4"
-                  />
-                ))}
-                {renderPolarWedges(DEFAULT_DAMAGE, 10000, false)}
-              </svg>
-            </div>
+              {/* Polar Wedges */}
+              {renderWedges('kills', maxK, setHoveredRoleA)}
+
+              {/* Role Names on Margins */}
+              <text x={CX} y="18" textAnchor="middle" fill="#EF4444" fontSize="10.5" fontWeight="800" className="font-hud">RUSHER</text>
+              <text x="265" y={CY + 4} textAnchor="start" fill="#22C55E" fontSize="10.5" fontWeight="800" className="font-hud">SUPPORT</text>
+              <text x={CX} y="268" textAnchor="middle" fill="#A855F7" fontSize="10.5" fontWeight="800" className="font-hud">SNIPER</text>
+              <text x="15" y={CY + 4} textAnchor="end" fill="#FACC15" fontSize="10.5" fontWeight="800" className="font-hud">BOMBER</text>
+            </svg>
+
+            {hoveredRoleA && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="px-3 py-1 rounded bg-slate-950/95 border border-white/20 text-white font-hud text-xs font-bold shadow">
+                  {hoveredRoleA.role}: {hoveredRoleA.kills} Kills
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Polar Chart: AVG DAMAGE */}
+        <div className="hud-card rounded-2xl p-5 flex flex-col items-center">
+          {/* Top Badge */}
+          <div
+            className={`mb-3 px-3.5 py-1 rounded-xl bg-transparent border border-purple-400 font-hud text-xs font-extrabold text-white flex items-center gap-2 relative transition-all duration-500 ${
+              fireActiveB ? 'top1-hero-glow top1-scale opacity-100' : 'opacity-0'
+            }`}
+            style={{ isolation: 'isolate' }}
+          >
+            {fireActiveB && (
+              <div
+                className="pointer-events-none absolute -inset-x-2 -top-6 bottom-0 transition-opacity duration-500 opacity-100"
+                style={{ zIndex: -1 }}
+              >
+                <RealFireCanvas opts={{ light: true }} />
+              </div>
+            )}
+            <span className="relative z-10 text-purple-400">#1 AVG DAMAGE</span>
+            <span className="relative z-10">SNIPER • 9,175</span>
+          </div>
+
+          {/* Polar SVG */}
+          <div className="relative w-full max-w-[280px]">
+            <svg viewBox="0 0 280 280" className="w-full overflow-visible">
+              {/* Background circular rings */}
+              {[30, 60, 90, 115].map((r) => (
+                <circle
+                  key={r}
+                  cx={CX}
+                  cy={CY}
+                  r={r}
+                  fill="none"
+                  stroke="rgba(226,232,240,0.18)"
+                  strokeWidth="1"
+                />
+              ))}
+
+              {/* Polar Wedges */}
+              {renderWedges('damage', maxD, setHoveredRoleB)}
+
+              {/* Role Names on Margins */}
+              <text x={CX} y="18" textAnchor="middle" fill="#EF4444" fontSize="10.5" fontWeight="800" className="font-hud">RUSHER</text>
+              <text x="265" y={CY + 4} textAnchor="start" fill="#22C55E" fontSize="10.5" fontWeight="800" className="font-hud">SUPPORT</text>
+              <text x={CX} y="268" textAnchor="middle" fill="#A855F7" fontSize="10.5" fontWeight="800" className="font-hud">SNIPER</text>
+              <text x="15" y={CY + 4} textAnchor="end" fill="#FACC15" fontSize="10.5" fontWeight="800" className="font-hud">BOMBER</text>
+            </svg>
+
+            {hoveredRoleB && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="px-3 py-1 rounded bg-slate-950/95 border border-white/20 text-white font-hud text-xs font-bold shadow">
+                  {hoveredRoleB.role}: {hoveredRoleB.damage.toLocaleString()} DMG
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
-
-      {/* Floating Tooltip */}
-      {activeTooltip && (
-        <div
-          className="fixed pointer-events-none z-50 px-3 py-1.5 rounded-xl bg-slate-900/95 border border-white/20 text-white font-hud text-xs font-bold shadow-2xl -translate-x-1/2 -translate-y-full"
-          style={{ left: activeTooltip.x, top: activeTooltip.y - 10 }}
-        >
-          <div className="text-[10px] text-slate-400 font-extrabold uppercase">
-            {activeTooltip.title}
-          </div>
-          <div className="text-amber-400 font-black mt-0.5">{activeTooltip.value}</div>
-        </div>
-      )}
     </div>
   );
 }

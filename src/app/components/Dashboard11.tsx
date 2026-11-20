@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import useSWR from 'swr';
-import FlameEffect from './FlameEffect';
+import RealFireCanvas from './RealFireCanvas';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -16,190 +16,171 @@ interface ColumnTeam {
 }
 
 const DEFAULT_TEAMS: ColumnTeam[] = [
-  { rank: 1,  tag: 'TOP', name: 'TOP', pts: 134, col: '#F5B700' },
-  { rank: 2,  tag: 'EXE', name: 'EXE', pts: 98,  col: '#E11D48' },
-  { rank: 3,  tag: 'S9x', name: 'S9x', pts: 96,  col: '#8B5CF6' },
-  { rank: 4,  tag: 'CME', name: 'CME', pts: 93,  col: '#2DD4BF' },
-  { rank: 5,  tag: 'TRX', name: 'TRX', pts: 85,  col: '#38BDF8' },
-  { rank: 6,  tag: 'UEO', name: 'UEO', pts: 78,  col: '#6366F1' },
-  { rank: 7,  tag: 'NK',  name: 'NK',  pts: 69,  col: '#A78BFA' },
-  { rank: 8,  tag: '69',  name: '69',  pts: 61,  col: '#F43F5E' },
-  { rank: 9,  tag: 'JG',  name: 'JG',  pts: 58,  col: '#14B8A6' },
-  { rank: 10, tag: 'ITZ', name: 'ITZ', pts: 36,  col: '#60A5FA' },
-  { rank: 11, tag: 'EGL', name: 'EGL', pts: 33,  col: '#94A3B8' },
-  { rank: 12, tag: 'SG',  name: 'SG',  pts: 0,   col: '#64748B' },
+  { rank: 1,  tag: 'TOP', name: 'RAAD VAI YT',       pts: 134, col: '#F5B700' },
+  { rank: 2,  tag: 'EXE', name: 'EXTREME EX',        pts: 98,  col: '#E11D48' },
+  { rank: 3,  tag: 'S9x', name: 'SNEAKY9X',          pts: 96,  col: '#8B5CF6' },
+  { rank: 4,  tag: 'CME', name: 'COFFIN MAKERS ESP', pts: 93,  col: '#2DD4BF' },
+  { rank: 5,  tag: 'TRX', name: 'TITANOVA REX',      pts: 85,  col: '#38BDF8' },
+  { rank: 6,  tag: 'UEO', name: 'TEAM UNIONIZED',    pts: 78,  col: '#6366F1' },
+  { rank: 7,  tag: 'NK',  name: 'NOVA KNIGHT',       pts: 69,  col: '#A78BFA' },
+  { rank: 8,  tag: '69',  name: '69 ESPORTS',        pts: 61,  col: '#F43F5E' },
+  { rank: 9,  tag: 'JG',  name: 'JUMA GAMING',       pts: 58,  col: '#14B8A6' },
+  { rank: 10, tag: 'ITZ', name: 'ITZ KABBO',         pts: 36,  col: '#60A5FA' },
+  { rank: 11, tag: 'EGL', name: 'TEAM EAGLE',        pts: 33,  col: '#94A3B8' },
+  { rank: 12, tag: 'SG',  name: 'SADIA GAMING',      pts: 0,   col: '#64748B' },
 ];
 
-const DEFAULT_COLORS = {
-  headerColor: '#F5B700',
-  fireColor: '#8B5CF6',
-  gridColor: 'rgba(148, 163, 184, 0.15)',
-};
-
 export default function Dashboard11({ overrideColors }: { overrideColors?: any } = {}) {
-  const [colors, setColors] = useState(overrideColors || DEFAULT_COLORS);
-  const [animated, setAnimated] = useState(false);
-  const [activeTooltip, setActiveTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
+  const [animatedBars, setAnimatedBars] = useState<boolean[]>(new Array(12).fill(false));
+  const [fireActive, setFireActive] = useState(false);
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
-  const { data: themeData } = useSWR('/api/theme', fetcher, { refreshInterval: 3000 });
   const { data: dayData } = useSWR('/api/daystanding', fetcher, { refreshInterval: 2000 });
   const { data: sheetData } = useSWR('/api/sheet', fetcher, { refreshInterval: 2000 });
 
-  useEffect(() => {
-    if (overrideColors) {
-      setColors({ ...DEFAULT_COLORS, ...overrideColors });
-      return;
-    }
-    if (themeData?.themes?.dashboard11) {
-      setColors({ ...DEFAULT_COLORS, ...themeData.themes.dashboard11 });
-      return;
-    }
-    try {
-      const saved = localStorage.getItem('rtb_colors_dashboard11');
-      if (saved) setColors({ ...DEFAULT_COLORS, ...JSON.parse(saved) });
-    } catch {}
-  }, [overrideColors, themeData]);
-
-  useEffect(() => {
-    const t = setTimeout(() => setAnimated(true), 200);
-    return () => clearTimeout(t);
-  }, []);
-
-  // Compute live teams from sheet/daystanding
   const teams: ColumnTeam[] = React.useMemo(() => {
     const source = dayData?.standing || sheetData?.data || [];
     if (source.length >= 6) {
       return source.slice(0, 12).map((row: any, idx: number) => {
         const pts = parseInt(row.total ?? row.Total ?? row.pts ?? 0, 10);
         const tag = row.tag || (row.TeamName ? row.TeamName.slice(0, 3).toUpperCase() : DEFAULT_TEAMS[idx]?.tag || `T${idx+1}`);
+        const name = row.name || row.TeamName || DEFAULT_TEAMS[idx]?.name || tag;
         const col = DEFAULT_TEAMS[idx]?.col || '#8B5CF6';
         return {
           rank: idx + 1,
           tag,
-          name: tag,
+          name,
           pts,
           col,
-          logoUrl: row.logoUrl || null,
+          logoUrl: row.logoUrl || row.LogoUrl || null,
         };
       });
     }
     return DEFAULT_TEAMS;
   }, [dayData, sheetData]);
 
-  const maxPts = Math.max(1, ...teams.map((t) => t.pts));
+  const maxPts = Math.max(140, ...teams.map((t) => t.pts));
+  const topTeam = teams[0] || DEFAULT_TEAMS[0];
+
+  useEffect(() => {
+    setAnimatedBars(new Array(teams.length).fill(false));
+    setFireActive(false);
+
+    // Bounce reveal columns
+    teams.forEach((_, i) => {
+      setTimeout(() => {
+        setAnimatedBars((prev) => {
+          const next = [...prev];
+          next[i] = true;
+          return next;
+        });
+      }, 100 + i * 110);
+    });
+
+    const tFire = setTimeout(() => {
+      setFireActive(true);
+    }, 320);
+
+    return () => clearTimeout(tFire);
+  }, [teams]);
 
   return (
-    <div className="relative w-full h-full min-h-[580px] flex flex-col items-center justify-center p-4 bg-transparent select-none font-sans overflow-hidden">
-      {/* Background Flame Aura */}
-      <div className="absolute inset-0 pointer-events-none flex items-center justify-center -z-10 opacity-75">
-        <FlameEffect color={colors.fireColor || '#F5B700'} height={480} opacity={0.65} />
-      </div>
-
-      <div className="w-full max-w-5xl flex flex-col items-center">
-        {/* Title Badge */}
-        <div className="mb-6 flex items-center gap-3">
-          <span
-            className="px-4 py-1 rounded-full font-hud text-xs font-black text-black tracking-widest uppercase shadow-lg"
-            style={{ backgroundColor: colors.headerColor || '#F5B700' }}
+    <div className="broadcast-stage w-full min-h-screen flex items-center justify-center p-2 sm:p-4 bg-transparent select-none font-sans">
+      <div className="w-full max-w-4xl space-y-4">
+        {/* Top 1 Pill */}
+        <div className="flex justify-center">
+          <div
+            className={`transition-all duration-500 px-4 py-1.5 rounded-xl bg-transparent border border-purple-400 font-hud text-xs sm:text-sm font-extrabold text-white flex items-center gap-2 relative ${
+              fireActive ? 'top1-hero-glow top1-scale opacity-100' : 'opacity-0'
+            }`}
+            style={{ isolation: 'isolate' }}
           >
-            TOTAL POINTS RANKING
-          </span>
-          <span className="text-xs font-bold text-slate-400 font-hud tracking-wider">
-            ALL 12 CONTENDERS
-          </span>
+            {fireActive && (
+              <div
+                className="pointer-events-none absolute -inset-x-2 -top-6 bottom-0 transition-opacity duration-500 opacity-100"
+                style={{ zIndex: -1 }}
+              >
+                <RealFireCanvas opts={{ light: true }} />
+              </div>
+            )}
+            <span className="relative z-10 text-amber-400">#1 TOP POINTS</span>
+            <span className="relative z-10">{topTeam.name} ({topTeam.tag})</span>
+            <span className="relative z-10 px-2 py-0.5 rounded bg-amber-400 text-black font-extrabold shadow">
+              {topTeam.pts} PTS
+            </span>
+          </div>
         </div>
 
-        {/* 12 Columns Stage */}
-        <div className="relative w-full h-80 sm:h-96 rounded-2xl p-6 backdrop-blur-md bg-black/60 border border-white/10 shadow-2xl flex flex-col justify-end">
-          {/* Horizontal Grid lines */}
-          <div className="absolute inset-x-6 top-8 bottom-16 flex flex-col justify-between pointer-events-none opacity-20">
-            <div className="w-full border-b border-white" />
-            <div className="w-full border-b border-white" />
-            <div className="w-full border-b border-white" />
-            <div className="w-full border-b border-white" />
-          </div>
+        {/* 12 Vertical Columns Bar Graph */}
+        <div className="hud-card rounded-2xl p-4 sm:p-6 relative">
+          <div className="h-72 sm:h-80 w-full flex items-end justify-between gap-1.5 sm:gap-3 px-2 pt-8 pb-8 border-b border-slate-700/60 relative">
+            {/* Horizontal Grid lines */}
+            <div className="absolute inset-x-2 top-8 bottom-8 flex flex-col justify-between pointer-events-none opacity-20">
+              <div className="w-full border-b border-dashed border-slate-400" />
+              <div className="w-full border-b border-dashed border-slate-400" />
+              <div className="w-full border-b border-dashed border-slate-400" />
+              <div className="w-full border-b border-dashed border-slate-400" />
+            </div>
 
-          {/* Bar Chart Container */}
-          <div className="relative z-10 w-full h-full flex items-end justify-between gap-1.5 sm:gap-3 pb-8">
-            {teams.map((t, idx) => {
-              const heightPct = (t.pts / maxPts) * 100;
-              const delaySec = idx * 0.08;
+            {teams.map((t, i) => {
+              const isLoaded = animatedBars[i];
+              const isTop1 = i === 0;
+              const heightPct = Math.min(100, Math.max(4, (t.pts / maxPts) * 100));
 
               return (
                 <div
                   key={t.tag}
-                  className="relative flex-1 flex flex-col items-center h-full justify-end group cursor-pointer"
-                  onMouseEnter={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    setActiveTooltip({
-                      x: rect.left + rect.width / 2,
-                      y: rect.top - 10,
-                      text: `#${t.rank} ${t.tag} — ${t.pts} PTS`,
-                    });
-                  }}
-                  onMouseLeave={() => setActiveTooltip(null)}
+                  className="flex-1 flex flex-col items-center h-full justify-end relative group cursor-pointer"
+                  onMouseEnter={() => setHoveredIdx(i)}
+                  onMouseLeave={() => setHoveredIdx(null)}
                 >
-                  {/* Points Counter Badge */}
-                  <div
-                    className="font-hud text-[11px] sm:text-xs font-black text-white mb-1.5 transition-all duration-700"
-                    style={{
-                      opacity: animated ? 1 : 0,
-                      transform: animated ? 'translateY(0)' : 'translateY(10px)',
-                      transitionDelay: `${delaySec + 0.3}s`,
-                    }}
+                  {/* Point number on top */}
+                  <span
+                    className={`font-hud font-bold text-[10px] sm:text-xs mb-1 transition-opacity duration-500 ${
+                      isLoaded ? 'opacity-100' : 'opacity-0'
+                    } ${isTop1 ? 'text-amber-300 font-extrabold text-xs sm:text-sm' : 'text-slate-200'}`}
                   >
                     {t.pts}
-                  </div>
+                  </span>
 
                   {/* Vertical Bar */}
-                  <div className="w-full max-w-[48px] rounded-t-lg relative overflow-hidden bg-white/5 border border-white/10 flex flex-col justify-end">
+                  <div className="w-full max-w-[42px] h-full flex items-end">
                     <div
-                      className="w-full rounded-t-md transition-all duration-1000 ease-out shadow-lg"
+                      className={`w-full rounded-t-lg bar-live transition-all ${
+                        isTop1 ? 'shadow-[0_0_14px_rgba(245,183,0,0.7)]' : ''
+                      }`}
                       style={{
+                        height: isLoaded ? `${heightPct}%` : '0%',
                         backgroundColor: t.col,
-                        height: animated ? `${Math.max(6, heightPct)}%` : '0%',
-                        transitionDelay: `${delaySec}s`,
-                        boxShadow: `0 0 16px ${t.col}66`,
+                        ['--bar-glow' as any]: t.col,
+                        transition: 'height 1.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
                       }}
-                    >
-                      {/* Top gloss strip */}
-                      <div className="w-full h-1 bg-white/40" />
-                    </div>
+                    />
                   </div>
 
-                  {/* Bottom Team Tag & Logo */}
-                  <div className="absolute -bottom-8 flex flex-col items-center">
-                    {t.logoUrl ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img
-                        src={t.logoUrl}
-                        alt={t.tag}
-                        className="w-4 h-4 object-contain rounded-full border border-black/50 bg-black/40 mb-0.5"
-                      />
-                    ) : null}
+                  {/* Bottom Tag Label */}
+                  <div className="absolute -bottom-7 flex flex-col items-center">
                     <span
-                      className="font-hud text-[10px] sm:text-xs font-black tracking-tight"
-                      style={{ color: t.col }}
+                      className={`font-hud font-extrabold text-[10px] sm:text-xs tracking-wider ${
+                        isTop1 ? 'text-amber-400 font-black' : 'text-slate-300'
+                      }`}
                     >
                       {t.tag}
                     </span>
                   </div>
+
+                  {/* Hover Tooltip */}
+                  {hoveredIdx === i && (
+                    <div className="absolute -top-12 z-30 px-2.5 py-1 rounded bg-slate-950/95 border border-white/20 text-white font-hud text-xs shadow-xl whitespace-nowrap pointer-events-none">
+                      #{t.rank} {t.name} — {t.pts} PTS
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
         </div>
       </div>
-
-      {/* Floating Tooltip */}
-      {activeTooltip && (
-        <div
-          className="fixed pointer-events-none z-50 px-3 py-1.5 rounded-lg bg-slate-900/95 border border-amber-400 text-amber-300 font-hud text-xs font-bold shadow-2xl -translate-x-1/2 -translate-y-full"
-          style={{ left: activeTooltip.x, top: activeTooltip.y }}
-        >
-          {activeTooltip.text}
-        </div>
-      )}
     </div>
   );
 }
