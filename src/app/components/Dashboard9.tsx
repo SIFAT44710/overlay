@@ -40,6 +40,7 @@ export default function Dashboard9({ overrideColors }: { overrideColors?: any } 
   const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
 
   const { data: themeData } = useSWR('/api/theme', fetcher, { refreshInterval: 3000 });
+  const { data: sheetData } = useSWR('/api/sheet', fetcher, { refreshInterval: 2000 });
   const { data: dayData } = useSWR('/api/daystanding', fetcher, { refreshInterval: 2000 });
 
   useEffect(() => {
@@ -75,8 +76,53 @@ export default function Dashboard9({ overrideColors }: { overrideColors?: any } 
 
   const teamColors = [colors.team1, colors.team2, colors.team3, colors.team4];
 
-  // Derive live top 4 teams from sheet
+  // Derive live top 4 teams from sheet (Live match Vmix priority, DayStanding fallback)
   const radarTeams: RadarTeam[] = React.useMemo(() => {
+    // 1. Check live Vmix match standing first
+    if (sheetData?.data && sheetData.data.length >= 4) {
+      const top4 = sheetData.data
+        .filter((r: any) => r.TeamName && r.TeamName.trim() !== '')
+        .slice(0, 4);
+      if (top4.length >= 4) {
+        const maxKills = Math.max(1, ...top4.map((t: any) => parseInt(t.Kill, 10) || 0));
+        const maxDmg = Math.max(1, ...top4.map((t: any) => parseInt(t.Damage, 10) || 0));
+        const maxPts = Math.max(1, ...top4.map((t: any) => parseInt(t.Total, 10) || 0));
+
+        return top4.map((t: any, idx: number): RadarTeam => {
+          const kills = parseInt(t.Kill, 10) || 0;
+          const dmg = parseInt(t.Damage, 10) || 0;
+          const pts = parseInt(t.Total, 10) || 0;
+          const surv = parseInt(t['Survival Score'] || t.SurvivalScore, 10) || 0;
+          const booyah = parseInt(t.Booyah, 10) || 0;
+
+          const kPct = Math.min(100, Math.round((kills / maxKills) * 100));
+          const dPct = Math.min(100, Math.round((dmg / maxDmg) * 100));
+          const pPct = Math.min(100, Math.round((pts / maxPts) * 100));
+          const sPct = Math.min(100, Math.round((surv / 12) * 100));
+          const bPct = Math.min(100, Math.round(booyah > 0 ? 100 : 35));
+
+          const name = t.TeamName.trim();
+          const tag = name.split(/\s+/).map((w: string) => w[0]).join('').slice(0, 3).toUpperCase();
+
+          return {
+            name,
+            tag,
+            color: teamColors[idx] || DEFAULT_RADAR.teams[idx]?.color || '#F5B700',
+            kills,
+            dmg,
+            vals: [
+              Math.max(25, kPct),
+              Math.max(25, sPct),
+              Math.max(25, bPct),
+              Math.max(25, pPct),
+              Math.max(25, dPct),
+            ],
+          };
+        });
+      }
+    }
+
+    // 2. Fallback to DayStanding
     if (dayData?.success && dayData.data && dayData.data.length >= 4) {
       const top4 = dayData.data.slice(0, 4);
       const maxKills = Math.max(1, ...top4.map((t: any) => t.elims || 0));
@@ -106,7 +152,7 @@ export default function Dashboard9({ overrideColors }: { overrideColors?: any } 
       });
     }
     return DEFAULT_RADAR.teams;
-  }, [dayData, teamColors]);
+  }, [sheetData, dayData, teamColors]);
 
   useEffect(() => {
     setActiveTeams([false, false, false, false]);

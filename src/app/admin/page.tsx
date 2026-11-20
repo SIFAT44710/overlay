@@ -700,23 +700,19 @@ const SLIDES: SlideConfig[] = [
     id: 13,
     name: 'Slide 13',
     title: 'FFWS Wipe Standing — Top 12 Teams',
-    desc: 'Diagonal wipe cascade leaderboard with skewed tags, dynamic rank deltas, and live DayStanding sheet sync',
+    desc: 'Diagonal wipe cascade leaderboard with skewed tags and real-time live Google Sheet sync',
     storageKey: 'rtb_colors_dashboard13',
     defaults: {
       headerGold: '#F5B700',
       headerPurple: '#6225A6',
       headerDark: '#2E0E56',
       totalPtsGold: '#F5B700',
-      accentMint: '#00DF82',
-      accentCrimson: '#FF3B5C',
     },
     fields: [
       { key: 'headerGold', label: 'Booyah Gold Accent', defaultVal: '#F5B700', desc: 'Main header crown & #1 highlight' },
       { key: 'headerPurple', label: 'Primary Brand Purple', defaultVal: '#6225A6', desc: 'Secondary angled header block' },
       { key: 'headerDark', label: 'Obsidian Header Base', defaultVal: '#2E0E56', desc: 'Base dark angled background' },
       { key: 'totalPtsGold', label: 'Total Points Column Accent', defaultVal: '#F5B700', desc: 'Pts score text & gold glow' },
-      { key: 'accentMint', label: 'Rank Up Indicator', defaultVal: '#00DF82', desc: '▲ Delta rank gain badge' },
-      { key: 'accentCrimson', label: 'Rank Drop Indicator', defaultVal: '#FF3B5C', desc: '▼ Delta rank loss badge' },
     ],
     presets: [
       {

@@ -113,7 +113,7 @@ const SLIDES: SlideItem[] = [
     id: 13,
     badge: 'Slide 13',
     title: 'FFWS Wipe Standing — Top 12 Teams',
-    desc: 'Diagonal wipe cascade leaderboard with skewed tags, dynamic rank deltas, and live DayStanding sheet sync.',
+    desc: 'Diagonal wipe cascade leaderboard with skewed tags and real-time live Google Sheet sync.',
     tag: 'FFWS Wipe Standing',
     color: '#F5B700',
   },

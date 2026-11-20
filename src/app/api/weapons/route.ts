@@ -16,22 +16,53 @@ export async function GET() {
 
     const sheets = google.sheets({ version: 'v4', auth });
 
-    // Fetch Top 5 weapons from Vmix!A93:F97
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: process.env.GOOGLE_SHEET_ID,
-      range: 'Vmix!A93:F97',
-    });
+    // Fetch Top 5 weapons from Vmix!A93:F97 and Weapons tab in parallel
+    const [vmixRes, weaponsTabRes] = await Promise.all([
+      sheets.spreadsheets.values.get({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: 'Vmix!A93:F97',
+      }).catch(() => ({ data: { values: [] } })),
+      sheets.spreadsheets.values.get({
+        spreadsheetId: process.env.GOOGLE_SHEET_ID,
+        range: 'Weapons!A3:F100',
+      }).catch(() => ({ data: { values: [] } })),
+    ]);
 
-    const rows = response.data.values || [];
+    const vmixRows = vmixRes.data.values || [];
     const defaultColors = ['#6225A6', '#EC008C', '#F5B700', '#00DF82', '#111827'];
 
-    const weapons = rows.map((r: any[], idx: number) => ({
-      name: (r[0] || `WEAPON ${idx + 1}`).toUpperCase(),
-      kills: parseInt(r[1], 10) || 0,
-      damage: parseInt(r[2], 10) || 0,
-      hs: parseInt(r[4], 10) || 0,
-      color: defaultColors[idx] || '#6225A6',
-    }));
+    let weapons: any[] = [];
+
+    if (vmixRows.length > 0 && vmixRows[0][0]) {
+      weapons = vmixRows.map((r: any[], idx: number) => ({
+        name: (r[0] || `WEAPON ${idx + 1}`).toUpperCase(),
+        kills: parseInt(r[1], 10) || 0,
+        damage: parseInt(r[2], 10) || 0,
+        hs: parseInt(r[4], 10) || 0,
+        color: defaultColors[idx] || '#6225A6',
+      }));
+    } else {
+      const tabRows = weaponsTabRes.data?.values || [];
+      const agg: Record<string, { kills: number; damage: number }> = {};
+      tabRows.forEach((row: any[]) => {
+        const weapon = (row[3] || '').trim().toUpperCase();
+        if (weapon) {
+          if (!agg[weapon]) agg[weapon] = { kills: 0, damage: 0 };
+          agg[weapon].kills += parseInt(row[4], 10) || 0;
+          agg[weapon].damage += parseInt(row[5], 10) || 0;
+        }
+      });
+      weapons = Object.entries(agg)
+        .map(([name, stats], idx) => ({
+          name,
+          kills: stats.kills,
+          damage: stats.damage,
+          hs: Math.round(stats.kills * 0.45),
+          color: defaultColors[idx % defaultColors.length],
+        }))
+        .sort((a, b) => b.kills - a.kills)
+        .slice(0, 5);
+    }
 
     return NextResponse.json(
       { success: true, weapons },

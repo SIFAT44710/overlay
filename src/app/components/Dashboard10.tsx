@@ -58,8 +58,51 @@ export default function Dashboard10({ overrideColors }: { overrideColors?: any }
     } catch {}
   }, [overrideColors, themeData]);
 
-  // Extract top 2 teams from live sheet or fallback
+  // Extract top 2 teams from live sheet (Live match Vmix priority, DayStanding fallback)
   const h2h = React.useMemo(() => {
+    // 1. Live match Vmix priority
+    const raw = sheetData?.data || [];
+    if (raw.length >= 2) {
+      const t1 = raw[0];
+      const t2 = raw[1];
+      const t1Kill = parseInt(t1.Kill, 10) || 0;
+      const t1Pts = parseInt(t1.Total || t1.TotalPoints || t1.Pts || t1.Kill, 10) || t1Kill;
+      const t1Surv = parseInt(t1['Survival Score'] || t1.SurvivalScore, 10) || Math.max(0, t1Pts - t1Kill);
+      const t1Dmg = parseInt(t1.Damage, 10) || 0;
+
+      const t2Kill = parseInt(t2.Kill, 10) || 0;
+      const t2Pts = parseInt(t2.Total || t2.TotalPoints || t2.Pts || t2.Kill, 10) || t2Kill;
+      const t2Surv = parseInt(t2['Survival Score'] || t2.SurvivalScore, 10) || Math.max(0, t2Pts - t2Kill);
+      const t2Dmg = parseInt(t2.Damage, 10) || 0;
+
+      const nameA = t1.TeamName ? t1.TeamName.trim() : DEFAULT_H2H.a.name;
+      const nameB = t2.TeamName ? t2.TeamName.trim() : DEFAULT_H2H.b.name;
+
+      return {
+        a: {
+          name: nameA,
+          tag: nameA.split(/\s+/).map((w: string) => w[0]).join('').slice(0, 3).toUpperCase(),
+          total: t1Pts,
+          kills: t1Kill,
+          surv: t1Surv,
+          damage: t1Dmg || DEFAULT_H2H.a.damage,
+          hs: Math.round(t1Kill * 0.9) || DEFAULT_H2H.a.hs,
+          gloo: Math.round(t1Kill * 3.1) || DEFAULT_H2H.a.gloo,
+        },
+        b: {
+          name: nameB,
+          tag: nameB.split(/\s+/).map((w: string) => w[0]).join('').slice(0, 3).toUpperCase(),
+          total: t2Pts,
+          kills: t2Kill,
+          surv: t2Surv,
+          damage: t2Dmg || DEFAULT_H2H.b.damage,
+          hs: Math.round(t2Kill * 0.9) || DEFAULT_H2H.b.hs,
+          gloo: Math.round(t2Kill * 3.4) || DEFAULT_H2H.b.gloo,
+        },
+      };
+    }
+
+    // 2. DayStanding fallback
     if (dayData?.success && dayData.data && dayData.data.length >= 2) {
       const t1 = dayData.data[0];
       const t2 = dayData.data[1];
@@ -91,39 +134,8 @@ export default function Dashboard10({ overrideColors }: { overrideColors?: any }
       };
     }
 
-    const raw = sheetData?.data || [];
-    if (raw.length >= 2) {
-      const t1 = raw[0];
-      const t2 = raw[1];
-      const t1Kill = parseInt(t1.Kill, 10) || 0;
-      const t1Pts = parseInt(t1.Total || t1.TotalPoints || t1.Pts || t1.Kill, 10) || t1Kill;
-      const t2Kill = parseInt(t2.Kill, 10) || 0;
-      const t2Pts = parseInt(t2.Total || t2.TotalPoints || t2.Pts || t2.Kill, 10) || t2Kill;
-      return {
-        a: {
-          name: t1.TeamName?.trim() || DEFAULT_H2H.a.name,
-          tag: (t1.TeamName?.trim() || 'TOP').slice(0, 3).toUpperCase(),
-          total: t1Pts,
-          kills: t1Kill,
-          surv: Math.max(0, t1Pts - t1Kill),
-          damage: parseInt(t1.Damage, 10) || DEFAULT_H2H.a.damage,
-          hs: Math.round(t1Kill * 0.9) || DEFAULT_H2H.a.hs,
-          gloo: Math.round(t1Kill * 3.1) || DEFAULT_H2H.a.gloo,
-        },
-        b: {
-          name: t2.TeamName?.trim() || DEFAULT_H2H.b.name,
-          tag: (t2.TeamName?.trim() || 'EXE').slice(0, 3).toUpperCase(),
-          total: t2Pts,
-          kills: t2Kill,
-          surv: Math.max(0, t2Pts - t2Kill),
-          damage: parseInt(t2.Damage, 10) || DEFAULT_H2H.b.damage,
-          hs: Math.round(t2Kill * 0.9) || DEFAULT_H2H.b.hs,
-          gloo: Math.round(t2Kill * 3.4) || DEFAULT_H2H.b.gloo,
-        },
-      };
-    }
     return DEFAULT_H2H;
-  }, [dayData, sheetData]);
+  }, [sheetData, dayData]);
 
   const pctA = Math.round((h2h.a.total / (h2h.a.total + h2h.b.total)) * 100) || 50;
   const pctB = 100 - pctA;
