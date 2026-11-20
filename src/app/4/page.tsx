@@ -1,5 +1,9 @@
-import Dashboard4 from '../Dashboard4';
+import Dashboard4 from '../components/Dashboard4';
 
 export default function Page4() {
-  return <Dashboard4 />;
+  return (
+    <main className="min-h-screen bg-transparent text-white">
+      <Dashboard4 />
+    </main>
+  );
 }

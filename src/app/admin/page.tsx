@@ -2,19 +2,20 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import Dashboard from '../Dashboard';
-import Dashboard2 from '../Dashboard2';
-import Dashboard3 from '../Dashboard3';
-import Dashboard4 from '../Dashboard4';
-import Dashboard5 from '../Dashboard5';
-import Dashboard6 from '../Dashboard6';
-import Dashboard7 from '../Dashboard7';
+import Dashboard1 from '../components/Dashboard1';
+import Dashboard2 from '../components/Dashboard2';
+import Dashboard3 from '../components/Dashboard3';
+import Dashboard4 from '../components/Dashboard4';
+import Dashboard5 from '../components/Dashboard5';
+import Dashboard6 from '../components/Dashboard6';
+import Dashboard7 from '../components/Dashboard7';
 import Dashboard8 from '../components/Dashboard8';
 import Dashboard9 from '../components/Dashboard9';
 import Dashboard10 from '../components/Dashboard10';
 import Dashboard11 from '../components/Dashboard11';
 import Dashboard12 from '../components/Dashboard12';
 import Dashboard13 from '../components/Dashboard13';
+import Dashboard14 from '../components/Dashboard14';
 
 interface ColorFieldDef {
   key: string;
@@ -174,6 +175,7 @@ const MASTER_PALETTES: MasterPalette[] = [
       11: { p1Plate: '#ffffff', p2Plate: '#FF2E00', gaugeDark: '#180808', gaugePurple: '#FF2E00', accentGold: '#FFD700', labelColor: '#FF2E00' },
       12: { w1Color: '#FFD700', w2Color: '#FF2E00', w3Color: '#FF9900', w4Color: '#B91C1C', w5Color: '#180808' },
       13: { headerGold: '#FFD700', headerPurple: '#FF2E00', headerDark: '#180808', totalPtsGold: '#FFD700', accentMint: '#FF9900', accentCrimson: '#DC2626' },
+      14: { headerKills: '#FF2E00', headerDamage: '#FFD700', fireColor: '#FF2E00' },
     },
   },
 ];
@@ -827,7 +829,7 @@ function BroadcastPreviewStage({ activeSlideId, currentColors, bgMode }: Preview
         }}
         className="pointer-events-none select-none origin-top-left shrink-0"
       >
-        {activeSlideId === 1 && <Dashboard overrideColors={currentColors} />}
+        {activeSlideId === 1 && <Dashboard1 overrideColors={currentColors} />}
         {activeSlideId === 2 && <Dashboard2 overrideColors={currentColors} />}
         {activeSlideId === 3 && <Dashboard3 overrideColors={currentColors} />}
         {activeSlideId === 4 && <Dashboard4 overrideColors={currentColors} />}
@@ -840,6 +842,7 @@ function BroadcastPreviewStage({ activeSlideId, currentColors, bgMode }: Preview
         {activeSlideId === 11 && <Dashboard11 overrideColors={currentColors} />}
         {activeSlideId === 12 && <Dashboard12 overrideColors={currentColors} />}
         {activeSlideId === 13 && <Dashboard13 overrideColors={currentColors} />}
+        {activeSlideId === 14 && <Dashboard14 overrideColors={currentColors} />}
       </div>
     </div>
   );

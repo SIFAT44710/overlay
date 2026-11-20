@@ -2,52 +2,28 @@
 
 import React, { useState, useEffect } from 'react';
 import useSWR from 'swr';
+import FlameEffect from './FlameEffect';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-interface TeamItem {
-  tag: string;
-  name: string;
-  pts: number;
-  surv: number;
-  kill: number;
-  dmg: number;
-  col: string;
-  textDark?: boolean;
-}
-
-const DEFAULT_TEAMS: TeamItem[] = [
-  { tag: 'TOP', name: 'RAAD VAI YT', pts: 134, surv: 40, kill: 94, dmg: 57261, col: '#F5B700', textDark: true },
-  { tag: 'EXE', name: 'EXTREME EX', pts: 98, surv: 22, kill: 76, dmg: 42349, col: '#6225A6' },
-  { tag: 'S9x', name: 'SNEAKY9X', pts: 96, surv: 34, kill: 62, dmg: 41088, col: '#00DF82', textDark: true },
-  { tag: 'CME', name: 'COFFIN MAKERS', pts: 93, surv: 35, kill: 58, dmg: 44026, col: '#EC008C' },
-  { tag: 'TRX', name: 'TITANOVA REX', pts: 85, surv: 36, kill: 49, dmg: 31573, col: '#111827' },
-  { tag: 'UEO', name: 'TEAM UNIONIZED', pts: 78, surv: 28, kill: 50, dmg: 29641, col: '#6225A6' },
-  { tag: 'NK', name: 'NOVA KNIGHT', pts: 69, surv: 23, kill: 46, dmg: 26408, col: '#111827' },
-  { tag: '69', name: '69 ESPORTS', pts: 61, surv: 13, kill: 48, dmg: 27036, col: '#6225A6' },
-  { tag: 'JG', name: 'JUMA GAMING', pts: 58, surv: 23, kill: 35, dmg: 23365, col: '#111827' },
-  { tag: 'ITZ', name: 'ITZ KABBO', pts: 36, surv: 14, kill: 22, dmg: 15660, col: '#6225A6' },
-  { tag: 'EGL', name: 'TEAM EAGLE', pts: 33, surv: 17, kill: 16, dmg: 11037, col: '#111827' },
-  { tag: 'SG', name: 'SADIA GAMING', pts: 0, surv: 0, kill: 0, dmg: 892, col: '#475569' },
-];
+const DEFAULT_H2H_DAY = {
+  a: { name: 'S9x', tag: 'S9x', total: 96, kills: 62, surv: 34, damage: 41088, hs: 51, booyah: 2 },
+  b: { name: 'UEO', tag: 'UEO', total: 78, kills: 50, surv: 28, damage: 29641, hs: 41, booyah: 1 },
+};
 
 const DEFAULT_COLORS = {
-  col1: '#F5B700',
-  colDark: '#111827',
-  colPurple: '#6225A6',
-  borderCol: '#000000',
-  textNum: '#000000',
+  teamAColor: '#8B5CF6',
+  teamBColor: '#2DD4BF',
+  fireColor: '#8B5CF6',
 };
 
 export default function Dashboard8({ overrideColors }: { overrideColors?: any } = {}) {
   const [colors, setColors] = useState(overrideColors || DEFAULT_COLORS);
-  const [animatedValues, setAnimatedValues] = useState<number[]>(new Array(12).fill(0));
-  const [barHeights, setBarHeights] = useState<number[]>(new Array(12).fill(0));
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; text: string } | null>(null);
+  const [widthsA, setWidthsA] = useState<number[]>(new Array(6).fill(0));
+  const [widthsB, setWidthsB] = useState<number[]>(new Array(6).fill(0));
 
   const { data: themeData } = useSWR('/api/theme', fetcher, { refreshInterval: 3000 });
   const { data: dayData } = useSWR('/api/daystanding', fetcher, { refreshInterval: 2000 });
-  const { data: sheetData } = useSWR('/api/sheet', fetcher, { refreshInterval: 2000 });
 
   useEffect(() => {
     if (overrideColors) {
@@ -64,189 +40,143 @@ export default function Dashboard8({ overrideColors }: { overrideColors?: any } 
     } catch {}
   }, [overrideColors, themeData]);
 
-  // Merge live Google Sheet data (Live match Vmix priority, DayStanding fallback)
-  const teams: TeamItem[] = React.useMemo(() => {
-    const raw = sheetData?.data || [];
-    if (raw.length > 0) {
-      const mapped = raw
-        .filter((r: any) => r.TeamName && r.TeamName.trim() !== '')
-        .map((r: any, idx: number): TeamItem => {
-          const kill = parseInt(r.Kill, 10) || 0;
-          const pts = parseInt(r.Total || r.TotalPoints || r.TotalPts || r.Pts || r.Kill, 10) || kill;
-          const dmg = parseInt(r.Damage, 10) || 0;
-          const name = r.TeamName.trim();
-          const tag = name.split(/\s+/).map((w: string) => w[0]).join('').slice(0, 3).toUpperCase();
-          return {
-            tag,
-            name,
-            pts,
-            surv: Math.max(0, pts - kill),
-            kill,
-            dmg,
-            col: idx === 0 ? colors.col1 : idx % 2 === 0 ? colors.colDark : colors.colPurple,
-            textDark: idx === 0,
-          };
-        });
-      if (mapped.length >= 6) return mapped.slice(0, 12);
+  const h2h = React.useMemo(() => {
+    if (dayData?.success && dayData.data && dayData.data.length >= 2) {
+      const t1 = dayData.data[0];
+      const t2 = dayData.data[1];
+      const tag1 = t1.tag || t1.name?.slice(0, 3).toUpperCase() || 'TOP';
+      const tag2 = t2.tag || t2.name?.slice(0, 3).toUpperCase() || 'EXE';
+      const tot1 = typeof t1.total === 'number' ? t1.total : parseInt(t1.total, 10) || 134;
+      const tot2 = typeof t2.total === 'number' ? t2.total : parseInt(t2.total, 10) || 98;
+      const k1 = typeof t1.elims === 'number' ? t1.elims : parseInt(t1.elims, 10) || 94;
+      const k2 = typeof t2.elims === 'number' ? t2.elims : parseInt(t2.elims, 10) || 76;
+      return {
+        a: {
+          name: tag1,
+          tag: tag1,
+          total: tot1,
+          kills: k1,
+          surv: typeof t1.place === 'number' ? t1.place : Math.max(0, tot1 - k1),
+          damage: typeof t1.damage === 'number' ? t1.damage : parseInt(t1.damage, 10) || 57261,
+          hs: Math.round(k1 * 0.9) || 89,
+          booyah: typeof t1.booyah === 'number' ? t1.booyah : parseInt(t1.booyah, 10) || 1,
+        },
+        b: {
+          name: tag2,
+          tag: tag2,
+          total: tot2,
+          kills: k2,
+          surv: typeof t2.place === 'number' ? t2.place : Math.max(0, tot2 - k2),
+          damage: typeof t2.damage === 'number' ? t2.damage : parseInt(t2.damage, 10) || 42349,
+          hs: Math.round(k2 * 0.9) || 67,
+          booyah: typeof t2.booyah === 'number' ? t2.booyah : parseInt(t2.booyah, 10) || 0,
+        },
+      };
     }
+    return DEFAULT_H2H_DAY;
+  }, [dayData]);
 
-    if (dayData?.success && dayData.data && dayData.data.length > 0) {
-      return dayData.data.slice(0, 12).map((r: any, idx: number): TeamItem => ({
-        tag: r.tag || (r.name ? r.name.slice(0, 3).toUpperCase() : `T${idx + 1}`),
-        name: r.name,
-        pts: typeof r.total === 'number' ? r.total : parseInt(r.total, 10) || 0,
-        surv: typeof r.place === 'number' ? r.place : parseInt(r.place, 10) || 0,
-        kill: typeof r.elims === 'number' ? r.elims : parseInt(r.elims, 10) || 0,
-        dmg: typeof r.damage === 'number' ? r.damage : parseInt(r.damage, 10) || 0,
-        col: idx === 0 ? colors.col1 : idx % 2 === 0 ? colors.colDark : colors.colPurple,
-        textDark: idx === 0,
-      }));
-    }
+  const { a, b } = h2h;
 
-    return DEFAULT_TEAMS;
-  }, [sheetData, dayData, colors]);
-
-  const maxPts = Math.max(140, ...teams.map((t: TeamItem) => t.pts));
+  const metrics = [
+    { label: 'TOTAL PTS', va: a.total, vb: b.total, max: Math.max(140, a.total, b.total) },
+    { label: 'KILLS', va: a.kills, vb: b.kills, max: Math.max(100, a.kills, b.kills) },
+    { label: 'SURVIVAL PTS', va: a.surv, vb: b.surv, max: Math.max(50, a.surv, b.surv) },
+    { label: 'TOTAL DAMAGE', va: a.damage, vb: b.damage, max: Math.max(60000, a.damage, b.damage) },
+    { label: 'HEADSHOTS', va: a.hs, vb: b.hs, max: Math.max(90, a.hs, b.hs) },
+    { label: 'BOOYAHS', va: a.booyah, vb: b.booyah, max: Math.max(3, a.booyah, b.booyah) },
+  ];
 
   useEffect(() => {
-    // Reset heights
-    setBarHeights(new Array(teams.length).fill(0));
-    setAnimatedValues(new Array(teams.length).fill(0));
+    setWidthsA(new Array(6).fill(0));
+    setWidthsB(new Array(6).fill(0));
 
     const timers: NodeJS.Timeout[] = [];
-    teams.forEach((t: TeamItem, i: number) => {
-      const tId = setTimeout(() => {
-        setBarHeights((prev) => {
-          const next = [...prev];
-          next[i] = Math.max(4, (t.pts / maxPts) * 100);
-          return next;
-        });
-
-        // Tween number
-        const start = performance.now();
-        const duration = 1200;
-        const step = (now: number) => {
-          const progress = Math.min(1, (now - start) / duration);
-          const eased = 1 - Math.pow(1 - progress, 3);
-          const current = Math.round(t.pts * eased);
-          setAnimatedValues((prev) => {
+    metrics.forEach((m, i) => {
+      timers.push(
+        setTimeout(() => {
+          setWidthsA((prev) => {
             const next = [...prev];
-            next[i] = current;
+            next[i] = Math.min(100, (m.va / m.max) * 100);
             return next;
           });
-          if (progress < 1) requestAnimationFrame(step);
-        };
-        requestAnimationFrame(step);
-      }, 100 + i * 85);
-      timers.push(tId);
+          setWidthsB((prev) => {
+            const next = [...prev];
+            next[i] = Math.min(100, (m.vb / m.max) * 100);
+            return next;
+          });
+        }, 160 + i * 160)
+      );
     });
 
     return () => timers.forEach(clearTimeout);
-  }, [teams, maxPts]);
+  }, [h2h]);
 
   return (
-    <div className="w-full min-h-screen flex items-center justify-center p-3 sm:p-6 bg-transparent select-none">
-      <div className="w-full max-w-5xl px-2">
-        {/* Bars Container */}
-        <div className="grid grid-cols-6 sm:grid-cols-12 gap-2 items-end h-80 pt-8 border-b-[3px] border-black pb-2">
-          {teams.map((t: TeamItem, i: number) => {
-            const barBg =
-              i === 0
-                ? colors.col1
-                : i % 2 === 0
-                ? colors.colDark
-                : colors.colPurple;
-            return (
-              <div
-                key={i}
-                className="flex flex-col items-center justify-end h-full cursor-pointer relative group"
-                onMouseEnter={(e) =>
-                  setTooltip({
-                    x: e.clientX,
-                    y: e.clientY,
-                    text: `${t.name} — ${t.pts} PTS (${t.kill} Kills, ${t.dmg.toLocaleString()} DMG)`,
-                  })
-                }
-                onMouseMove={(e) =>
-                  setTooltip({
-                    x: e.clientX,
-                    y: e.clientY,
-                    text: `${t.name} — ${t.pts} PTS (${t.kill} Kills, ${t.dmg.toLocaleString()} DMG)`,
-                  })
-                }
-                onMouseLeave={() => setTooltip(null)}
-              >
-                <div
-                  className="font-num text-xs sm:text-sm font-extrabold mb-1"
-                  style={{ color: colors.textNum }}
-                >
-                  {animatedValues[i]}
-                </div>
-                <div className="w-full max-w-[38px] flex-1 flex items-end">
+    <div className="w-full min-h-screen flex flex-col items-center justify-center p-3 sm:p-5 bg-transparent select-none relative">
+      {/* Background Flame Aura */}
+      <div className="absolute top-6 inset-x-0 flex justify-center pointer-events-none opacity-70">
+        <FlameEffect color={colors.fireColor || colors.teamAColor} height={130} opacity={0.65} />
+      </div>
+
+      <div className="w-full max-w-4xl hud-card rounded-2xl p-5 space-y-4 relative z-10 border border-white/10">
+        {/* Top Header with Team Short Names */}
+        <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+          <div className="font-hud text-xl sm:text-2xl font-bold text-violet-400 tracking-wide">
+            {a.tag}
+          </div>
+          <span className="px-3.5 py-1 rounded-full bg-amber-400 text-black text-xs font-hud font-black uppercase tracking-wider">
+            DAY H2H BUTTERFLY
+          </span>
+          <div className="font-hud text-xl sm:text-2xl font-bold text-teal-300 tracking-wide">
+            {b.tag}
+          </div>
+        </div>
+
+        {/* 6 Butterfly Metrics */}
+        <div className="space-y-3 pt-1">
+          {metrics.map((m, i) => (
+            <div key={m.label} className="grid grid-cols-[1fr_120px_1fr] items-center gap-3">
+              {/* Left Bar (Team A) */}
+              <div className="flex items-center justify-end gap-2.5">
+                <span className="font-hud text-sm font-bold text-white shrink-0">
+                  {m.va.toLocaleString()}
+                </span>
+                <div className="w-full h-5 bg-slate-900 rounded-l-md overflow-hidden flex justify-end">
                   <div
-                    className="w-full rounded-t-md border-2 border-b-0 transition-all duration-1000"
+                    className="bar-grow-x h-full rounded-l-md"
                     style={{
-                      height: `${barHeights[i]}%`,
-                      backgroundColor: barBg,
-                      borderColor: colors.borderCol,
-                      transitionTimingFunction: 'cubic-bezier(0.34, 1.35, 0.64, 1)',
+                      width: `${widthsA[i]}%`,
+                      background: colors.teamAColor,
                     }}
                   />
                 </div>
               </div>
-            );
-          })}
-        </div>
 
-        {/* Team Badges & Names */}
-        <div className="grid grid-cols-6 sm:grid-cols-12 gap-2 mt-3">
-          {teams.map((t: TeamItem, i: number) => {
-            const badgeBg =
-              i === 0
-                ? colors.col1
-                : i % 2 === 0
-                ? colors.colDark
-                : colors.colPurple;
-            return (
-              <div
-                key={i}
-                className="flex flex-col items-center text-center cursor-pointer group"
-                onMouseEnter={(e) =>
-                  setTooltip({
-                    x: e.clientX,
-                    y: e.clientY,
-                    text: `${t.name} — ${t.pts} PTS (${t.kill} Kills, ${t.dmg.toLocaleString()} DMG)`,
-                  })
-                }
-                onMouseLeave={() => setTooltip(null)}
-              >
-                <div
-                  className="w-9 h-9 rounded-md flex items-center justify-center font-num text-xs font-extrabold border-2 border-black shadow-[2px_2px_0px_#000] shrink-0"
-                  style={{
-                    backgroundColor: badgeBg,
-                    color: i === 0 ? '#000000' : '#ffffff',
-                  }}
-                >
-                  {t.tag}
+              {/* Center Metric Label */}
+              <div className="text-center font-hud text-[11px] font-bold text-slate-300 tracking-wider">
+                {m.label}
+              </div>
+
+              {/* Right Bar (Team B) */}
+              <div className="flex items-center gap-2.5">
+                <div className="w-full h-5 bg-slate-900 rounded-r-md overflow-hidden">
+                  <div
+                    className="bar-grow-x h-full rounded-r-md"
+                    style={{
+                      width: `${widthsB[i]}%`,
+                      background: colors.teamBColor,
+                    }}
+                  />
                 </div>
-                <span className="font-title text-[10px] sm:text-[11px] font-bold text-black leading-tight mt-1 max-w-[68px] truncate">
-                  {t.name}
+                <span className="font-hud text-sm font-bold text-white shrink-0">
+                  {m.vb.toLocaleString()}
                 </span>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </div>
-
-      {/* Dark Tooltip */}
-      {tooltip && (
-        <div
-          className="fixed pointer-events-none z-50 px-3 py-1.5 rounded-lg bg-black text-white text-xs font-bold font-num shadow-xl border-2 border-[#6225A6]"
-          style={{ left: tooltip.x + 12, top: tooltip.y - 34 }}
-        >
-          {tooltip.text}
-        </div>
-      )}
     </div>
   );
 }

@@ -2,69 +2,37 @@
 
 import React, { useState, useEffect } from 'react';
 import useSWR from 'swr';
+import FlameEffect from './FlameEffect';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
-interface StandingTeam {
-  rank: string;
-  rankNum?: number;
-  tag: string;
-  name: string;
-  booyah: number;
-  elims: number;
-  place: number;
-  total: number;
-  damage?: number;
-  logoUrl?: string | null;
-  col: string;
-}
+const MATCH_LABELS = ['M1', 'M2', 'M3', 'M4', 'M5'];
 
-const DEFAULT_STANDING: StandingTeam[] = [
-  { rank: '1ST',  tag: 'TOP', name: 'RAAD VAI YT',       booyah: 1, elims: 94, place: 40, total: 134, col: '#F5B700' },
-  { rank: '2ND',  tag: 'EXE', name: 'EXTREME EX',        booyah: 0, elims: 76, place: 22, total: 98,  col: '#6225A6' },
-  { rank: '3RD',  tag: 'S9x', name: 'SNEAKY9X',          booyah: 2, elims: 62, place: 34, total: 96,  col: '#00DF82' },
-  { rank: '4TH',  tag: 'CME', name: 'COFFIN MAKERS ESP', booyah: 0, elims: 58, place: 35, total: 93,  col: '#EC008C' },
-  { rank: '5TH',  tag: 'TRX', name: 'TITANOVA REX',      booyah: 1, elims: 49, place: 36, total: 85,  col: '#38BDF8' },
-  { rank: '6TH',  tag: 'UEO', name: 'TEAM UNIONIZED',    booyah: 1, elims: 50, place: 28, total: 78,  col: '#8B5CF6' },
-  { rank: '7TH',  tag: 'NK',  name: 'NOVA KNIGHT',       booyah: 0, elims: 46, place: 23, total: 69,  col: '#F97316' },
-  { rank: '8TH',  tag: '69',  name: '69 ESPORTS',        booyah: 0, elims: 48, place: 13, total: 61,  col: '#E11D48' },
-  { rank: '9TH',  tag: 'JG',  name: 'JUMA GAMING',       booyah: 0, elims: 35, place: 23, total: 58,  col: '#14B8A6' },
-  { rank: '10TH', tag: 'ITZ', name: 'ITZ KABBO',         booyah: 0, elims: 22, place: 14, total: 36,  col: '#64748B' },
-  { rank: '11TH', tag: 'EGL', name: 'TEAM EAGLE',        booyah: 0, elims: 16, place: 17, total: 33,  col: '#475569' },
-  { rank: '12TH', tag: 'SG',  name: 'SADIA GAMING',      booyah: 0, elims: 0,  place: 0,  total: 0,   col: '#334155' },
-];
+const DEFAULT_LINE_DATA = {
+  kills: [114, 102, 97, 129, 114],
+  damage: [74334, 67724, 60618, 75983, 71677],
+};
 
 const DEFAULT_COLORS = {
-  headerGold: '#F5B700',
-  headerPurple: '#6225A6',
-  headerDark: '#2E0E56',
-  rank1GradStart: '#1e0b36',
-  rank1GradMid: '#3b136b',
-  rank1GradEnd: '#6225A6',
-  rowGradStart: 'rgba(22,10,42,0.94)',
-  rowGradMid: 'rgba(46,14,86,0.92)',
-  rowGradEnd: 'rgba(98,37,166,0.88)',
-  totalPtsGold: '#F5B700',
+  killsColor: '#F5B700',
+  damageColor: '#38BDF8',
+  fireColor: '#8B5CF6',
+  cardBg: 'rgba(9, 11, 18, 0.75)',
 };
 
 export default function Dashboard13({ overrideColors }: { overrideColors?: any } = {}) {
   const [colors, setColors] = useState(overrideColors || DEFAULT_COLORS);
-  const [wipeKey, setWipeKey] = useState(0);
+  const [animated, setAnimated] = useState(false);
+  const [hoveredPoint, setHoveredPoint] = useState<{
+    x: number;
+    y: number;
+    match: string;
+    kills: number;
+    damage: number;
+  } | null>(null);
 
-  // Poll Google Sheet DayStanding and Vmix APIs every 2 seconds for instant updates
-  const { data: dayData } = useSWR('/api/daystanding', fetcher, {
-    refreshInterval: 2000,
-    revalidateOnFocus: true,
-  });
-
-  const { data: sheetData } = useSWR('/api/sheet', fetcher, {
-    refreshInterval: 2000,
-    revalidateOnFocus: true,
-  });
-
-  const { data: themeData } = useSWR('/api/theme', fetcher, {
-    refreshInterval: 3000,
-  });
+  const { data: themeData } = useSWR('/api/theme', fetcher, { refreshInterval: 3000 });
+  const { data: sheetData } = useSWR('/api/sheet', fetcher, { refreshInterval: 2000 });
 
   useEffect(() => {
     if (overrideColors) {
@@ -81,210 +49,314 @@ export default function Dashboard13({ overrideColors }: { overrideColors?: any }
     } catch {}
   }, [overrideColors, themeData]);
 
-  // Merge live Google Sheet data (Live match Vmix priority, DayStanding fallback)
-  const teams: StandingTeam[] = React.useMemo(() => {
-    const formatRank = (idx: number) => {
-      const n = idx + 1;
-      if (n === 1) return '1ST';
-      if (n === 2) return '2ND';
-      if (n === 3) return '3RD';
-      return `${n}TH`;
-    };
-
-    // 1. If Vmix match sheet was updated with live teams
-    if (sheetData?.data && sheetData.data.length > 0) {
-      const vmixRows = sheetData.data.filter((r: any) => r.TeamName && r.TeamName.trim() !== '');
-      if (vmixRows.length >= 6) {
-        return vmixRows.slice(0, 12).map((r: any, idx: number): StandingTeam => {
-          const name = r.TeamName.trim();
-          const tag = name.split(/\s+/).map((w: string) => w[0]).join('').slice(0, 3).toUpperCase();
-          const elims = parseInt(r.Kill, 10) || 0;
-          const place = parseInt(r['Survival Score'] || r.SurvivalScore || r.Place, 10) || 0;
-          const total = parseInt(r.Total || r.TotalPoints, 10) || (elims + place);
-          const booyah = parseInt(r.Booyah, 10) || 0;
-          const damage = parseInt(r.Damage, 10) || 0;
-          return {
-            rank: formatRank(idx),
-            rankNum: idx + 1,
-            tag,
-            name,
-            booyah,
-            elims,
-            place,
-            total,
-            damage,
-            logoUrl: r.LogoUrl || null,
-            col: idx === 0 ? '#F5B700' : idx % 2 === 0 ? '#111827' : '#6225A6',
-          };
-        });
-      }
-    }
-
-    // 2. DayStanding fallback
-    if (dayData?.success && dayData.data && dayData.data.length > 0) {
-      return dayData.data.slice(0, 12);
-    }
-
-    return DEFAULT_STANDING;
-  }, [sheetData, dayData]);
-
-  // Re-trigger entrance wipe on tab visibility change or OBS source show
   useEffect(() => {
-    const handleVisChange = () => {
-      if (!document.hidden) {
-        setWipeKey((k) => k + 1);
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisChange);
-    window.addEventListener('obsSourceVisibleChanged', handleVisChange as any);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisChange);
-      window.removeEventListener('obsSourceVisibleChanged', handleVisChange as any);
-    };
+    const t = setTimeout(() => setAnimated(true), 200);
+    return () => clearTimeout(t);
   }, []);
 
+  // Compute live match points if sheet provides multiple matches or fallback
+  const lineData = React.useMemo(() => {
+    if (sheetData?.history && Array.isArray(sheetData.history) && sheetData.history.length >= 2) {
+      const k = sheetData.history.map((m: any) => m.kills || 100);
+      const d = sheetData.history.map((m: any) => m.damage || 70000);
+      return { kills: k, damage: d };
+    }
+    return DEFAULT_LINE_DATA;
+  }, [sheetData]);
+
+  // Dimensions for SVG Line Chart
+  const W = 800;
+  const H = 340;
+  const PAD_X = 70;
+  const PAD_TOP = 40;
+  const PAD_BOTTOM = 50;
+  const PLOT_W = W - PAD_X * 2;
+  const PLOT_H = H - PAD_TOP - PAD_BOTTOM;
+
+  const minKills = 80;
+  const maxKills = 145;
+  const minDmg = 50000;
+  const maxDmg = 85000;
+
+  const getKillsY = (v: number) =>
+    PAD_TOP + PLOT_H * (1 - (v - minKills) / (maxKills - minKills));
+  const getDmgY = (v: number) =>
+    PAD_TOP + PLOT_H * (1 - (v - minDmg) / (maxDmg - minDmg));
+  const getX = (idx: number) =>
+    PAD_X + (idx / (MATCH_LABELS.length - 1)) * PLOT_W;
+
+  // Build SVG path with Catmull-Rom or cubic spline
+  const buildSmoothPath = (pts: [number, number][]) => {
+    if (pts.length === 0) return '';
+    let d = `M ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[Math.max(0, i - 1)];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[Math.min(pts.length - 1, i + 2)];
+
+      const cp1x = p1[0] + (p2[0] - p0[0]) / 6;
+      const cp1y = p1[1] + (p2[1] - p0[1]) / 6;
+      const cp2x = p2[0] - (p3[0] - p1[0]) / 6;
+      const cp2y = p2[1] - (p3[1] - p1[1]) / 6;
+
+      d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`;
+    }
+    return d;
+  };
+
+  const killPts: [number, number][] = lineData.kills.map((v: number, i: number) => [
+    getX(i),
+    getKillsY(v),
+  ]);
+  const dmgPts: [number, number][] = lineData.damage.map((v: number, i: number) => [
+    getX(i),
+    getDmgY(v),
+  ]);
+
+  const killLinePath = buildSmoothPath(killPts);
+  const dmgLinePath = buildSmoothPath(dmgPts);
+
+  const killAreaPath = `${killLinePath} L ${getX(MATCH_LABELS.length - 1)} ${
+    PAD_TOP + PLOT_H
+  } L ${getX(0)} ${PAD_TOP + PLOT_H} Z`;
+  const dmgAreaPath = `${dmgLinePath} L ${getX(MATCH_LABELS.length - 1)} ${
+    PAD_TOP + PLOT_H
+  } L ${getX(0)} ${PAD_TOP + PLOT_H} Z`;
+
   return (
-    <div className="w-full min-h-screen flex flex-col justify-center items-center p-3 sm:p-5 bg-transparent select-none">
-      {/* Main Transparent Overlay Stage */}
-      <div key={wipeKey} className="w-full max-w-4xl relative">
-        {/* FFWS Purple Starburst Stinger Flash */}
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-20 overflow-hidden">
-          <svg viewBox="0 0 300 300" className="w-80 h-80 stinger-flash">
-            <polygon
-              points="150,10 185,110 290,115 205,175 235,280 150,215 65,280 95,175 10,115 115,110"
-              fill={colors.headerPurple}
-              fillOpacity="0.75"
+    <div className="relative w-full h-full min-h-[580px] flex flex-col items-center justify-center p-4 bg-transparent select-none font-sans overflow-hidden">
+      {/* Dynamic Background Flame */}
+      <div className="absolute inset-0 pointer-events-none flex items-center justify-center -z-10 opacity-75">
+        <FlameEffect color={colors.fireColor || '#8B5CF6'} height={480} opacity={0.65} />
+      </div>
+
+      <div className="w-full max-w-4xl flex flex-col items-center">
+        {/* Header Badges */}
+        <div className="w-full flex items-center justify-between mb-4 px-2">
+          <div className="flex items-center gap-3">
+            <span
+              className="px-4 py-1 rounded-full font-hud text-xs font-black text-black tracking-widest uppercase shadow-lg"
+              style={{ backgroundColor: colors.killsColor }}
+            >
+              TOTAL KILLS (L)
+            </span>
+            <span
+              className="px-4 py-1 rounded-full font-hud text-xs font-black text-black tracking-widest uppercase shadow-lg"
+              style={{ backgroundColor: colors.damageColor }}
+            >
+              TOTAL DAMAGE (R)
+            </span>
+          </div>
+
+          <span className="font-hud text-xs font-bold text-slate-400 tracking-wider">
+            MATCH 1–5 PROGRESSION
+          </span>
+        </div>
+
+        {/* Chart Canvas Card */}
+        <div
+          className="relative w-full rounded-2xl p-6 backdrop-blur-md border shadow-2xl overflow-hidden"
+          style={{
+            backgroundColor: colors.cardBg,
+            borderColor: 'rgba(148, 163, 184, 0.2)',
+          }}
+        >
+          <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto overflow-visible">
+            <defs>
+              {/* Kills Gradient Fill */}
+              <linearGradient id="kill-fill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={colors.killsColor} stopOpacity="0.32" />
+                <stop offset="100%" stopColor={colors.killsColor} stopOpacity="0.0" />
+              </linearGradient>
+
+              {/* Damage Gradient Fill */}
+              <linearGradient id="dmg-fill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={colors.damageColor} stopOpacity="0.25" />
+                <stop offset="100%" stopColor={colors.damageColor} stopOpacity="0.0" />
+              </linearGradient>
+            </defs>
+
+            {/* Horizontal Grid lines */}
+            {[0, 0.25, 0.5, 0.75, 1].map((p, i) => {
+              const y = PAD_TOP + PLOT_H * p;
+              const kVal = Math.round(maxKills - p * (maxKills - minKills));
+              const dVal = Math.round(maxDmg - p * (maxDmg - minDmg));
+              return (
+                <g key={i}>
+                  <line
+                    x1={PAD_X}
+                    y1={y}
+                    x2={W - PAD_X}
+                    y2={y}
+                    stroke="rgba(226, 232, 240, 0.12)"
+                    strokeDasharray="4 4"
+                  />
+                  {/* Left Axis Tick (Kills) */}
+                  <text
+                    x={PAD_X - 12}
+                    y={y + 4}
+                    textAnchor="end"
+                    fill={colors.killsColor}
+                    fontSize="11"
+                    fontWeight="800"
+                    className="font-hud"
+                  >
+                    {kVal}
+                  </text>
+                  {/* Right Axis Tick (Damage) */}
+                  <text
+                    x={W - PAD_X + 12}
+                    y={y + 4}
+                    textAnchor="start"
+                    fill={colors.damageColor}
+                    fontSize="11"
+                    fontWeight="800"
+                    className="font-hud"
+                  >
+                    {dVal.toLocaleString()}
+                  </text>
+                </g>
+              );
+            })}
+
+            {/* Area Fills */}
+            <path
+              d={dmgAreaPath}
+              fill="url(#dmg-fill)"
+              style={{
+                opacity: animated ? 1 : 0,
+                transition: 'opacity 1.2s ease 0.3s',
+              }}
             />
+            <path
+              d={killAreaPath}
+              fill="url(#kill-fill)"
+              style={{
+                opacity: animated ? 1 : 0,
+                transition: 'opacity 1.2s ease',
+              }}
+            />
+
+            {/* Damage Line (Sky Blue) */}
+            <path
+              d={dmgLinePath}
+              fill="none"
+              stroke={colors.damageColor}
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              className={animated ? 'draw-line' : ''}
+              style={{
+                strokeDasharray: 2000,
+                strokeDashoffset: animated ? 0 : 2000,
+                transition: 'stroke-dashoffset 1.8s cubic-bezier(0.16, 1, 0.3, 1)',
+              }}
+            />
+
+            {/* Kills Line (Gold) */}
+            <path
+              d={killLinePath}
+              fill="none"
+              stroke={colors.killsColor}
+              strokeWidth="4"
+              strokeLinecap="round"
+              className={animated ? 'draw-line' : ''}
+              style={{
+                strokeDasharray: 2000,
+                strokeDashoffset: animated ? 0 : 2000,
+                transition: 'stroke-dashoffset 1.8s cubic-bezier(0.16, 1, 0.3, 1) 0.1s',
+              }}
+            />
+
+            {/* Interactive Data Nodes */}
+            {MATCH_LABELS.map((m, idx) => {
+              const [kx, ky] = killPts[idx];
+              const [dx, dy] = dmgPts[idx];
+              const kVal = lineData.kills[idx];
+              const dVal = lineData.damage[idx];
+
+              return (
+                <g key={m}>
+                  {/* Bottom X Label */}
+                  <text
+                    x={kx}
+                    y={H - 14}
+                    textAnchor="middle"
+                    fill="#e2e8f0"
+                    fontSize="13"
+                    fontWeight="900"
+                    className="font-hud"
+                  >
+                    {m}
+                  </text>
+
+                  {/* Damage Node */}
+                  <circle
+                    cx={dx}
+                    cy={dy}
+                    r="6"
+                    fill={colors.damageColor}
+                    stroke="#090b10"
+                    strokeWidth="2.5"
+                    className="cursor-pointer transition-transform hover:scale-150"
+                    onMouseEnter={(e) => {
+                      const rect = (e.target as SVGElement).getBoundingClientRect();
+                      setHoveredPoint({
+                        x: rect.left + rect.width / 2,
+                        y: rect.top,
+                        match: m,
+                        kills: kVal,
+                        damage: dVal,
+                      });
+                    }}
+                    onMouseLeave={() => setHoveredPoint(null)}
+                  />
+
+                  {/* Kills Node */}
+                  <circle
+                    cx={kx}
+                    cy={ky}
+                    r="6.5"
+                    fill={colors.killsColor}
+                    stroke="#090b10"
+                    strokeWidth="2.5"
+                    className="cursor-pointer transition-transform hover:scale-150"
+                    onMouseEnter={(e) => {
+                      const rect = (e.target as SVGElement).getBoundingClientRect();
+                      setHoveredPoint({
+                        x: rect.left + rect.width / 2,
+                        y: rect.top,
+                        match: m,
+                        kills: kVal,
+                        damage: dVal,
+                      });
+                    }}
+                    onMouseLeave={() => setHoveredPoint(null)}
+                  />
+                </g>
+              );
+            })}
           </svg>
         </div>
-
-        {/* Column Headers (Clean 6-Column Grid without Delta) */}
-        <div className="grid grid-cols-[58px_1fr_64px_64px_76px_74px] items-center gap-1.5 px-1 mb-1.5 font-num text-[10px] font-extrabold uppercase tracking-wider">
-          <span />
-          <span />
-          <span
-            className="skew-tag text-black text-center py-0.5 border border-black shadow-sm"
-            style={{ backgroundColor: colors.headerGold }}
-          >
-            <span className="unskew-tag inline-block">BOOYAHS</span>
-          </span>
-          <span
-            className="skew-tag text-white text-center py-0.5 border border-purple-500/40 shadow-sm"
-            style={{ backgroundColor: colors.headerDark }}
-          >
-            <span className="unskew-tag inline-block">ELIMS</span>
-          </span>
-          <span
-            className="skew-tag text-white text-center py-0.5 border border-purple-500/40 shadow-sm"
-            style={{ backgroundColor: colors.headerDark }}
-          >
-            <span className="unskew-tag inline-block">PLACE PTS</span>
-          </span>
-          <span
-            className="skew-tag text-center py-0.5 border border-black shadow-sm"
-            style={{
-              backgroundColor: colors.headerPurple,
-              color: colors.totalPtsGold,
-            }}
-          >
-            <span className="unskew-tag inline-block">TOTAL PTS</span>
-          </span>
-        </div>
-
-        {/* All 12 Cascading Wipe Rows (Clean 6-Column Grid without Delta) */}
-        <div className="space-y-1">
-          {teams.map((t, i) => {
-            const isFirst = i === 0;
-
-            const rowBg = isFirst
-              ? `linear-gradient(90deg, ${colors.rank1GradStart} 0%, ${colors.rank1GradMid} 65%, ${colors.rank1GradEnd} 100%)`
-              : `linear-gradient(90deg, ${colors.rowGradStart} 0%, ${colors.rowGradMid} 75%, ${colors.rowGradEnd} 100%)`;
-
-            return (
-              <div
-                key={i}
-                className="ffws-row grid grid-cols-[58px_1fr_64px_64px_76px_74px] items-center gap-1.5 rounded-sm overflow-hidden border border-black/70 shadow-md"
-                style={{
-                  animationDelay: `${140 + i * 68}ms`,
-                  background: rowBg,
-                }}
-              >
-                {/* Rank Badge */}
-                <div
-                  className={`h-9 flex items-center justify-center font-num text-xs sm:text-sm font-extrabold italic border-r border-white/10 ${
-                    isFirst ? 'text-black' : 'bg-black/45 text-white'
-                  }`}
-                  style={{
-                    backgroundColor: isFirst ? colors.headerGold : undefined,
-                  }}
-                >
-                  {t.rank}
-                </div>
-
-                {/* Team Tag & Name + Logo */}
-                <div className="flex items-center gap-2 pl-2 pr-2 truncate">
-                  {t.logoUrl ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img
-                      src={t.logoUrl}
-                      alt={t.name}
-                      className="w-6 h-6 object-contain rounded border border-black shrink-0 bg-black/40"
-                      onError={(e: any) => {
-                        e.target.style.display = 'none';
-                      }}
-                    />
-                  ) : (
-                    <span
-                      className="w-6 h-6 rounded flex items-center justify-center font-num text-[9.5px] font-extrabold border border-black shrink-0"
-                      style={{
-                        backgroundColor: t.col,
-                        color:
-                          t.col === '#F5B700' || t.col === '#00DF82'
-                            ? '#000000'
-                            : '#ffffff',
-                      }}
-                    >
-                      {t.tag}
-                    </span>
-                  )}
-                  <span className="font-title text-sm sm:text-base font-bold text-white truncate">
-                    {t.name}
-                  </span>
-                </div>
-
-                {/* Booyah */}
-                <div className="text-center font-num text-sm font-bold text-white">
-                  {t.booyah}
-                </div>
-
-                {/* Elims (Kills) */}
-                <div className="text-center font-num text-sm font-bold text-slate-200">
-                  {t.elims}
-                </div>
-
-                {/* Place Pts (Survival) */}
-                <div className="text-center font-num text-sm font-bold text-slate-200">
-                  {t.place}
-                </div>
-
-                {/* Total Pts */}
-                <div
-                  className={`h-9 flex items-center justify-center font-num text-sm sm:text-base font-extrabold ${
-                    isFirst ? 'text-black' : 'bg-black/35'
-                  }`}
-                  style={{
-                    backgroundColor: isFirst ? colors.headerGold : undefined,
-                    color: isFirst ? '#000000' : colors.totalPtsGold,
-                  }}
-                >
-                  {t.total}
-                </div>
-              </div>
-            );
-          })}
-        </div>
       </div>
+
+      {/* Floating Point Tooltip */}
+      {hoveredPoint && (
+        <div
+          className="fixed pointer-events-none z-50 px-3 py-2 rounded-xl bg-slate-900/95 border border-white/20 text-white font-hud text-xs font-bold shadow-2xl -translate-x-1/2 -translate-y-full"
+          style={{ left: hoveredPoint.x, top: hoveredPoint.y - 12 }}
+        >
+          <div className="text-[10px] text-slate-400 font-extrabold uppercase">
+            MATCH {hoveredPoint.match}
+          </div>
+          <div className="flex items-center gap-3 mt-1">
+            <span style={{ color: colors.killsColor }}>{hoveredPoint.kills} Kills</span>
+            <span style={{ color: colors.damageColor }}>
+              {hoveredPoint.damage.toLocaleString()} DMG
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-

@@ -1,4 +1,4 @@
-import Dashboard3 from '../Dashboard3';
+import Dashboard3 from '../components/Dashboard3';
 
 export default function Page3() {
   return (

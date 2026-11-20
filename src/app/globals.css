@@ -176,3 +176,49 @@ body {
 .stinger-flash {
   animation: stingerBurst 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+.font-hud {
+  font-family: 'Chakra Petch', sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.draw-line {
+  transition: stroke-dashoffset 2.0s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.bar-grow-x {
+  transition: width 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pop-card {
+  transition: transform 0.85s cubic-bezier(0.22, 1.15, 0.36, 1), opacity 0.65s ease;
+}
+
+@keyframes vertexHalo {
+  0%, 100% { r: 6; opacity: 0.7; }
+  50% { r: 13; opacity: 0.12; }
+}
+.v-halo {
+  animation: vertexHalo 2.1s ease-in-out infinite;
+}
+
+@keyframes glossSweep {
+  0% { transform: translateX(-140%) skewX(-20deg); }
+  100% { transform: translateX(260%) skewX(-20deg); }
+}
+.gloss-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 35%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+  animation: glossSweep 3.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.hud-card {
+  background: linear-gradient(145deg, rgba(13, 16, 28, 0.94), rgba(7, 9, 16, 0.96));
+  border: 1.5px solid rgba(139, 92, 246, 0.35);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
