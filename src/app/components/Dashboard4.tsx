@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import useSWR from 'swr';
+import RealFireCanvas from './RealFireCanvas';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -24,8 +25,9 @@ const DEFAULT_WEAPONS: WeaponMeta[] = [
 export default function Dashboard4({ overrideColors }: { overrideColors?: any } = {}) {
   const [activeItems, setActiveItems] = useState<boolean[]>([false, false, false, false, false]);
   const [killsCounts, setKillsCounts] = useState<number[]>([0, 0, 0, 0, 0]);
+  const [topFireActive, setTopFireActive] = useState(false);
 
-  const { data: weaponsData } = useSWR('/api/weapons', fetcher, { refreshInterval: 3000 });
+  const { data: weaponsData } = useSWR('/api/weapons', fetcher, { refreshInterval: 2500 });
 
   const list: WeaponMeta[] = React.useMemo(() => {
     if (weaponsData?.weapons && weaponsData.weapons.length >= 5) {
@@ -67,19 +69,36 @@ export default function Dashboard4({ overrideColors }: { overrideColors?: any } 
           if (t < 1) requestAnimationFrame(step);
         };
         requestAnimationFrame(step);
+
+        if (i === 0) {
+          setTopFireActive(true);
+        }
       }, delay);
     });
   }, [list]);
 
   return (
-    <div className="w-full min-h-screen flex items-center justify-center p-2 sm:p-4 bg-transparent select-none font-sans">
+    <div className="broadcast-stage w-full min-h-screen flex items-center justify-center p-2 sm:p-4 bg-transparent select-none font-sans">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center w-full max-w-4xl">
-        {/* Left: Concentric Weapon Meta Rings */}
+        {/* Left: Concentric Weapon Meta Rings with Free Fire Flame Logo */}
         <div className="flex justify-center">
           <svg
             viewBox="0 0 320 320"
             className="w-full max-w-[300px] drop-shadow-[0_10px_18px_rgba(0,0,0,0.45)]"
           >
+            <defs>
+              <linearGradient id="ffLogoGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#FACC15" />
+                <stop offset="55%" stopColor="#F97316" />
+                <stop offset="100%" stopColor="#EF4444" />
+              </linearGradient>
+              <linearGradient id="ffRingStroke" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#F5B700" />
+                <stop offset="100%" stopColor="#EC008C" />
+              </linearGradient>
+            </defs>
+
+            {/* Rings */}
             {list.map((w, i) => {
               const r = 132 - i * 22;
               const circ = 2 * Math.PI * r;
@@ -89,16 +108,16 @@ export default function Dashboard4({ overrideColors }: { overrideColors?: any } 
 
               return (
                 <g key={w.name}>
-                  {/* Outer track */}
+                  {/* Track ring */}
                   <circle
                     cx="160"
                     cy="160"
                     r={r}
                     fill="none"
-                    stroke="rgba(15,23,42,0.7)"
+                    stroke="rgba(168,85,247,0.16)"
                     strokeWidth="14"
                   />
-                  {/* Progress arc */}
+                  {/* Glowing progress arc */}
                   <circle
                     cx="160"
                     cy="160"
@@ -108,32 +127,42 @@ export default function Dashboard4({ overrideColors }: { overrideColors?: any } 
                     strokeWidth="14"
                     strokeLinecap="round"
                     transform="rotate(-90 160 160)"
-                    className="arc-sweep"
+                    className="arc-sweep neon-pulse"
+                    style={{
+                      color: w.color,
+                      animationDelay: `${(i * 0.3).toFixed(2)}s`,
+                    }}
                     strokeDasharray={circ}
                     strokeDashoffset={isLoaded ? targetOffset : circ}
                   />
                 </g>
               );
             })}
+
+            {/* Center Free Fire Flame Logo */}
             <circle
               cx="160"
               cy="160"
-              r="24"
-              fill="#090b10"
-              stroke="#8b5cf6"
-              strokeWidth="2"
+              r="27"
+              fill="rgba(59,7,100,0.32)"
+              stroke="url(#ffRingStroke)"
+              strokeWidth="2.6"
             />
-            <text
-              x="160"
-              y="164"
-              textAnchor="middle"
-              fill="#fff"
-              fontSize="11"
-              fontWeight="800"
-              className="font-hud"
-            >
-              META
-            </text>
+            <circle
+              cx="160"
+              cy="160"
+              r="22"
+              fill="none"
+              stroke="rgba(250,204,21,0.28)"
+              strokeWidth="1"
+            />
+            <g transform="translate(160,160)">
+              <path
+                d="M-3,-16 C2,-10 7,-4 5,3 C8,0 10,-4 10,-8 C14,-2 13,8 7,13 C3,16 -4,16 -8,12 C-13,7 -12,-2 -7,-8 C-7,-4 -5,-2 -3,-1 C-6,-6 -6,-12 -3,-16 Z"
+                fill="url(#ffLogoGrad)"
+              />
+              <path d="M-1,-11 L3,5 L-1,11 L-4,5 Z" fill="#fff7ed" opacity="0.92" />
+            </g>
           </svg>
         </div>
 
@@ -141,21 +170,41 @@ export default function Dashboard4({ overrideColors }: { overrideColors?: any } 
         <div className="space-y-3">
           {list.map((w, i) => {
             const isLoaded = activeItems[i];
+            const isTop1 = i === 0;
             const barWidth = Math.max(12, (w.kills / maxK) * 100);
 
             return (
               <div
                 key={w.name}
-                className="pop-card hud-card rounded-xl p-3 shadow-lg"
+                className={`pop-card hud-card rounded-xl p-3 relative transition-all duration-500 ${
+                  isTop1 ? 'top1-hero-glow' : ''
+                }`}
                 style={{
                   opacity: isLoaded ? 1 : 0,
-                  transform: isLoaded ? 'translateX(0)' : 'translateX(28px)',
+                  transform: isLoaded
+                    ? isTop1
+                      ? 'translateX(0) scale(1.04)'
+                      : 'translateX(0)'
+                    : 'translateX(28px)',
+                  isolation: 'isolate',
                 }}
               >
-                <div className="flex justify-between items-center mb-1.5">
+                {/* Real-time Spirit Fire Canvas on Top 1 Weapon */}
+                {isTop1 && (
+                  <div
+                    className={`pointer-events-none absolute -inset-x-2 -top-8 bottom-0 transition-opacity duration-500 ${
+                      topFireActive ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    style={{ zIndex: -1 }}
+                  >
+                    <RealFireCanvas opts={{ light: true }} />
+                  </div>
+                )}
+
+                <div className="relative z-10 flex justify-between items-center mb-1.5">
                   <span className="font-hud text-base font-bold text-white flex items-center gap-2">
                     <span
-                      className="w-3 h-3 rounded-full shrink-0"
+                      className="w-3 h-3 rounded-full"
                       style={{ background: w.color }}
                     />
                     {w.name}
@@ -166,17 +215,20 @@ export default function Dashboard4({ overrideColors }: { overrideColors?: any } 
                 </div>
 
                 {/* Progress bar */}
-                <div className="w-full h-2.5 bg-slate-900 rounded-full overflow-hidden">
+                <div className="relative z-10 w-full h-2.5 bg-purple-950/25 rounded-full overflow-hidden">
                   <div
-                    className="bar-grow-x h-full rounded-full"
+                    className="bar-grow-x bar-live h-full rounded-full"
                     style={{
+                      ['--bar-glow' as any]: w.color,
                       width: isLoaded ? `${barWidth}%` : '0%',
                       background: w.color,
+                      boxShadow: `0 0 10px ${w.color}`,
+                      transition: 'width 1.5s cubic-bezier(0.22, 1, 0.36, 1)',
                     }}
                   />
                 </div>
 
-                <div className="flex justify-between text-[11px] text-slate-300 mt-1 font-semibold font-hud">
+                <div className="relative z-10 flex justify-between text-[11px] text-slate-300 mt-1 font-semibold">
                   <span>DMG: {w.damage.toLocaleString()}</span>
                   <span>HEADSHOTS: {w.hs}</span>
                 </div>

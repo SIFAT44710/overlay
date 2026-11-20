@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import useSWR from 'swr';
+import RealFireCanvas from './RealFireCanvas';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -14,7 +15,7 @@ interface PlayerStats {
   assist: number;
 }
 
-const DEFAULT_DUEL = {
+const DEFAULT_DUEL: { p1: PlayerStats; p2: PlayerStats } = {
   p1: { name: 'TOP.1SHOVO', team: 'RAAD VAI YT', kills: 29, damage: 11859, hs: 31, assist: 22 },
   p2: { name: 'EXE.SEJAN',  team: 'EXTREME EX',  kills: 27, damage: 11890, hs: 22, assist: 13 },
 };
@@ -23,8 +24,11 @@ export default function Dashboard3({ overrideColors }: { overrideColors?: any } 
   const [animStep, setAnimStep] = useState(0);
   const [labelVisible, setLabelVisible] = useState<boolean[]>([false, false, false, false]);
   const [barsExpanded, setBarsExpanded] = useState(false);
+  const [fireActive, setFireActive] = useState(false);
   const [dispP1, setDispP1] = useState(0);
   const [dispP2, setDispP2] = useState(0);
+  const [dispValuesA, setDispValuesA] = useState<number[]>([0, 0, 0, 0]);
+  const [dispValuesB, setDispValuesB] = useState<number[]>([0, 0, 0, 0]);
 
   const { data: sheetData } = useSWR('/api/sheet', fetcher, { refreshInterval: 2000 });
 
@@ -46,17 +50,18 @@ export default function Dashboard3({ overrideColors }: { overrideColors?: any } 
   const py = CY - R * Math.sin(theta);
 
   const rows = [
-    { label: 'ELIMINATIONS', a: p1.kills, b: p2.kills, max: Math.max(p1.kills, p2.kills) * 1.25 },
-    { label: 'TOTAL DAMAGE', a: p1.damage, b: p2.damage, max: Math.max(p1.damage, p2.damage) * 1.2 },
-    { label: 'HEADSHOTS', a: p1.hs, b: p2.hs, max: Math.max(p1.hs, p2.hs) * 1.3 },
-    { label: 'ASSISTS', a: p1.assist, b: p2.assist, max: Math.max(p1.assist, p2.assist) * 1.3 },
+    { label: 'ELIMINATIONS', a: p1.kills, b: p2.kills },
+    { label: 'TOTAL DAMAGE', a: p1.damage, b: p2.damage },
+    { label: 'HEADSHOTS', a: p1.hs, b: p2.hs },
+    { label: 'ASSISTS', a: p1.assist, b: p2.assist },
   ];
 
+  const winnerSide = s1 >= s2 ? 'p1' : 'p2';
+
   useEffect(() => {
-    // 1. Gauge Arcs expand at 420ms
+    // 1. Gauge Arcs expand & percentages tween at 420ms
     const tArc = setTimeout(() => {
       setAnimStep(1);
-      // Tween percentage
       const start = performance.now();
       const dur = 1800;
       const step = (now: number) => {
@@ -72,7 +77,7 @@ export default function Dashboard3({ overrideColors }: { overrideColors?: any } 
     // 2. Shockwave burst at 2150ms
     const tShock = setTimeout(() => setAnimStep(2), 2150);
 
-    // 3. Center labels appear one by one
+    // 3. Step 1: Center labels appear one by one (350 + idx * 340ms)
     const labelTimers = rows.map((_, idx) =>
       setTimeout(() => {
         setLabelVisible((prev) => {
@@ -83,15 +88,31 @@ export default function Dashboard3({ overrideColors }: { overrideColors?: any } 
       }, 350 + idx * 340)
     );
 
-    // 4. Bars sweep outward simultaneously after all 4 labels appear (1750ms)
+    // 4. Step 2: At 1850ms, both bars sweep outward and numbers tween
     const tBars = setTimeout(() => {
       setBarsExpanded(true);
-    }, 1750);
+      const start = performance.now();
+      const dur = 1650;
+      const step = (now: number) => {
+        const t = Math.min(1, (now - start) / dur);
+        const eased = 1 - Math.pow(1 - t, 3);
+        setDispValuesA(rows.map((r) => Math.round(r.a * eased)));
+        setDispValuesB(rows.map((r) => Math.round(r.b * eased)));
+        if (t < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    }, 1850);
+
+    // 5. Step 3: At 2050ms, ignite real-time Free Fire spirit-flame on winner card
+    const tFire = setTimeout(() => {
+      setFireActive(true);
+    }, 2050);
 
     return () => {
       clearTimeout(tArc);
       clearTimeout(tShock);
       clearTimeout(tBars);
+      clearTimeout(tFire);
       labelTimers.forEach(clearTimeout);
     };
   }, [pct1, pct2]);
@@ -119,35 +140,60 @@ export default function Dashboard3({ overrideColors }: { overrideColors?: any } 
   }
 
   return (
-    <div className="w-full min-h-screen flex items-center justify-center p-2 sm:p-4 bg-transparent select-none font-sans">
+    <div className="broadcast-stage w-full min-h-screen flex items-center justify-center p-2 sm:p-4 bg-transparent select-none font-sans">
       <div className="w-full max-w-4xl space-y-5">
         {/* Top 3-Column Header: Contender 1, Clash Gauge, Contender 2 */}
         <div className="grid grid-cols-1 md:grid-cols-3 items-center gap-4">
           {/* Contender 01 Card */}
-          <div className="hud-card rounded-2xl p-4 border-l-4 border-l-violet-500 text-center md:text-left relative overflow-hidden gloss-bar shadow-xl">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-violet-400">
-              CONTENDER 01
+          <div
+            className={`hud-card rounded-2xl p-4 border-l-4 border-l-violet-500 text-center md:text-left relative transition-all duration-700 ${
+              winnerSide === 'p1' && fireActive ? 'fire-winner-card top1-scale' : ''
+            }`}
+            style={{ isolation: 'isolate' }}
+          >
+            {winnerSide === 'p1' && (
+              <div
+                className={`pointer-events-none absolute -inset-x-3 -top-12 bottom-0 transition-opacity duration-500 ${
+                  fireActive ? 'opacity-100' : 'opacity-0'
+                }`}
+                style={{ zIndex: -1 }}
+              >
+                <RealFireCanvas opts={{ light: true }} />
+              </div>
+            )}
+            <div className="relative z-10 flex items-center justify-center md:justify-between gap-2">
+              <div className="text-[10px] font-bold uppercase tracking-widest text-violet-400">
+                CONTENDER 01
+              </div>
+              {winnerSide === 'p1' && (
+                <span
+                  className={`transition-all duration-500 px-2 py-0.5 rounded-full bg-gradient-to-r from-purple-600 to-fuchsia-400 text-white font-hud text-[9.5px] font-extrabold tracking-wider shadow-lg ${
+                    fireActive ? 'opacity-100' : 'opacity-0'
+                  }`}
+                >
+                  TOP LEADER
+                </span>
+              )}
             </div>
-            <div className="font-hud text-2xl font-bold text-white mt-0.5">{p1.name}</div>
-            <div className="text-xs font-semibold text-slate-400">{p1.team}</div>
+            <div className="relative z-10 font-hud text-2xl font-bold text-white mt-0.5">
+              {p1.name}
+            </div>
+            <div className="relative z-10 text-xs font-semibold text-slate-300">{p1.team}</div>
           </div>
 
-          {/* Clash Semi-Circle SVG Gauge */}
+          {/* Semi-Circle Clash Gauge */}
           <div className="relative flex flex-col items-center">
             <svg
               viewBox="0 0 360 195"
               className="w-full max-w-[300px] overflow-visible drop-shadow-[0_10px_18px_rgba(0,0,0,0.5)]"
             >
               {ticks}
-              {/* Gauge Background Track */}
               <path
                 d="M 55 170 A 125 125 0 0 1 305 170"
                 fill="none"
-                stroke="#0b0f19"
+                stroke="rgba(168,85,247,0.16)"
                 strokeWidth="32"
               />
-
-              {/* Contender 1 Arc (Violet) */}
               <path
                 className="arc-sweep"
                 d="M 55 170 A 125 125 0 0 1 305 170"
@@ -157,17 +203,14 @@ export default function Dashboard3({ overrideColors }: { overrideColors?: any } 
                 strokeDasharray={ARC}
                 strokeDashoffset={animStep >= 1 ? ARC * (1 - pct1 / 100) : ARC}
               />
-
-              {/* Energy Line */}
               <path
                 d="M 55 170 A 125 125 0 0 1 305 170"
                 fill="none"
-                stroke="rgba(255,255,255,0.35)"
+                stroke="#c084fc"
+                strokeOpacity="0.85"
                 strokeWidth="5"
                 className="energy-line"
               />
-
-              {/* Contender 2 Arc (Teal) */}
               <path
                 className="arc-sweep"
                 d="M 305 170 A 125 125 0 0 0 55 170"
@@ -177,8 +220,6 @@ export default function Dashboard3({ overrideColors }: { overrideColors?: any } 
                 strokeDasharray={ARC}
                 strokeDashoffset={animStep >= 1 ? ARC * (1 - pct2 / 100) : ARC}
               />
-
-              {/* Scanner Needle */}
               <line
                 x1="180"
                 y1="170"
@@ -187,11 +228,9 @@ export default function Dashboard3({ overrideColors }: { overrideColors?: any } 
                 stroke="#fbbf24"
                 strokeWidth="3"
                 strokeLinecap="round"
-                opacity="0"
+                opacity={0}
                 className="scanner-run"
               />
-
-              {/* Shockwave Burst Circle */}
               <circle
                 cx={px.toFixed(1)}
                 cy={py.toFixed(1)}
@@ -201,8 +240,6 @@ export default function Dashboard3({ overrideColors }: { overrideColors?: any } 
                 opacity="0"
                 className={animStep >= 2 ? 'shock-run' : ''}
               />
-
-              {/* Moving Spark Node */}
               <circle
                 cx={animStep >= 1 ? px.toFixed(1) : '55'}
                 cy={animStep >= 1 ? py.toFixed(1) : '170'}
@@ -216,10 +253,8 @@ export default function Dashboard3({ overrideColors }: { overrideColors?: any } 
                 }}
               />
             </svg>
-
-            {/* Bottom Ratio Box */}
             <div className="absolute inset-x-0 bottom-1.5 flex justify-center">
-              <div className="px-4 py-1 rounded-lg bg-slate-950/95 border border-white/15 font-hud text-xl font-bold text-white shadow-xl">
+              <div className="px-4 py-1 rounded-lg bg-transparent border border-purple-400/35 font-hud text-xl font-bold text-white shadow-xl">
                 <span className="text-violet-400">{dispP1}%</span>
                 <span className="text-amber-400 text-xs mx-1.5">VS</span>
                 <span className="text-teal-300">{dispP2}%</span>
@@ -228,65 +263,102 @@ export default function Dashboard3({ overrideColors }: { overrideColors?: any } 
           </div>
 
           {/* Contender 02 Card */}
-          <div className="hud-card rounded-2xl p-4 border-r-4 border-r-teal-400 text-center md:text-right relative overflow-hidden gloss-bar shadow-xl">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-teal-400">
-              CONTENDER 02
+          <div
+            className={`hud-card rounded-2xl p-4 border-r-4 border-r-teal-400 text-center md:text-right relative transition-all duration-700 ${
+              winnerSide === 'p2' && fireActive ? 'fire-winner-card top1-scale' : ''
+            }`}
+            style={{ isolation: 'isolate' }}
+          >
+            {winnerSide === 'p2' && (
+              <div
+                className={`pointer-events-none absolute -inset-x-3 -top-12 bottom-0 transition-opacity duration-500 ${
+                  fireActive ? 'opacity-100' : 'opacity-0'
+                }`}
+                style={{ zIndex: -1 }}
+              >
+                <RealFireCanvas opts={{ light: true }} />
+              </div>
+            )}
+            <div className="relative z-10 flex items-center justify-center md:justify-between gap-2">
+              {winnerSide === 'p2' ? (
+                <span
+                  className={`transition-all duration-500 px-2 py-0.5 rounded-full bg-gradient-to-r from-purple-600 to-fuchsia-400 text-white font-hud text-[9.5px] font-extrabold tracking-wider shadow-lg ${
+                    fireActive ? 'opacity-100' : 'opacity-0'
+                  }`}
+                >
+                  TOP LEADER
+                </span>
+              ) : (
+                <span />
+              )}
+              <div className="text-[10px] font-bold uppercase tracking-widest text-teal-400">
+                CONTENDER 02
+              </div>
             </div>
-            <div className="font-hud text-2xl font-bold text-white mt-0.5">{p2.name}</div>
-            <div className="text-xs font-semibold text-slate-400">{p2.team}</div>
+            <div className="relative z-10 font-hud text-2xl font-bold text-white mt-0.5">
+              {p2.name}
+            </div>
+            <div className="relative z-10 text-xs font-semibold text-slate-300">{p2.team}</div>
           </div>
         </div>
 
         {/* 4 Center-Outward Skewed Duel Bars */}
         <div className="space-y-2.5 max-w-2xl mx-auto">
           {rows.map((r, idx) => {
-            const widthA = Math.min(100, Math.round((r.a / r.max) * 100));
-            const widthB = Math.min(100, Math.round((r.b / r.max) * 100));
+            const rowMax = Math.max(r.a, r.b) * 1.06;
+            const wA = Math.max(24, Math.round((r.a / rowMax) * 100));
+            const wB = Math.max(24, Math.round((r.b / rowMax) * 100));
+            const leftWins = r.a > r.b;
+            const rightWins = r.b > r.a;
 
             return (
               <div
                 key={r.label}
-                className="skew-box bg-slate-950/95 border border-white/15 rounded-lg overflow-hidden shadow-lg"
+                className="skew-box bg-transparent border-0 rounded-lg overflow-visible"
               >
                 <div className="relative flex items-center h-10 w-full">
-                  {/* Left Half: Expands OUTWARD from center toward left */}
+                  {/* Left Half: Outward expansion */}
                   <div className="w-1/2 h-full flex justify-end overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-l from-violet-500 to-violet-700 flex items-center justify-start pl-4 overflow-hidden"
+                      className={`bar-live h-full rounded-l-md bg-gradient-to-l from-violet-600 via-purple-700 to-fuchsia-700 flex items-center justify-start pl-4 overflow-hidden ${
+                        fireActive && leftWins ? 'fire-bar-glow' : ''
+                      }`}
                       style={{
-                        width: barsExpanded ? `${widthA}%` : '0%',
+                        ['--bar-glow' as any]: '#e879f9',
+                        width: barsExpanded ? `${wA}%` : '0%',
+                        boxShadow: '0 0 12px rgba(168,85,247,0.55)',
                         transition: 'width 1.75s cubic-bezier(0.22, 1, 0.36, 1)',
                       }}
                     >
                       <span
-                        className="unskew font-hud font-bold text-sm text-white"
-                        style={{
-                          opacity: barsExpanded ? 1 : 0,
-                          transition: 'opacity 0.5s ease 0.4s',
-                        }}
+                        className={`unskew font-hud font-bold text-sm text-white transition-opacity duration-500 ${
+                          barsExpanded ? 'opacity-100' : 'opacity-0'
+                        }`}
                       >
-                        {r.a.toLocaleString()}
+                        {dispValuesA[idx].toLocaleString()}
                       </span>
                     </div>
                   </div>
 
-                  {/* Right Half: Expands OUTWARD from center toward right */}
+                  {/* Right Half: Outward expansion */}
                   <div className="w-1/2 h-full flex justify-start overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-cyan-400 to-teal-500 flex items-center justify-end pr-4 overflow-hidden"
+                      className={`bar-live h-full rounded-r-md bg-gradient-to-r from-cyan-500 to-teal-600 flex items-center justify-end pr-4 overflow-hidden ${
+                        fireActive && rightWins ? 'fire-bar-glow' : ''
+                      }`}
                       style={{
-                        width: barsExpanded ? `${widthB}%` : '0%',
+                        ['--bar-glow' as any]: '#5eead4',
+                        width: barsExpanded ? `${wB}%` : '0%',
+                        boxShadow: '0 0 12px rgba(45,212,191,0.55)',
                         transition: 'width 1.75s cubic-bezier(0.22, 1, 0.36, 1)',
                       }}
                     >
                       <span
-                        className="unskew font-hud font-bold text-sm text-slate-950 font-extrabold"
-                        style={{
-                          opacity: barsExpanded ? 1 : 0,
-                          transition: 'opacity 0.5s ease 0.4s',
-                        }}
+                        className={`unskew font-hud font-bold text-sm text-slate-950 font-extrabold transition-opacity duration-500 ${
+                          barsExpanded ? 'opacity-100' : 'opacity-0'
+                        }`}
                       >
-                        {r.b.toLocaleString()}
+                        {dispValuesB[idx].toLocaleString()}
                       </span>
                     </div>
                   </div>
@@ -294,7 +366,7 @@ export default function Dashboard3({ overrideColors }: { overrideColors?: any } 
                   {/* Center Stat Label Pill: Appears FIRST slowly one by one */}
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <span
-                      className="unskew px-3 py-0.5 rounded bg-slate-950 text-[10.5px] font-bold tracking-widest text-amber-300 border border-amber-400/40 shadow"
+                      className="unskew px-3.5 py-0.5 rounded bg-purple-950/80 text-[10.5px] font-bold tracking-widest text-purple-100 border border-purple-400/60 shadow"
                       style={{
                         opacity: labelVisible[idx] ? 1 : 0,
                         transform: labelVisible[idx]

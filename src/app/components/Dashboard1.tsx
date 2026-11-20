@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import useSWR from 'swr';
+import { startRealFireCanvas } from './RealFireCanvas';
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
@@ -33,8 +34,10 @@ const DEFAULT_STANDING12: StandingTeam[] = [
 
 export default function Dashboard1({ overrideColors }: { overrideColors?: any } = {}) {
   const [wipeKey, setWipeKey] = useState(0);
+  const [fireActive, setFireActive] = useState(false);
+  const fireCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // Poll sheet data every 2s
+  // Poll sheet data
   const { data: dayData } = useSWR('/api/daystanding', fetcher, {
     refreshInterval: 2000,
   });
@@ -58,13 +61,20 @@ export default function Dashboard1({ overrideColors }: { overrideColors?: any } 
     return DEFAULT_STANDING12;
   }, [dayData]);
 
-  // Re-trigger wipe animation when standing updates
   useEffect(() => {
     setWipeKey((prev) => prev + 1);
+    setFireActive(false);
+    const t = setTimeout(() => {
+      setFireActive(true);
+      if (fireCanvasRef.current) {
+        startRealFireCanvas(fireCanvasRef.current, { light: true });
+      }
+    }, 780);
+    return () => clearTimeout(t);
   }, [dayData?.updatedAt]);
 
   return (
-    <div className="w-full min-h-screen flex items-center justify-center p-2 sm:p-4 bg-transparent select-none">
+    <div className="broadcast-stage w-full min-h-screen flex items-center justify-center p-2 sm:p-4 bg-transparent select-none">
       <div key={wipeKey} className="w-full max-w-4xl relative">
         {/* Purple Starburst Stinger Flash */}
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-20 overflow-hidden">
@@ -77,7 +87,7 @@ export default function Dashboard1({ overrideColors }: { overrideColors?: any } 
           </svg>
         </div>
 
-        {/* Header Tags Bar with Skew Effect */}
+        {/* Header Tags */}
         <div className="grid grid-cols-[62px_1fr_64px_64px_76px_74px] items-center gap-1 px-1 mb-1.5 font-hud text-[10px] font-extrabold uppercase tracking-wider">
           <span></span>
           <span></span>
@@ -95,36 +105,58 @@ export default function Dashboard1({ overrideColors }: { overrideColors?: any } 
           </span>
         </div>
 
-        {/* 12 Standing Rows with Left-to-Right Diagonal Wipe Animation */}
+        {/* 12 Standing Rows */}
         <div className="space-y-1">
           {standing.map((t, i) => {
             const isFirst = i === 0;
             return (
               <div
                 key={`${t.rank}-${t.tag}`}
-                className="ffws-row grid grid-cols-[62px_1fr_64px_64px_76px_74px] items-center gap-1 rounded-sm overflow-hidden border border-black/60 shadow-md"
+                className={`ffws-row grid grid-cols-[62px_1fr_64px_64px_76px_74px] items-center gap-1 rounded-sm shadow-md transition-all duration-500 relative ${
+                  isFirst
+                    ? `border-2 border-amber-400 my-1 ${fireActive ? 'top1-hero-glow top1-scale' : ''}`
+                    : 'overflow-hidden border border-black/60'
+                }`}
                 style={{
                   animationDelay: `${140 + i * 68}ms`,
                   background: isFirst
-                    ? 'linear-gradient(90deg, #1e0b36 0%, #3b136b 65%, #6225A6 100%)'
-                    : 'linear-gradient(90deg, rgba(22,10,42,0.94) 0%, rgba(46,14,86,0.92) 75%, rgba(98,37,166,0.88) 100%)',
+                    ? 'linear-gradient(90deg, rgba(88,28,135,0.68) 0%, rgba(147,51,234,0.72) 100%)'
+                    : 'linear-gradient(90deg, rgba(59,7,100,0.48) 0%, rgba(98,37,166,0.52) 100%)',
+                  isolation: isFirst ? 'isolate' : undefined,
                 }}
               >
-                {/* Rank Badge */}
+                {/* Real-time Spirit Fire Canvas for Rank #1 */}
+                {isFirst && (
+                  <div
+                    className="pointer-events-none absolute -inset-x-2 -top-8 bottom-0 transition-opacity duration-500"
+                    style={{
+                      zIndex: -1,
+                      opacity: fireActive ? 1 : 0,
+                    }}
+                  >
+                    <canvas ref={fireCanvasRef} className="w-full h-full block" />
+                  </div>
+                )}
+
+                {/* Rank */}
                 <div
-                  className={`h-9 flex items-center justify-center font-hud text-xs sm:text-sm font-extrabold italic border-r border-white/10 ${
-                    isFirst ? 'bg-[#F5B700] text-black' : 'bg-black/45 text-white'
-                  }`}
+                  className={`${
+                    isFirst ? 'h-11 text-base' : 'h-9 text-xs sm:text-sm'
+                  } flex items-center justify-center font-hud font-extrabold italic ${
+                    isFirst ? 'bg-[#F5B700] text-black' : 'bg-purple-950/35 text-white'
+                  } border-r border-white/10`}
                 >
                   {t.rank}
                 </div>
 
-                {/* Team Tag & Name */}
+                {/* Tag & Name */}
                 <div className="flex items-center gap-2.5 pl-2 pr-2 truncate">
                   <span
-                    className="w-6 h-6 rounded flex items-center justify-center font-hud text-[9.5px] font-extrabold border border-black shrink-0"
+                    className={`${
+                      isFirst ? 'w-7 h-7 text-[10.5px]' : 'w-6 h-6 text-[9.5px]'
+                    } rounded flex items-center justify-center font-hud font-extrabold border border-black shrink-0`}
                     style={{
-                      backgroundColor: t.col,
+                      background: t.col,
                       color:
                         t.col === '#F5B700' || t.col === '#00DF82'
                           ? '#000000'
@@ -133,30 +165,48 @@ export default function Dashboard1({ overrideColors }: { overrideColors?: any } 
                   >
                     {t.tag}
                   </span>
-                  <span className="font-title text-sm sm:text-base font-bold text-white truncate tracking-wide">
+                  <span
+                    className={`font-title ${
+                      isFirst ? 'text-base sm:text-lg text-amber-200' : 'text-sm sm:text-base text-white'
+                    } font-bold truncate`}
+                  >
                     {t.name}
                   </span>
                 </div>
 
                 {/* Booyahs */}
-                <div className="text-center font-hud text-sm font-bold text-white">
+                <div
+                  className={`text-center font-hud ${
+                    isFirst ? 'text-base' : 'text-sm'
+                  } font-bold text-white`}
+                >
                   {t.booyah}
                 </div>
 
                 {/* Elims */}
-                <div className="text-center font-hud text-sm font-bold text-slate-200">
+                <div
+                  className={`text-center font-hud ${
+                    isFirst ? 'text-base' : 'text-sm'
+                  } font-bold text-slate-200`}
+                >
                   {t.elims}
                 </div>
 
-                {/* Place Points */}
-                <div className="text-center font-hud text-sm font-bold text-slate-200">
+                {/* Place Pts */}
+                <div
+                  className={`text-center font-hud ${
+                    isFirst ? 'text-base' : 'text-sm'
+                  } font-bold text-slate-200`}
+                >
                   {t.place}
                 </div>
 
-                {/* Total Points */}
+                {/* Total Pts */}
                 <div
-                  className={`h-9 flex items-center justify-center font-hud text-sm sm:text-base font-extrabold ${
-                    isFirst ? 'bg-[#F5B700] text-black' : 'bg-black/35 text-[#F5B700]'
+                  className={`${
+                    isFirst ? 'h-11 text-base sm:text-lg' : 'h-9 text-sm sm:text-base'
+                  } flex items-center justify-center font-hud font-extrabold ${
+                    isFirst ? 'bg-[#F5B700] text-black' : 'bg-purple-950/30 text-[#F5B700]'
                   }`}
                 >
                   {t.total}
