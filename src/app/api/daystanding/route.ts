@@ -207,7 +207,7 @@ export async function GET() {
     }
 
     if (!data.length) {
-      return NextResponse.json({ success: false, data: [] }, { status: 200 });
+      return NextResponse.json({ success: false, data: [], standing: [] }, { status: 200 });
     }
 
     return NextResponse.json(
@@ -215,6 +215,7 @@ export async function GET() {
         success: true,
         timestamp: Date.now(),
         data,
+        standing: data,
       },
       {
         headers: {
