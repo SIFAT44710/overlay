@@ -140,7 +140,10 @@ export default function Dashboard5({ overrideColors }: { overrideColors?: any } 
   const [totalKillsDisp, setTotalKillsDisp] = useState(0);
   const [topFireActive, setTopFireActive] = useState(false);
 
-  const roles = DEFAULT_ROLES;
+  const { data: sheetData } = useSWR('/api/sheet', fetcher, { refreshInterval: 2000 });
+  const roles: RoleStat[] = (sheetData?.roles && sheetData.roles.length > 0)
+    ? sheetData.roles
+    : DEFAULT_ROLES;
   const tot = roles.reduce((s, r) => s + r.kills, 0);
 
   const R = 108;

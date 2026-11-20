@@ -61,7 +61,13 @@ export default function Dashboard2({ overrideColors }: { overrideColors?: any } 
   } | null>(null);
 
   const pillCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const teams = DEFAULT_PROGRESSION;
+
+  const { data: sheetData } = useSWR('/api/sheet', fetcher, { refreshInterval: 2000 });
+  const teams: ProgressionTeam[] = (sheetData?.matchProgression && sheetData.matchProgression.length > 0)
+    ? sheetData.matchProgression
+    : DEFAULT_PROGRESSION;
+
+  const maxVal = Math.max(140, ...teams.flatMap((t) => t.pts));
 
   const W = 920;
   const H = 370;
@@ -73,7 +79,7 @@ export default function Dashboard2({ overrideColors }: { overrideColors?: any } 
   const cH = H - padT - padB;
 
   const safeYs = spreadY(
-    teams.map((t) => ({ y: padT + cH - (t.pts[4] / 140) * cH })),
+    teams.map((t) => ({ y: padT + cH - (((t.pts[4] ?? t.pts[t.pts.length - 1] ?? 0)) / maxVal) * cH })),
     36,
     padT + 14,
     H - padB - 14
@@ -116,9 +122,9 @@ export default function Dashboard2({ overrideColors }: { overrideColors?: any } 
             </div>
 
             <span className="text-amber-400">#1 LEADER</span>
-            <span>RAAD VAI YT (TOP)</span>
+            <span>{teams[0]?.name || 'RAAD VAI YT'} ({teams[0]?.tag || 'TOP'})</span>
             <span className="px-2 py-0.5 rounded bg-amber-400 text-black font-extrabold">
-              134 PTS
+              {teams[0]?.pts[4] ?? teams[0]?.pts[teams[0]?.pts.length - 1] ?? 134} PTS
             </span>
           </div>
         </div>
@@ -140,8 +146,8 @@ export default function Dashboard2({ overrideColors }: { overrideColors?: any } 
           />
 
           {/* Grid Lines and Y-Axis Ticks */}
-          {[0, 35, 70, 105, 140].map((v) => {
-            const y = padT + cH - (v / 140) * cH;
+          {[0, Math.round(maxVal * 0.25), Math.round(maxVal * 0.5), Math.round(maxVal * 0.75), maxVal].map((v) => {
+            const y = padT + cH - (v / maxVal) * cH;
             return (
               <g key={v}>
                 <line
@@ -213,7 +219,7 @@ export default function Dashboard2({ overrideColors }: { overrideColors?: any } 
           {teams.map((team, tIdx) => {
             const pts = team.pts.map((val, i) => ({
               x: padL + (i / 4) * cW,
-              y: padT + cH - (val / 140) * cH,
+              y: padT + cH - (val / maxVal) * cH,
               val,
               matchIdx: i,
             }));

@@ -21,6 +21,13 @@ export default function Dashboard13({ overrideColors }: { overrideColors?: any }
   const { data: sheetData } = useSWR('/api/sheet', fetcher, { refreshInterval: 2000 });
 
   const lineData = React.useMemo(() => {
+    if (
+      sheetData?.matchTotals &&
+      Array.isArray(sheetData.matchTotals.kills) &&
+      sheetData.matchTotals.kills.length >= 2
+    ) {
+      return sheetData.matchTotals;
+    }
     if (sheetData?.history && Array.isArray(sheetData.history) && sheetData.history.length >= 2) {
       const k = sheetData.history.map((m: any) => m.kills || 100);
       const d = sheetData.history.map((m: any) => m.damage || 70000);
@@ -28,6 +35,13 @@ export default function Dashboard13({ overrideColors }: { overrideColors?: any }
     }
     return DEFAULT_LINE_DATA;
   }, [sheetData]);
+
+  const peakIdx = React.useMemo(() => {
+    return lineData.kills.reduce(
+      (maxI: number, curr: number, i: number, arr: number[]) => (curr > arr[maxI] ? i : maxI),
+      0
+    );
+  }, [lineData]);
 
   useEffect(() => {
     const tAnim = setTimeout(() => setAnimated(true), 200);
@@ -46,10 +60,10 @@ export default function Dashboard13({ overrideColors }: { overrideColors?: any }
   const PLOT_W = W - PAD_X * 2;
   const PLOT_H = H - PAD_TOP - PAD_BOTTOM;
 
-  const minK = 80;
-  const maxK = 145;
-  const minD = 50000;
-  const maxD = 85000;
+  const minK = Math.max(0, Math.min(...lineData.kills) - 20);
+  const maxK = Math.max(145, ...lineData.kills) + 10;
+  const minD = Math.max(0, Math.min(...lineData.damage) - 10000);
+  const maxD = Math.max(85000, ...lineData.damage) + 10000;
 
   const getKillsY = (v: number) =>
     PAD_TOP + PLOT_H * (1 - (v - minK) / (maxK - minK));
@@ -103,10 +117,10 @@ export default function Dashboard13({ overrideColors }: { overrideColors?: any }
                 <RealFireCanvas opts={{ light: true }} />
               </div>
             )}
-            <span className="relative z-10 text-amber-400">#1 PEAK MATCH • M4</span>
-            <span className="relative z-10 text-amber-300">129 KILLS</span>
+            <span className="relative z-10 text-amber-400">#1 PEAK MATCH • {MATCH_LABELS[peakIdx] || 'M1'}</span>
+            <span className="relative z-10 text-amber-300">{lineData.kills[peakIdx] || 0} KILLS</span>
             <span className="relative z-10 text-slate-500">|</span>
-            <span className="relative z-10 text-sky-300">75,983 DMG</span>
+            <span className="relative z-10 text-sky-300">{(lineData.damage[peakIdx] || 0).toLocaleString()} DMG</span>
           </div>
         </div>
 

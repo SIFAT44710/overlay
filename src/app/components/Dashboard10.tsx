@@ -38,6 +38,9 @@ export default function Dashboard10({ overrideColors }: { overrideColors?: any }
   const { data: sheetData } = useSWR('/api/sheet', fetcher, { refreshInterval: 2000 });
 
   const mvp = React.useMemo(() => {
+    if (sheetData?.mvp) {
+      return sheetData.mvp;
+    }
     if (sheetData?.data && sheetData.data.length > 0) {
       const top = sheetData.data[0];
       const kills = parseInt(top.Kill, 10) || DEFAULT_MVP.kills;

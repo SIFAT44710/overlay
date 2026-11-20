@@ -32,9 +32,9 @@ export default function Dashboard3({ overrideColors }: { overrideColors?: any } 
 
   const { data: sheetData } = useSWR('/api/sheet', fetcher, { refreshInterval: 2000 });
 
-  const duel = DEFAULT_DUEL;
-  const p1 = duel.p1;
-  const p2 = duel.p2;
+  const duel = sheetData?.duel1v1 || DEFAULT_DUEL;
+  const p1 = duel.p1 || DEFAULT_DUEL.p1;
+  const p2 = duel.p2 || DEFAULT_DUEL.p2;
 
   const s1 = p1.kills * 100 + p1.damage * 0.1 + p1.hs * 40;
   const s2 = p2.kills * 100 + p2.damage * 0.1 + p2.hs * 40;

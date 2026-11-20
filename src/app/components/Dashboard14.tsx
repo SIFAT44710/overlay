@@ -28,6 +28,22 @@ export default function Dashboard14({ overrideColors }: { overrideColors?: any }
   const [hoveredRoleB, setHoveredRoleB] = useState<RolePolarData | null>(null);
 
   const { data: themeData } = useSWR('/api/theme', fetcher, { refreshInterval: 3000 });
+  const { data: sheetData } = useSWR('/api/sheet', fetcher, { refreshInterval: 2000 });
+
+  const rolesData: RolePolarData[] = (sheetData?.rolesPolar && sheetData.rolesPolar.length > 0)
+    ? sheetData.rolesPolar
+    : ROLES_DATA;
+
+  const maxK = Math.max(13, ...rolesData.map((r) => r.kills * 1.15));
+  const maxD = Math.max(10500, ...rolesData.map((r) => r.damage * 1.15));
+
+  const topRoleKills = React.useMemo(() => {
+    return [...rolesData].sort((a, b) => b.kills - a.kills)[0] || rolesData[0];
+  }, [rolesData]);
+
+  const topRoleDmg = React.useMemo(() => {
+    return [...rolesData].sort((a, b) => b.damage - a.damage)[0] || rolesData[0];
+  }, [rolesData]);
 
   useEffect(() => {
     const tAnim = setTimeout(() => setAnimated(true), 150);
@@ -44,8 +60,6 @@ export default function Dashboard14({ overrideColors }: { overrideColors?: any }
   const CX = 140;
   const CY = 140;
   const MAX_R = 105;
-  const maxK = 13;
-  const maxD = 10500;
 
   // Polar wedge helper for 4 equal 90-deg quadrants
   const renderWedges = (
@@ -54,7 +68,7 @@ export default function Dashboard14({ overrideColors }: { overrideColors?: any }
     onHover: (r: RolePolarData | null) => void
   ) => {
     const stepAngle = (2 * Math.PI) / 4;
-    return ROLES_DATA.map((r, i) => {
+    return rolesData.map((r, i) => {
       const val = r[valKey];
       const radiusPct = val / maxVal;
       const targetR = MAX_R * (0.35 + 0.65 * radiusPct);
@@ -134,7 +148,7 @@ export default function Dashboard14({ overrideColors }: { overrideColors?: any }
               </div>
             )}
             <span className="relative z-10 text-yellow-400">#1 AVG KILLS</span>
-            <span className="relative z-10">BOMBER • 11.7</span>
+            <span className="relative z-10">{topRoleKills.role.toUpperCase()} • {topRoleKills.kills}</span>
           </div>
 
           {/* Polar SVG */}
@@ -191,7 +205,7 @@ export default function Dashboard14({ overrideColors }: { overrideColors?: any }
               </div>
             )}
             <span className="relative z-10 text-purple-400">#1 AVG DAMAGE</span>
-            <span className="relative z-10">SNIPER • 9,175</span>
+            <span className="relative z-10">{topRoleDmg.role.toUpperCase()} • {topRoleDmg.damage.toLocaleString()}</span>
           </div>
 
           {/* Polar SVG */}
