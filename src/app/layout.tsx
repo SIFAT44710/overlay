@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import "./globals.css";
-import SlideNav from "./components/SlideNav";
 
 export const metadata: Metadata = {
   title: "Free Fire Esports Live Broadcast Overlays | Demo-Graph-BD",
@@ -24,9 +22,6 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col" style={{ backgroundColor: 'rgba(0,0,0,0)' }}>
-        <Suspense fallback={null}>
-          <SlideNav />
-        </Suspense>
         {children}
       </body>
     </html>

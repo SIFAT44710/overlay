@@ -46,6 +46,22 @@ const SLIDES: SlideItem[] = [
     color: '#2DD4BF',
   },
   {
+    id: 5,
+    badge: 'Slide 05',
+    title: 'Role Warfare Donut',
+    desc: 'Tactical role breakdown donut (Rusher, Support, Sniper, Bomber) with animated center total kills.',
+    tag: 'Role Warfare',
+    color: '#38BDF8',
+  },
+  {
+    id: 6,
+    badge: 'Slide 06',
+    title: 'Match 5 Map Standing',
+    desc: 'Top 10 map standings with dual survival and kill bars, Booyah winner badge, and team tags.',
+    tag: 'Map Standing',
+    color: '#10B981',
+  },
+  {
     id: 7,
     badge: 'Slide 07',
     title: 'Team H2H Match 5 (Radar + Gauge)',
@@ -108,22 +124,6 @@ const SLIDES: SlideItem[] = [
     desc: 'Dual polar area diagrams comparing Avg Kills and Avg Damage across 4 player roles.',
     tag: 'Role Polar',
     color: '#2DD4BF',
-  },
-  {
-    id: 5,
-    badge: 'Slide 05',
-    title: 'Role Warfare Donut (Queued Later)',
-    desc: 'Tactical role breakdown donut (Rusher, Support, Sniper, Bomber) with animated center total kills.',
-    tag: 'Role Warfare',
-    color: '#38BDF8',
-  },
-  {
-    id: 6,
-    badge: 'Slide 06',
-    title: 'Match 5 Map Standing (Queued Later)',
-    desc: 'Top 10 map standings with dual survival and kill bars, Booyah winner badge, and team tags.',
-    tag: 'Map Standing',
-    color: '#10B981',
   },
 ];
 
