@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import AuthGate from './components/AuthGate';
 
 interface SlideItem {
   id: number;
@@ -140,9 +141,10 @@ export default function HomePage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#18191a] text-[#e4e6eb] p-6 sm:p-10 font-sans">
-      {/* Header Bar */}
-      <header className="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-[#3a3b3c] pb-8">
+    <AuthGate pageTitle="Master Broadcast Suite" badge="OBS BROADCAST CONSOLE">
+      <main className="min-h-screen bg-[#18191a] text-[#e4e6eb] p-6 sm:p-10 font-sans">
+        {/* Header Bar */}
+        <header className="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-[#3a3b3c] pb-8">
         <div>
           <div className="flex items-center gap-3">
             <span className="w-3.5 h-3.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -228,5 +230,6 @@ export default function HomePage() {
         ))}
       </div>
     </main>
+    </AuthGate>
   );
 }

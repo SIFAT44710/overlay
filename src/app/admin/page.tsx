@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import AuthGate from '../components/AuthGate';
 import Dashboard1 from '../components/Dashboard1';
 import Dashboard2 from '../components/Dashboard2';
 import Dashboard3 from '../components/Dashboard3';
@@ -978,7 +979,8 @@ export default function AdminPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#18191a] text-[#e4e6eb] p-3 sm:p-6 lg:p-8 font-sans">
+    <AuthGate pageTitle="Admin Color Studio" badge="ADMIN SECURITY LOCK">
+      <main className="min-h-screen bg-[#18191a] text-[#e4e6eb] p-3 sm:p-6 lg:p-8 font-sans">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Toast Notification */}
         {toastMsg && (
@@ -1324,5 +1326,6 @@ export default function AdminPage() {
         </div>
       </div>
     </main>
+    </AuthGate>
   );
 }
