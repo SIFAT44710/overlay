@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import AuthGate from './components/AuthGate';
+import AuthGate from '@/components/AuthGate';
 
 interface SlideItem {
   id: number;
@@ -17,219 +17,168 @@ const SLIDES: SlideItem[] = [
   {
     id: 1,
     badge: 'Slide 01',
-    title: 'FFWS Wipe Standing (Top 12)',
-    desc: '6-column tactical leaderboard with live points, short tags, team logos, and flame aura.',
-    tag: 'Overall Standings',
-    color: '#F5B700',
+    title: 'Match 1–5 Points Race',
+    desc: 'SVG multi-line race progression tracking top squads with glowing end tags and Drive team logo badges.',
+    tag: 'Points Race',
+    color: '#fbbf24',
   },
   {
     id: 2,
     badge: 'Slide 02',
-    title: 'Match 1–5 Points Race',
-    desc: 'SVG multi-line race progression tracking top squads with glowing end tags (#1 TOP 134 PTS).',
-    tag: 'Progression',
-    color: '#8B5CF6',
+    title: '1v1 Player Clash',
+    desc: 'Pure black semi-circle clash gauge with laser scanner needle, collision shockwave, and exact numbers.',
+    tag: '1v1 Clash',
+    color: '#8b5cf6',
   },
   {
     id: 3,
     badge: 'Slide 03',
-    title: '1v1 Player Clash Gauge',
-    desc: 'Contender 1 vs 2 clash gauge with scanner needle, shockwave burst, and sequential stat reveal.',
-    tag: '1v1 Clash',
-    color: '#E11D48',
+    title: 'Weapon Meta Rings',
+    desc: 'Concentric target rings with center crown emblem, damage meters, and headshot ratios.',
+    tag: 'Weapon Meta',
+    color: '#2dd4bf',
   },
   {
     id: 4,
     badge: 'Slide 04',
-    title: 'Weapon Meta Rings',
-    desc: 'Concentric target rings with center META badge, damage meters, and headshot ratios.',
-    tag: 'Weapon Meta',
-    color: '#2DD4BF',
+    title: 'Team H2H Match 5',
+    desc: 'Dynamic 4-corner diamond radar recalculating all 4 vertices from Team A vs Team B stats.',
+    tag: 'Team H2H',
+    color: '#ec008c',
   },
   {
     id: 5,
     badge: 'Slide 05',
-    title: 'Role Warfare Donut',
-    desc: 'Tactical role breakdown donut (Rusher, Support, Sniper, Bomber) with animated center total kills.',
-    tag: 'Role Warfare',
-    color: '#38BDF8',
+    title: 'Group Stage Averages',
+    desc: 'Dual concentric ring gauges comparing Elims, Damage, and Survival minutes between 2 teams.',
+    tag: 'Averages',
+    color: '#8b5cf6',
   },
   {
     id: 6,
     badge: 'Slide 06',
-    title: 'Match 5 Map Standing',
-    desc: 'Top 10 map standings with dual survival and kill bars, Booyah winner badge, and team tags.',
-    tag: 'Map Standing',
-    color: '#10B981',
+    title: 'Single-Candle Dynamic Column',
+    desc: '72px bottom hex team logos with 22px tag names, live energy glow, and full numbers (zero K).',
+    tag: 'Column Chart',
+    color: '#F5B700',
   },
   {
     id: 7,
     badge: 'Slide 07',
-    title: 'Team H2H Match 5 (Radar + Gauge)',
-    desc: '4-axis tactical diamond radar on left + semi-circle duel clash gauge on right.',
-    tag: 'Team H2H',
-    color: '#6366F1',
+    title: 'Top 2 / H2H Fast Radar',
+    desc: 'Expanding polygon rings with glowing vertex halos and 64px team badges.',
+    tag: 'Fast Radar',
+    color: '#e11d48',
   },
   {
     id: 8,
     badge: 'Slide 08',
-    title: 'Team H2H Day Butterfly',
-    desc: '6-metric horizontal butterfly comparison bars between top 2 championship rivals.',
-    tag: 'Butterfly Duel',
-    color: '#EC008C',
+    title: 'M1–M5 Kills & DMG Line',
+    desc: 'Dual-axis line chart tracking total kills (gold) and damage (sky blue) across Match 1 to 5.',
+    tag: 'Dual Line',
+    color: '#38bdf8',
   },
   {
     id: 9,
     badge: 'Slide 09',
-    title: 'Group Stage Averages',
-    desc: '3 metric cards with dual concentric SVG rings for Avg Elims, Damage, and Survival time.',
-    tag: 'Group Stage',
-    color: '#8B5CF6',
+    title: 'Role Dual Polar',
+    desc: 'Two side-by-side polar area charts analyzing Rusher, Support, Sniper, and Bomber roles.',
+    tag: 'Dual Polar',
+    color: '#facc15',
   },
   {
     id: 10,
     badge: 'Slide 10',
-    title: 'Match 5 MVP Spotlight',
-    desc: 'MVP spotlight with semi-circle On-Target Accuracy Gauge, live counter, and player tag.',
-    tag: 'MVP Spotlight',
-    color: '#FBBF24',
-  },
-  {
-    id: 11,
-    badge: 'Slide 11',
-    title: 'Total Points Column',
-    desc: '12 vertical bounce bars with team short tags, logos, count-up points, and flame aura.',
-    tag: '12-Team Race',
+    title: 'Dual-Candle Comparison Column',
+    desc: '72px bottom hex team logos with dual comparison bars (Kills vs Damage, Survival vs Kills).',
+    tag: 'Dual Column',
     color: '#F5B700',
-  },
-  {
-    id: 12,
-    badge: 'Slide 12',
-    title: 'Top 2 Cinematic Slow Radar',
-    desc: 'Slow cinematic radar reveal with concentric rings lock-in, #2 entrance, then #1 sweep.',
-    tag: 'Cinematic Radar',
-    color: '#E11D48',
-  },
-  {
-    id: 13,
-    badge: 'Slide 13',
-    title: 'M1–M5 Kills & DMG Line',
-    desc: 'Dual Y-axis line chart tracking Match 1 to 5 Total Kills vs Total Damage with smooth curves.',
-    tag: 'Progression Trend',
-    color: '#38BDF8',
-  },
-  {
-    id: 14,
-    badge: 'Slide 14',
-    title: 'Role Avg Dual Polar',
-    desc: 'Dual polar area diagrams comparing Avg Kills and Avg Damage across 4 player roles.',
-    tag: 'Role Polar',
-    color: '#2DD4BF',
   },
 ];
 
-export default function HomePage() {
-  const [copiedId, setCopiedId] = useState<number | null>(null);
-
-  const copyUrl = (id: number) => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const url = `${origin}/${id}`;
-    navigator.clipboard.writeText(url).then(() => {
-      setCopiedId(id);
-      setTimeout(() => setCopiedId(null), 2000);
-    });
-  };
-
+export default function Home() {
   return (
-    <AuthGate pageTitle="Master Broadcast Suite" badge="OBS BROADCAST CONSOLE">
-      <main className="min-h-screen bg-[#18191a] text-[#e4e6eb] p-6 sm:p-10 font-sans">
-        {/* Header Bar */}
-        <header className="max-w-7xl mx-auto mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-[#3a3b3c] pb-8">
-        <div>
+    <AuthGate>
+      <main className="min-h-screen bg-[#0a0c16] text-white p-4 sm:p-8 font-hud">
+        {/* Header */}
+        <header className="max-w-7xl mx-auto mb-8 border-b border-purple-500/30 pb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-3">
+              <span className="px-3 py-1 rounded-full bg-gradient-to-r from-purple-600 to-amber-500 text-xs font-bold uppercase tracking-wider text-black">
+                vMix / OBS Production Suite
+              </span>
+              <span className="flex items-center gap-1.5 text-xs text-emerald-400 font-bold">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                Live Google Sheets & Drive Sync
+              </span>
+            </div>
+            <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight mt-2 bg-gradient-to-r from-white via-slate-200 to-purple-300 bg-clip-text text-transparent">
+              RTB / Free Fire Esports Broadcast Suite
+            </h1>
+            <p className="text-sm sm:text-base text-slate-400 mt-1 max-w-2xl font-sans">
+              1080p transparent broadcast overlays with real-time polling every 2.5s. Click any overlay below for vMix input, or enter the Locked Admin Panel.
+            </p>
+          </div>
+
           <div className="flex items-center gap-3">
-            <span className="w-3.5 h-3.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="font-hud text-xs font-black uppercase tracking-widest text-emerald-400">
-              LIVE BROADCAST SUITE • 14 SLIDES
-            </span>
+            <Link
+              href="/admin"
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white font-bold text-sm sm:text-base shadow-lg shadow-purple-600/30 transition-all flex items-center gap-2"
+            >
+              <span>⚙</span> Admin Control Panel
+            </Link>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mt-2 text-white">
-            Free Fire Broadcast Graphics Engine
-          </h1>
-          <p className="text-sm text-[#b0b3b8] mt-1">
-            Google Sheets Synchronized • Transparent OBS Fire Overlays • Dynamic Color Studio
-          </p>
-        </div>
+        </header>
 
-        <div className="flex items-center gap-3 flex-wrap">
-          <Link
-            href="/admin"
-            className="px-5 py-2.5 rounded-xl bg-[#1877f2] hover:bg-[#166fe5] text-white font-bold text-sm shadow-lg transition-all flex items-center gap-2"
-          >
-            <svg className="w-4 h-4 fill-current" viewBox="0 0 20 20">
-              <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z" />
-            </svg>
-            Admin Color Studio
-          </Link>
-          <a
-            href="https://docs.google.com/spreadsheets/d/1QOTrmLLqyZQdL7AarXbhnFFA8_BeXHoWhod8INJnoHE/edit"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-5 py-2.5 rounded-xl bg-[#242526] hover:bg-[#3a3b3c] text-white border border-[#3a3b3c] font-bold text-sm shadow transition-all flex items-center gap-2"
-          >
-            Google Sheet (Live Data)
-          </a>
-        </div>
-      </header>
+        {/* Overlays Grid */}
+        <section className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {SLIDES.map((slide) => (
+              <div
+                key={slide.id}
+                className="group relative bg-slate-900/60 border border-purple-500/25 hover:border-purple-400/80 rounded-2xl p-5 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-900/20 hover:-translate-y-1 flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span
+                      className="px-2.5 py-1 rounded-md text-xs font-extrabold uppercase tracking-wider"
+                      style={{
+                        backgroundColor: `${slide.color}25`,
+                        color: slide.color,
+                        border: `1px solid ${slide.color}50`,
+                      }}
+                    >
+                      {slide.badge}
+                    </span>
+                    <span className="text-xs text-slate-400 font-semibold">{slide.tag}</span>
+                  </div>
 
-      {/* Grid of 14 Slides */}
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {SLIDES.map((slide) => (
-          <div
-            key={slide.id}
-            className="bg-[#242526] rounded-2xl border border-[#3a3b3c] p-6 shadow-xl flex flex-col justify-between hover:border-[#1877f2] transition-all group"
-          >
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <span
-                  className="px-3 py-1 rounded-full text-xs font-black font-hud text-black"
-                  style={{ backgroundColor: slide.color }}
-                >
-                  {slide.badge}
-                </span>
-                <span className="text-[11px] font-bold text-[#b0b3b8] uppercase tracking-wider font-hud">
-                  {slide.tag}
-                </span>
+                  <h3 className="text-xl font-bold text-white group-hover:text-purple-300 transition-colors">
+                    {slide.title}
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-2 line-clamp-2 leading-relaxed font-sans">
+                    {slide.desc}
+                  </p>
+                </div>
+
+                <div className="mt-5 pt-4 border-t border-white/10 flex items-center justify-between">
+                  <div className="text-[11px] text-slate-400 font-mono">Route: /{slide.id}</div>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/${slide.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-lg bg-purple-950/70 hover:bg-purple-800/80 border border-purple-500/40 text-xs font-bold text-purple-200 transition-all flex items-center gap-1.5"
+                    >
+                      <span>📺</span> Open Overlay
+                    </Link>
+                  </div>
+                </div>
               </div>
-
-              <h2 className="text-xl font-bold text-white group-hover:text-[#1877f2] transition-colors">
-                {slide.title}
-              </h2>
-              <p className="text-sm text-[#b0b3b8] mt-2 line-clamp-2 leading-relaxed">
-                {slide.desc}
-              </p>
-            </div>
-
-            {/* Actions */}
-            <div className="mt-6 pt-4 border-t border-[#3a3b3c] flex items-center gap-2">
-              <Link
-                href={`/${slide.id}`}
-                target="_blank"
-                className="flex-1 py-2 text-center rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider transition-all"
-              >
-                Open Slide ↗
-              </Link>
-              <button
-                type="button"
-                onClick={() => copyUrl(slide.id)}
-                className="px-4 py-2 rounded-xl bg-[#1877f2]/15 hover:bg-[#1877f2]/30 text-[#1877f2] font-bold text-xs uppercase tracking-wider transition-all border border-[#1877f2]/30"
-              >
-                {copiedId === slide.id ? 'Copied!' : 'Copy OBS URL'}
-              </button>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
-    </main>
+        </section>
+      </main>
     </AuthGate>
   );
 }

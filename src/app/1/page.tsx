@@ -1,9 +1,16 @@
-import Dashboard1 from '../components/Dashboard1';
+'use client';
 
-export default function Page1() {
+import Slide01PointsRace from '@/components/slides/Slide01PointsRace';
+import { useLiveSheetData } from '@/hooks/useLiveSheetData';
+import { useBroadcastTheme } from '@/hooks/useBroadcastTheme';
+
+export default function Slide01Page() {
+  const { sheetData } = useLiveSheetData();
+  const { themes } = useBroadcastTheme();
+
   return (
-    <main className="min-h-screen bg-transparent text-white">
-      <Dashboard1 />
+    <main id="stage" className="w-screen h-screen flex items-center justify-center p-4 overflow-hidden bg-transparent select-none">
+      <Slide01PointsRace sheetData={sheetData} theme={themes} />
     </main>
   );
 }

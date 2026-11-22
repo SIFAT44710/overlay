@@ -1,5 +1,16 @@
-import Dashboard9 from '../components/Dashboard9';
+'use client';
 
-export default function Page9() {
-  return <Dashboard9 />;
+import Slide09RolePolar from '@/components/slides/Slide09RolePolar';
+import { useLiveSheetData } from '@/hooks/useLiveSheetData';
+import { useBroadcastTheme } from '@/hooks/useBroadcastTheme';
+
+export default function Slide09Page() {
+  const { sheetData } = useLiveSheetData();
+  const { themes } = useBroadcastTheme();
+
+  return (
+    <main id="stage" className="w-screen h-screen flex items-center justify-center p-4 overflow-hidden bg-transparent select-none">
+      <Slide09RolePolar sheetData={sheetData} theme={themes} />
+    </main>
+  );
 }

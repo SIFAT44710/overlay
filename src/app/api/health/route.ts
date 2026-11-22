@@ -1,15 +1,18 @@
 import { NextResponse } from 'next/server';
-import { getGoogleClients, getDriveLogos, getSheetsCacheStats } from '@/lib/googleSheets';
+import { getGoogleClients, getActiveConfig } from '@/lib/googleClient';
+import { getDriveLogos } from '@/lib/googleClient';
+import { getCacheStats } from '@/lib/sheetCache';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const { sheets, sheetId } = getGoogleClients();
+    const { sheets } = getGoogleClients();
+    const config = await getActiveConfig();
 
     // Fetch spreadsheet metadata to verify connection and list tabs
     const sheetMeta = await sheets.spreadsheets.get({
-      spreadsheetId: sheetId,
+      spreadsheetId: config.sheetId,
       fields: 'sheets.properties.title',
     });
 
@@ -17,19 +20,20 @@ export async function GET() {
       .map((s: any) => s.properties?.title || '')
       .filter(Boolean);
 
-    // Fetch drive logos (uses 10-min cache)
+    // Fetch drive logos (cached 10 min)
     const logos = await getDriveLogos();
 
     // Cache stats
-    const cacheStats = getSheetsCacheStats();
+    const cacheStats = getCacheStats();
 
     return NextResponse.json({
       ok: true,
       sheetConnected: true,
-      sheetId,
+      activeSheetId: config.sheetId,
+      activeDriveFolderId: config.driveFolderId || '(none)',
       tabsFound,
       driveLogosCount: logos.length,
-      cacheAgeMs: cacheStats.oldestCacheAgeMs,
+      cacheAgeMs: cacheStats.oldestSheetCacheAgeMs,
       cacheStats,
       timestamp: new Date().toISOString(),
     });

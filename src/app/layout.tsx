@@ -1,9 +1,9 @@
-import type { Metadata } from "next";
-import "./globals.css";
+import type { Metadata } from 'next';
+import './globals.css';
 
 export const metadata: Metadata = {
-  title: "Free Fire Esports Live Broadcast Overlays | Demo-Graph-BD",
-  description: "Real-time Free Fire broadcast overlays with live Google Sheets sync and theme manager",
+  title: 'RTB / Free Fire Esports Broadcast Overlay Suite',
+  description: '1080p transparent live tournament broadcast overlay suite with live Google Sheets sync and locked admin panel',
 };
 
 export default function RootLayout({
@@ -12,16 +12,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full antialiased" style={{ backgroundColor: 'rgba(0,0,0,0)' }}>
+    <html lang="en" className="h-full antialiased" style={{ backgroundColor: 'transparent' }}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,600;0,700;1,700&family=Inter:wght@600;700;800&family=Rajdhani:wght@700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Teko:wght@500;600;700&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-full flex flex-col" style={{ backgroundColor: 'rgba(0,0,0,0)' }}>
+      <body className="min-h-full flex flex-col" style={{ backgroundColor: 'transparent', margin: 0, padding: 0 }}>
         {children}
       </body>
     </html>
