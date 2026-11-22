@@ -120,6 +120,20 @@ body.obs-white, .obs-white {
 }
 .neon-pulse { animation: neonPulse 2.2s ease-in-out infinite; }
 
+@keyframes ringNeonGlow {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px currentColor) drop-shadow(0 0 14px currentColor);
+    opacity: 0.94;
+  }
+  50% {
+    filter: drop-shadow(0 0 14px currentColor) drop-shadow(0 0 28px currentColor) brightness(1.35);
+    opacity: 1;
+  }
+}
+.ring-neon-glow {
+  animation: ringNeonGlow 2.0s ease-in-out infinite;
+}
+
 @keyframes barEnergySweep {
   0% { transform: translateX(-120%) skewX(-24deg); opacity: 0; }
   25% { opacity: 0.55; }

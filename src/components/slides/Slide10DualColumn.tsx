@@ -189,7 +189,7 @@ export default function Slide10DualColumn({
           const meta = chart.getDatasetMeta(dsIdx);
           if (meta.hidden) return;
           const isKills = dsIdx === 0;
-          ctx.font = '800 15px "GFF Latin", "Teko", sans-serif';
+          ctx.font = '800 18px "GFF Latin", "Teko", sans-serif';
           ctx.textBaseline = 'bottom';
 
           meta.data.forEach((el: any, i: number) => {
@@ -200,16 +200,16 @@ export default function Slide10DualColumn({
             const textCol = isKills ? currentTheme.kills : currentTheme.damage;
             ctx.fillStyle = textCol;
             ctx.strokeStyle = 'rgba(0,0,0,0.96)';
-            ctx.lineWidth = 4;
-            // Left bar aligns right, right bar aligns left so numbers never cross or collide
+            ctx.lineWidth = 4.5;
+            // Yellow aligns right slightly left of its center; Blue aligns center directly above its candle
             if (isKills) {
               ctx.textAlign = 'right';
-              ctx.strokeText(fullTxt, pos.x - 2, pos.y - 8);
-              ctx.fillText(fullTxt, pos.x - 2, pos.y - 8);
+              ctx.strokeText(fullTxt, pos.x - 3, pos.y - 12);
+              ctx.fillText(fullTxt, pos.x - 3, pos.y - 12);
             } else {
-              ctx.textAlign = 'left';
-              ctx.strokeText(fullTxt, pos.x + 2, pos.y - 8);
-              ctx.fillText(fullTxt, pos.x + 2, pos.y - 8);
+              ctx.textAlign = 'center';
+              ctx.strokeText(fullTxt, pos.x - 2, pos.y - 12);
+              ctx.fillText(fullTxt, pos.x - 2, pos.y - 12);
             }
           });
         });
@@ -329,8 +329,8 @@ export default function Slide10DualColumn({
             backgroundColor: currentTheme.kills,
             borderRadius: 5,
             yAxisID: 'y',
-            barThickness: 12,
-            maxBarThickness: 14,
+            barThickness: 16,
+            maxBarThickness: 18,
           },
           {
             label: currentCfg.lbl2,
@@ -338,8 +338,8 @@ export default function Slide10DualColumn({
             backgroundColor: currentTheme.damage,
             borderRadius: 6,
             yAxisID: 'y1',
-            barThickness: 34,
-            maxBarThickness: 38,
+            barThickness: 26,
+            maxBarThickness: 28,
           },
         ],
       },
@@ -356,7 +356,7 @@ export default function Slide10DualColumn({
             onElementClick(evt.nativeEvent, 's9', 'damage', `${latestRef.current.cfg.lbl2} Candle`);
           }
         },
-        layout: { padding: { top: 38, bottom: 94, left: 10, right: 10 } },
+        layout: { padding: { top: 52, bottom: 94, left: 10, right: 10 } },
         animation: {
           duration: 1350,
           delay: (c: any) => c.dataIndex * 80 + c.datasetIndex * 55,
@@ -382,7 +382,7 @@ export default function Slide10DualColumn({
           y: {
             position: 'left',
             beginAtZero: true,
-            grace: '14%',
+            grace: '18%',
             grid: { color: 'rgba(100,116,139,0.25)' },
             title: {
               display: true,
@@ -399,7 +399,7 @@ export default function Slide10DualColumn({
           y1: {
             position: 'right',
             beginAtZero: true,
-            grace: '14%',
+            grace: '18%',
             grid: { display: false },
             title: {
               display: true,
@@ -436,15 +436,15 @@ export default function Slide10DualColumn({
       chart.data.datasets[0].data = cfg.d1;
       chart.data.datasets[0].label = cfg.lbl1;
       chart.data.datasets[0].backgroundColor = themeS9.kills;
-      (chart.data.datasets[0] as any).barThickness = 12;
-      (chart.data.datasets[0] as any).maxBarThickness = 14;
+      (chart.data.datasets[0] as any).barThickness = 16;
+      (chart.data.datasets[0] as any).maxBarThickness = 18;
     }
     if (chart.data.datasets[1]) {
       chart.data.datasets[1].data = cfg.d2;
       chart.data.datasets[1].label = cfg.lbl2;
       chart.data.datasets[1].backgroundColor = themeS9.damage;
-      (chart.data.datasets[1] as any).barThickness = 34;
-      (chart.data.datasets[1] as any).maxBarThickness = 38;
+      (chart.data.datasets[1] as any).barThickness = 26;
+      (chart.data.datasets[1] as any).maxBarThickness = 28;
     }
     const scales = chart.options.scales as any;
     if (scales?.y?.title) {
