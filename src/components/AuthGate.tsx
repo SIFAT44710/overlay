@@ -86,10 +86,10 @@ export default function AuthGate({ children }: AuthGateProps) {
               🔒
             </div>
             <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-wide">
-              ADMIN CONTROL PANEL
+              BROADCAST SUITE ACCESS
             </h2>
             <p className="text-sm text-slate-400 mt-1 font-sans">
-              RTB / Free Fire Esports Broadcast Suite
+              RTB / Free Fire Esports Broadcast Suite (Password Protected)
             </p>
           </div>
 

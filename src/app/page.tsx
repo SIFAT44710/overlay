@@ -97,8 +97,15 @@ const SLIDES: SlideItem[] = [
 ];
 
 export default function Home() {
+  const handleLogout = async () => {
+    if (confirm('Broadcast suite theke logout korben?')) {
+      await fetch('/api/auth', { method: 'DELETE' });
+      window.location.reload();
+    }
+  };
+
   return (
-    <AuthGate>
+    <AuthGate onLogout={handleLogout}>
       <main className="min-h-screen bg-[#0a0c16] text-white p-4 sm:p-8 font-hud">
         {/* Header */}
         <header className="max-w-7xl mx-auto mb-8 border-b border-purple-500/30 pb-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -120,13 +127,21 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <Link
               href="/admin"
               className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white font-bold text-sm sm:text-base shadow-lg shadow-purple-600/30 transition-all flex items-center gap-2"
             >
               <span>⚙</span> Admin Control Panel
             </Link>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="px-4 py-2.5 rounded-xl bg-slate-900/90 hover:bg-rose-950 border border-rose-500/50 hover:border-rose-400 text-rose-300 font-bold text-sm transition-all flex items-center gap-1.5 cursor-pointer shadow-lg"
+              title="Logout and lock suite"
+            >
+              <span>🔒</span> লক করুন
+            </button>
           </div>
         </header>
 

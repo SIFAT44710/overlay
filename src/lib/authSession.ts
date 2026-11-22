@@ -4,8 +4,8 @@
 import crypto from 'crypto';
 import { NextRequest } from 'next/server';
 
-export const AUTH_COOKIE_NAME = 'dg_session';
-export const AUTH_COOKIE_MAX_AGE = 60 * 60 * 24; // 24 hours
+export const AUTH_COOKIE_NAME = 'dg_session_v3';
+export const AUTH_COOKIE_MAX_AGE = 60 * 60 * 12; // 12 hours
 
 function getSessionSecret(): string {
   const secret = process.env.SESSION_SECRET || process.env.ADMIN_SECRET;
