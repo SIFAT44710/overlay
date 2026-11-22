@@ -243,7 +243,7 @@ export async function getBatchSheetRanges(
 }
 
 /**
- * Fetches Google Drive logo list (10-minute cache)
+ * Fetches Google Drive logo list (3-second TTL cache for instant sync)
  */
 export async function getDriveLogos(fresh = false): Promise<DriveFileItem[]> {
   const cached = getCachedDriveLogos(fresh);
@@ -257,7 +257,7 @@ export async function getDriveLogos(fresh = false): Promise<DriveFileItem[]> {
     const { drive } = getGoogleClients();
     const res = await drive.files.list({
       q: `'${driveFolderId}' in parents and trashed = false`,
-      fields: 'files(id, name)',
+      fields: 'files(id, name, modifiedTime, version)',
       pageSize: 150,
     });
 

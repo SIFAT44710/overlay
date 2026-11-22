@@ -59,15 +59,27 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey = 0, onEl
     teamB = allTeams[custom?.rBIdx ?? 1] || allTeams[1];
   }
 
-  // Resolve Drive Logo for both teams
+  // Resolve Drive Logo for each team with full tag & name coverage
   const teamLogoMap: Record<string, string> = {};
+  const registerLogo = (tag?: string, name?: string, url?: string) => {
+    if (!url) return;
+    if (tag) {
+      teamLogoMap[tag.toUpperCase()] = url;
+      teamLogoMap[tag.toLowerCase()] = url;
+      teamLogoMap[tag] = url;
+    }
+    if (name) {
+      teamLogoMap[name.toUpperCase()] = url;
+      teamLogoMap[name.toLowerCase()] = url;
+      teamLogoMap[name] = url;
+    }
+  };
+
   if (sheetData?.standing12) {
-    sheetData.standing12.forEach((st) => {
-      if (st.logoUrl) {
-        teamLogoMap[st.tag.toUpperCase()] = st.logoUrl;
-        teamLogoMap[st.name.toUpperCase()] = st.logoUrl;
-      }
-    });
+    sheetData.standing12.forEach((st) => registerLogo(st.tag, st.name, st.logoUrl));
+  }
+  if (sheetData?.allTeamsFull) {
+    sheetData.allTeamsFull.forEach((t) => registerLogo(t.tag, t.name, t.logoUrl));
   }
 
   const axes = ['KILLS', 'DAMAGE', 'HEADSHOTS', 'GLOO WALL', 'TOTAL PTS'];

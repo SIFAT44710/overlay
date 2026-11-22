@@ -414,6 +414,7 @@ export async function GET(req: NextRequest) {
         avgElims,
         avgDmg,
         avgSurvMin,
+        logoUrl: resolveDriveLogo(name, tag, driveFiles),
         col: DEFAULT_TEAM_COLS[allTeamsFull.length % DEFAULT_TEAM_COLS.length],
       });
     });
@@ -433,6 +434,7 @@ export async function GET(req: NextRequest) {
           avgElims: safeFloat((st.elims / 5).toFixed(1)),
           avgDmg: Math.round((st.damage || st.elims * 500) / 5),
           avgSurvMin: safeFloat((10 + st.rank * 0.4).toFixed(1)),
+          logoUrl: st.logoUrl,
           col: st.col,
         });
       });
@@ -444,6 +446,7 @@ export async function GET(req: NextRequest) {
       name: t.name,
       kills: 'elims' in t ? (t as any).elims : (t as any).kills,
       dmg: t.damage || 0,
+      logoUrl: (t as any).logoUrl || resolveDriveLogo(t.name, t.tag, driveFiles),
       col: t.col || DEFAULT_TEAM_COLS[idx % DEFAULT_TEAM_COLS.length],
     }));
 

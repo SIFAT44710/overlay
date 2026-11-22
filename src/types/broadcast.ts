@@ -3,6 +3,8 @@
 export interface DriveFileItem {
   id: string;
   name: string;
+  modifiedTime?: string;
+  version?: string;
 }
 
 export interface StandingTeam {
@@ -100,6 +102,7 @@ export interface TeamFullStats {
   avgElims: number;
   avgDmg: number;
   avgSurvMin: number;
+  logoUrl?: string;
   col: string;
 }
 
@@ -109,6 +112,7 @@ export interface TeamKillsDmg {
   kills: number;
   dmg: number;
   col: string;
+  logoUrl?: string;
 }
 
 export interface RoleItem {
