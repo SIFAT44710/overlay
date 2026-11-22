@@ -26,7 +26,11 @@ export const DEFAULT_THEMES: BroadcastThemeConfig = {
   },
   s6: { rank1: '#E11D48', rank2: '#A78BFA', outerBox: '#090b12' },
   s7: { kills: '#F5B700', damage: '#38BDF8' },
-  s8: { rusher: '#EF4444', support: '#22C55E', sniper: '#A855F7', bomber: '#FACC15' },
+  s8: {
+    rusher: '#EF4444', support: '#22C55E', sniper: '#A855F7', bomber: '#FACC15',
+    a_rusher: '#EF4444', a_support: '#22C55E', a_sniper: '#A855F7', a_bomber: '#FACC15',
+    b_rusher: '#38BDF8', b_support: '#2DD4BF', b_sniper: '#F5B700', b_bomber: '#E11D48',
+  },
   s9: { kills: '#F5B700', damage: '#38BDF8' },
   sources: {
     0: 'top5_m1_m5',
@@ -40,7 +44,7 @@ export const DEFAULT_THEMES: BroadcastThemeConfig = {
     8: 'role_avg',
     9: 'day_kd_12',
   },
-  custom: { p1Idx: 0, p2Idx: 1, tAIdx: 1, tBIdx: 7, gAIdx: 7, gBIdx: 3, rAIdx: 0, rBIdx: 1 },
+  custom: { p1Idx: 0, p2Idx: 1, tAIdx: 1, tBIdx: 7, gAIdx: 7, gBIdx: 3, rAIdx: 0, rBIdx: 1, s2Logo: '' },
 };
 
 export function useBroadcastTheme() {

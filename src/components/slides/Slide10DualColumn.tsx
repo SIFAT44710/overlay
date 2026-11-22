@@ -198,7 +198,7 @@ export default function Slide10DualColumn({
 
     const { cfg: currentCfg, themeS9: currentTheme } = latestRef.current;
 
-    // Custom Plugin: Exact Full Numbers positioned cleanly above each candle (Zero overlap) with Neon Glow
+    // Custom Plugin: Large 24px Numbers cleanly positioned above each candle with Guaranteed Zero Overlap
     const valuePlugin = {
       id: 'dualValuePlugin',
       afterDatasetsDraw(chart: any) {
@@ -216,7 +216,7 @@ export default function Slide10DualColumn({
         const ds1 = chart.data.datasets[1];
         const total = Math.max(meta0.data.length, meta1.data.length);
 
-        ctx.font = '800 22px "GFF Latin", "Teko", sans-serif';
+        ctx.font = '800 24px "GFF Latin", "Teko", sans-serif';
         ctx.textBaseline = 'bottom';
         ctx.lineWidth = 4.5;
         ctx.strokeStyle = 'rgba(0,0,0,0.96)';
@@ -239,42 +239,45 @@ export default function Slide10DualColumn({
           const w0 = has0 ? ctx.measureText(txt0).width : 0;
           const w1 = has1 ? ctx.measureText(txt1).width : 0;
 
-          // By default, center cleanly directly over each candle
-          let x0 = p0 ? p0.x : 0;
-          let x1 = p1 ? p1.x - 1 : 0;
+          // Default: Centered directly over the top of each candle
+          let x0 = p0 ? p0.x - 2 : 0;
+          let x1 = p1 ? p1.x : 0;
           let y0 = p0 ? p0.y - 12 : 0;
           let y1 = p1 ? p1.y - 12 : 0;
 
           if (has0 && has1 && p0 && p1) {
-            // Horizontal bounds of both labels
+            // Check horizontal overlap between yellow number bounds and blue number bounds
             const right0 = x0 + w0 / 2;
             const left1 = x1 - w1 / 2;
-            const horizontalOverlap = right0 - left1;
+            const hOverlap = right0 - left1; // Positive if bounds overlap
             const vDist = Math.abs(y0 - y1);
 
-            // If text labels overlap horizontally or are within 10px of each other, AND vertically close (< 28px):
-            if (horizontalOverlap > -10 && vDist < 28) {
-              // Elevate the Damage (blue) label cleanly above Kills so they never collide or block each other
-              y1 = Math.min(y0, y1) - 24;
+            // Guaranteed Zero Collision: If labels are close horizontally (or overlapping) AND close vertically:
+            // Elevate the Damage (blue) label cleanly above Kills so they NEVER collide or merge into each other
+            if (hOverlap > -10 && vDist < 38) {
+              y1 = Math.min(y0, y1) - 26;
             }
           }
 
-          // Draw Yellow (Kills) label cleanly centered directly above yellow candle with glow
+          // Draw Yellow (Kills) label cleanly centered directly above yellow candle with neon glow
+          const liveKillsCol = latestRef.current.themeS9.kills;
+          const liveDamageCol = latestRef.current.themeS9.damage;
+
           if (has0) {
             ctx.textAlign = 'center';
-            ctx.fillStyle = currentTheme.kills;
-            ctx.shadowColor = currentTheme.kills;
+            ctx.fillStyle = liveKillsCol;
+            ctx.shadowColor = liveKillsCol;
             ctx.shadowBlur = 8;
             ctx.strokeText(txt0, x0, y0);
             ctx.fillText(txt0, x0, y0);
             ctx.shadowBlur = 0;
           }
 
-          // Draw Blue (Damage) label cleanly centered directly above blue candle with glow
+          // Draw Blue (Damage) label cleanly centered directly above blue candle with neon glow
           if (has1) {
             ctx.textAlign = 'center';
-            ctx.fillStyle = currentTheme.damage;
-            ctx.shadowColor = currentTheme.damage;
+            ctx.fillStyle = liveDamageCol;
+            ctx.shadowColor = liveDamageCol;
             ctx.shadowBlur = 8;
             ctx.strokeText(txt1, x1, y1);
             ctx.fillText(txt1, x1, y1);
@@ -400,9 +403,9 @@ export default function Slide10DualColumn({
             borderWidth: 1.5,
             borderRadius: 6,
             yAxisID: 'y',
-            maxBarThickness: 32,
-            categoryPercentage: 0.92,
-            barPercentage: 0.94,
+            maxBarThickness: 36, // Thicker yellow candle
+            categoryPercentage: 0.94,
+            barPercentage: 0.96,
           },
           {
             label: currentCfg.lbl2,
@@ -412,9 +415,9 @@ export default function Slide10DualColumn({
             borderWidth: 1.5,
             borderRadius: 6,
             yAxisID: 'y1',
-            maxBarThickness: 18,
-            categoryPercentage: 0.92,
-            barPercentage: 0.94,
+            maxBarThickness: 16, // Slimmer blue candle
+            categoryPercentage: 0.94,
+            barPercentage: 0.96,
           },
         ],
       },
@@ -423,15 +426,70 @@ export default function Slide10DualColumn({
         responsive: true,
         maintainAspectRatio: false,
         onClick: (evt: any, elems: any[]) => {
-          if (!elems.length || !onElementClick) return;
-          const dsIdx = elems[0].datasetIndex;
-          if (dsIdx === 0) {
-            onElementClick(evt.nativeEvent, 's9', 'kills', `${latestRef.current.cfg.lbl1} Candle`);
+          if (!onElementClick) return;
+          const chart = chartInstanceRef.current;
+          if (!chart) return;
+
+          // 1. Direct bar hit test via Chart.js geometry: 100% accurate on candle clicks
+          if (elems && elems.length > 0) {
+            const dsIdx = elems[0].datasetIndex;
+            if (dsIdx === 0) {
+              onElementClick(
+                evt.nativeEvent,
+                's9',
+                'kills',
+                `${latestRef.current.cfg.lbl1} (Yellow / Left Candle) Color`
+              );
+            } else {
+              onElementClick(
+                evt.nativeEvent,
+                's9',
+                'damage',
+                `${latestRef.current.cfg.lbl2} (Blue / Right Candle) Color`
+              );
+            }
+            return;
+          }
+
+          // 2. Coordinate fallback: If clicked above the bar or near category
+          const xScale = chart.scales.x;
+          if (!xScale) return;
+          const canvasEl = canvasRef.current;
+          if (!canvasEl) return;
+          const rect = canvasEl.getBoundingClientRect();
+          const clickX = evt.nativeEvent.clientX - rect.left;
+
+          let clickedIdx = 0;
+          let minDist = Infinity;
+          const tags = latestRef.current.cfg.tags;
+          for (let i = 0; i < tags.length; i++) {
+            const cx = xScale.getPixelForValue(i);
+            const dist = Math.abs(clickX - cx);
+            if (dist < minDist) {
+              minDist = dist;
+              clickedIdx = i;
+            }
+          }
+
+          const cx = xScale.getPixelForValue(clickedIdx);
+          // Left side = Kills (Yellow) Candle; Right side = Damage (Blue) Candle
+          if (clickX <= cx) {
+            onElementClick(
+              evt.nativeEvent,
+              's9',
+              'kills',
+              `${latestRef.current.cfg.lbl1} (Yellow / Left Candle) Color`
+            );
           } else {
-            onElementClick(evt.nativeEvent, 's9', 'damage', `${latestRef.current.cfg.lbl2} Candle`);
+            onElementClick(
+              evt.nativeEvent,
+              's9',
+              'damage',
+              `${latestRef.current.cfg.lbl2} (Blue / Right Candle) Color`
+            );
           }
         },
-        layout: { padding: { top: 62, bottom: 94, left: 10, right: 10 } },
+        layout: { padding: { top: 75, bottom: 94, left: 10, right: 10 } },
         animation: {
           duration: 1400,
           delay: (c: any) => c.dataIndex * 85 + c.datasetIndex * 55,
@@ -508,25 +566,35 @@ export default function Slide10DualColumn({
     const chart = chartInstanceRef.current;
     if (!chart) return;
     chart.data.labels = cfg.tags;
-    (chart.options as any).categoryPercentage = 0.92;
-    (chart.options as any).barPercentage = 0.94;
+    (chart.options as any).categoryPercentage = 0.94;
+    (chart.options as any).barPercentage = 0.96;
     if (chart.data.datasets[0]) {
       chart.data.datasets[0].data = cfg.d1;
       chart.data.datasets[0].label = cfg.lbl1;
       chart.data.datasets[0].backgroundColor = themeS9.kills;
-      delete (chart.data.datasets[0] as any).barThickness;
-      (chart.data.datasets[0] as any).maxBarThickness = 32;
-      (chart.data.datasets[0] as any).categoryPercentage = 0.92;
-      (chart.data.datasets[0] as any).barPercentage = 0.94;
+      (chart.data.datasets[0] as any).maxBarThickness = 36;
+      (chart.data.datasets[0] as any).categoryPercentage = 0.94;
+      (chart.data.datasets[0] as any).barPercentage = 0.96;
+      const meta0 = chart.getDatasetMeta(0);
+      if (meta0) {
+        meta0.data.forEach((el: any) => {
+          if (el.options) el.options.backgroundColor = themeS9.kills;
+        });
+      }
     }
     if (chart.data.datasets[1]) {
       chart.data.datasets[1].data = cfg.d2;
       chart.data.datasets[1].label = cfg.lbl2;
       chart.data.datasets[1].backgroundColor = themeS9.damage;
-      delete (chart.data.datasets[1] as any).barThickness;
-      (chart.data.datasets[1] as any).maxBarThickness = 18;
-      (chart.data.datasets[1] as any).categoryPercentage = 0.92;
-      (chart.data.datasets[1] as any).barPercentage = 0.94;
+      (chart.data.datasets[1] as any).maxBarThickness = 16;
+      (chart.data.datasets[1] as any).categoryPercentage = 0.94;
+      (chart.data.datasets[1] as any).barPercentage = 0.96;
+      const meta1 = chart.getDatasetMeta(1);
+      if (meta1) {
+        meta1.data.forEach((el: any) => {
+          if (el.options) el.options.backgroundColor = themeS9.damage;
+        });
+      }
     }
     const scales = chart.options.scales as any;
     if (scales?.y?.title) {
@@ -548,7 +616,7 @@ export default function Slide10DualColumn({
 
   return (
     <div className="w-full max-w-[1340px] pt-14 relative font-hud select-none">
-      {/* Top Header Row with Compact Leader Badge on Left & Legend on Right */}
+      {/* Top Header Row with Compact Leader Badge on Left & Big Clickable Legend on Right */}
       <div
         className={`absolute top-1 inset-x-3 sm:inset-x-6 flex items-center justify-between gap-3 z-30 transition-all duration-700 ${
           animated ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-3'
@@ -577,47 +645,39 @@ export default function Slide10DualColumn({
         <div className="flex items-center gap-3 font-hud text-sm sm:text-base font-bold">
           <button
             type="button"
-            onClick={(e) => onElementClick?.(e, 's9', 'kills', `${cfg.lbl1} Candle Color`)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-950/80 border border-white/10 hover:border-amber-400 cursor-pointer transition-all"
-            title={`Click to change ${cfg.lbl1} candle color`}
+            onClick={(e) =>
+              onElementClick?.(e, 's9', 'kills', `${cfg.lbl1} (Yellow Candle) Color`)
+            }
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-950/90 border-2 hover:brightness-125 cursor-pointer shadow-lg transition-all"
+            style={{ borderColor: themeS9.kills }}
+            title={`Click to change ${cfg.lbl1} (Yellow candle) color`}
           >
-            <span className="w-3 h-3 rounded-xs" style={{ backgroundColor: themeS9.kills }} />
+            <span
+              className="w-3.5 h-3.5 rounded-sm shadow-sm"
+              style={{ backgroundColor: themeS9.kills }}
+            />
             <span style={{ color: themeS9.kills }}>{cfg.lbl1}</span>
           </button>
           <button
             type="button"
-            onClick={(e) => onElementClick?.(e, 's9', 'damage', `${cfg.lbl2} Candle Color`)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-950/80 border border-white/10 hover:border-sky-400 cursor-pointer transition-all"
-            title={`Click to change ${cfg.lbl2} candle color`}
+            onClick={(e) =>
+              onElementClick?.(e, 's9', 'damage', `${cfg.lbl2} (Blue Candle) Color`)
+            }
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-950/90 border-2 hover:brightness-125 cursor-pointer shadow-lg transition-all"
+            style={{ borderColor: themeS9.damage }}
+            title={`Click to change ${cfg.lbl2} (Blue candle) color`}
           >
-            <span className="w-3 h-3 rounded-xs" style={{ backgroundColor: themeS9.damage }} />
+            <span
+              className="w-3.5 h-3.5 rounded-sm shadow-sm"
+              style={{ backgroundColor: themeS9.damage }}
+            />
             <span style={{ color: themeS9.damage }}>{cfg.lbl2}</span>
           </button>
         </div>
       </div>
 
       <div className="relative h-[460px] sm:h-[540px] w-full">
-        <canvas
-          ref={canvasRef}
-          onClick={(e) => {
-            const chart = chartInstanceRef.current;
-            if (!chart || !onElementClick) return;
-            const elements = chart.getElementsAtEventForMode(
-              e.nativeEvent,
-              'nearest',
-              { intersect: false },
-              false
-            );
-            if (elements.length > 0) {
-              const dsIdx = elements[0].datasetIndex;
-              if (dsIdx === 0) {
-                onElementClick(e, 's9', 'kills', `${latestRef.current.cfg.lbl1} Candle Color`);
-              } else {
-                onElementClick(e, 's9', 'damage', `${latestRef.current.cfg.lbl2} Candle Color`);
-              }
-            }
-          }}
-        />
+        <canvas ref={canvasRef} className="cursor-pointer" />
       </div>
     </div>
   );

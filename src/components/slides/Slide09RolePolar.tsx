@@ -27,12 +27,23 @@ export default function Slide09RolePolar({
   const chart1Ref = useRef<Chart | null>(null);
   const chart2Ref = useRef<Chart | null>(null);
 
-  const themeS8 = theme?.s8 || {
-    rusher: '#EF4444',
-    support: '#22C55E',
-    sniper: '#A855F7',
-    bomber: '#FACC15',
-  };
+  const s8 = (theme?.s8 as any) || {};
+
+  // Independent color arrays for Left Circle (Card A) and Right Circle (Card B)
+  const roleColsA = [
+    s8.a_rusher || s8.rusher || '#EF4444',
+    s8.a_support || s8.support || '#22C55E',
+    s8.a_sniper || s8.sniper || '#A855F7',
+    s8.a_bomber || s8.bomber || '#FACC15',
+  ];
+
+  const roleColsB = [
+    s8.b_rusher || s8.rusher || '#38BDF8',
+    s8.b_support || s8.support || '#2DD4BF',
+    s8.b_sniper || s8.sniper || '#F5B700',
+    s8.b_bomber || s8.bomber || '#E11D48',
+  ];
+
   const source = theme?.sources?.[8] || 'role_avg';
 
   const polarSets: Record<
@@ -129,11 +140,10 @@ export default function Slide09RolePolar({
   }
 
   const ps = polarSets[source] || polarSets.role_avg;
-  const roleCols = [themeS8.rusher, themeS8.support, themeS8.sniper, themeS8.bomber];
 
-  const latestRef = useRef({ ps, roleCols });
+  const latestRef = useRef({ ps, roleColsA, roleColsB });
   useEffect(() => {
-    latestRef.current = { ps, roleCols };
+    latestRef.current = { ps, roleColsA, roleColsB };
   });
 
   // 1. Initial Mount & ReplayKey: Create Both Polar Charts ONCE
@@ -159,9 +169,9 @@ export default function Slide09RolePolar({
       chart2Ref.current = null;
     }
 
-    const { ps: currentPs, roleCols: currentCols } = latestRef.current;
+    const { ps: currentPs, roleColsA: currentColsA, roleColsB: currentColsB } = latestRef.current;
 
-    // Value Plugin for Polar Area Charts with Sector Color Neon Glow
+    // Pure White Value Plugin for Polar Area Charts with High-Contrast Dark Outline
     const polarValuePlugin = {
       id: 'polarValuePlugin',
       afterDatasetsDraw(chart: any) {
@@ -178,12 +188,11 @@ export default function Slide09RolePolar({
             if (raw === 0 || raw == null) return;
             const pos = el.tooltipPosition();
             const fullTxt = formatNumber(raw);
-            const col = currentCols[i % currentCols.length] || '#ffffff';
-            ctx.fillStyle = col;
-            ctx.strokeStyle = 'rgba(15,23,42,0.96)';
+            ctx.fillStyle = '#ffffff'; // Always crisp pure white text
+            ctx.strokeStyle = 'rgba(9,11,18,0.96)';
             ctx.lineWidth = 4.5;
-            ctx.shadowColor = col;
-            ctx.shadowBlur = 8;
+            ctx.shadowColor = 'rgba(0,0,0,0.85)';
+            ctx.shadowBlur = 6;
             ctx.strokeText(fullTxt, pos.x, pos.y);
             ctx.fillText(fullTxt, pos.x, pos.y);
             ctx.shadowBlur = 0;
@@ -193,7 +202,7 @@ export default function Slide09RolePolar({
       },
     };
 
-    const mk = (canvas: HTMLCanvasElement, data: number[]) =>
+    const mk = (canvas: HTMLCanvasElement, data: number[], cols: string[], side: 'a' | 'b') =>
       new Chart(canvas, {
         type: 'polarArea',
         data: {
@@ -201,7 +210,7 @@ export default function Slide09RolePolar({
           datasets: [
             {
               data,
-              backgroundColor: currentCols.map((c) => `${c}D9`),
+              backgroundColor: cols.map((c) => `${c}D9`),
               borderColor: 'rgba(255,255,255,0.25)',
               borderWidth: 2,
             },
@@ -213,15 +222,32 @@ export default function Slide09RolePolar({
           maintainAspectRatio: false,
           animation: { animateRotate: true, animateScale: true, duration: 1550 },
           onClick: (evt: any, elems: any[]) => {
+            if (!onElementClick) return;
+            let idx = -1;
             if (elems.length > 0) {
-              const idx = elems[0].index;
+              idx = elems[0].index;
+            } else {
+              const activeChart = side === 'a' ? chart1Ref.current : chart2Ref.current;
+              if (activeChart) {
+                const near = activeChart.getElementsAtEventForMode(
+                  evt.nativeEvent,
+                  'nearest',
+                  { intersect: false },
+                  false
+                );
+                if (near.length > 0) idx = near[0].index;
+              }
+            }
+            if (idx >= 0) {
               const roleKeys = ['rusher', 'support', 'sniper', 'bomber'];
-              const key = roleKeys[idx % 4];
-              onElementClick?.(
+              const baseKey = roleKeys[idx % 4];
+              const key = `${side}_${baseKey}`;
+              const sideLabel = side === 'a' ? 'Left Circle' : 'Right Circle';
+              onElementClick(
                 evt.nativeEvent,
                 's8',
                 key,
-                `${latestRef.current.ps.lbls[idx]} Role Color`
+                `${sideLabel}: ${latestRef.current.ps.lbls[idx]} Role`
               );
             }
           },
@@ -243,8 +269,8 @@ export default function Slide09RolePolar({
         },
       });
 
-    chart1Ref.current = mk(c1, currentPs.dA);
-    chart2Ref.current = mk(c2, currentPs.dB);
+    chart1Ref.current = mk(c1, currentPs.dA, currentColsA, 'a');
+    chart2Ref.current = mk(c2, currentPs.dB, currentColsB, 'b');
 
     return () => {
       clearTimeout(animTimer);
@@ -261,50 +287,42 @@ export default function Slide09RolePolar({
       chart1Ref.current.data.labels = ps.lbls;
       if (chart1Ref.current.data.datasets[0]) {
         chart1Ref.current.data.datasets[0].data = ps.dA;
-        chart1Ref.current.data.datasets[0].backgroundColor = roleCols.map((c) => `${c}D9`);
+        chart1Ref.current.data.datasets[0].backgroundColor = roleColsA.map((c) => `${c}D9`);
+        const meta = chart1Ref.current.getDatasetMeta(0);
+        if (meta) {
+          meta.data.forEach((el: any, i: number) => {
+            if (el.options) el.options.backgroundColor = `${roleColsA[i % roleColsA.length]}D9`;
+          });
+        }
       }
-      chart1Ref.current.update('none');
+      chart1Ref.current.update();
     }
     if (chart2Ref.current) {
       chart2Ref.current.data.labels = ps.lbls;
       if (chart2Ref.current.data.datasets[0]) {
         chart2Ref.current.data.datasets[0].data = ps.dB;
-        chart2Ref.current.data.datasets[0].backgroundColor = roleCols.map((c) => `${c}D9`);
+        chart2Ref.current.data.datasets[0].backgroundColor = roleColsB.map((c) => `${c}D9`);
+        const meta = chart2Ref.current.getDatasetMeta(0);
+        if (meta) {
+          meta.data.forEach((el: any, i: number) => {
+            if (el.options) el.options.backgroundColor = `${roleColsB[i % roleColsB.length]}D9`;
+          });
+        }
       }
-      chart2Ref.current.update('none');
+      chart2Ref.current.update();
     }
-  }, [ps.lbls.join(','), ps.dA.join(','), ps.dB.join(','), roleCols.join(',')]);
+  }, [ps.lbls.join(','), ps.dA.join(','), ps.dB.join(','), roleColsA.join(','), roleColsB.join(',')]);
 
   return (
-    <div className="w-full max-w-[1340px] pt-14 flex flex-col gap-4 relative font-hud select-none">
-      {/* Top 4 Clickable Role Legends */}
-      <div className="flex items-center justify-center gap-2 flex-wrap z-30">
-        {[
-          { key: 'rusher', label: 'RUSHER', col: roleCols[0] },
-          { key: 'support', label: 'SUPPORT', col: roleCols[1] },
-          { key: 'sniper', label: 'SNIPER', col: roleCols[2] },
-          { key: 'bomber', label: 'BOMBER', col: roleCols[3] },
-        ].map((role) => (
-          <button
-            key={role.key}
-            type="button"
-            onClick={(e) => onElementClick?.(e, 's8', role.key, `${role.label} Role Color`)}
-            className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-950/90 border border-white/15 hover:border-purple-400 font-hud text-xs sm:text-sm font-bold cursor-pointer transition-all"
-            title={`Click to change ${role.label} color`}
-          >
-            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: role.col }} />
-            <span style={{ color: role.col }}>{role.label}</span>
-          </button>
-        ))}
-      </div>
-
+    <div className="w-full max-w-[1340px] pt-14 flex flex-col gap-5 relative font-hud select-none">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-        {/* Polar Card A */}
+        {/* Polar Card A (Left Circle) */}
         <div
           className={`dark-box rounded-2xl p-5 relative border border-white/10 shadow-2xl flex flex-col items-center transition-all duration-700 ${
             animated ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
           }`}
         >
+          {/* Header */}
           <div className="flex justify-between items-center w-full mb-3">
             <div className="relative px-2.5 py-1 rounded-lg bg-slate-950/90 border border-purple-400 font-hud text-xs sm:text-sm font-bold text-white flex items-center gap-2 top1-hero-glow">
               <SpiritFireCanvas />
@@ -318,35 +336,44 @@ export default function Slide09RolePolar({
               #1 LEADER
             </div>
           </div>
-          <div className="relative h-[380px] sm:h-[440px] w-full">
-            <canvas
-              ref={canvas1Ref}
-              onClick={(e) => {
-                const chart = chart1Ref.current;
-                if (!chart || !onElementClick) return;
-                const elems = chart.getElementsAtEventForMode(
-                  e.nativeEvent,
-                  'nearest',
-                  { intersect: false },
-                  false
-                );
-                if (elems.length > 0) {
-                  const idx = elems[0].index;
-                  const roleKeys = ['rusher', 'support', 'sniper', 'bomber'];
-                  onElementClick(e, 's8', roleKeys[idx % 4], `${ps.lbls[idx]} Role Color`);
+
+          {/* Left Circle Role Color Selectors */}
+          <div className="flex items-center justify-center gap-1.5 flex-wrap w-full mb-2">
+            {[
+              { key: 'a_rusher', label: 'RUSHER', col: roleColsA[0] },
+              { key: 'a_support', label: 'SUPPORT', col: roleColsA[1] },
+              { key: 'a_sniper', label: 'SNIPER', col: roleColsA[2] },
+              { key: 'a_bomber', label: 'BOMBER', col: roleColsA[3] },
+            ].map((role) => (
+              <button
+                key={role.key}
+                type="button"
+                onClick={(e) =>
+                  onElementClick?.(e, 's8', role.key, `Left Circle: ${role.label} Color`)
                 }
-              }}
-            />
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-950/90 border border-white/15 hover:border-purple-400 font-hud text-xs font-bold cursor-pointer transition-all"
+                title={`Click to change Left Circle ${role.label} color`}
+              >
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: role.col }} />
+                <span style={{ color: role.col }}>{role.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Canvas */}
+          <div className="relative h-[380px] sm:h-[440px] w-full">
+            <canvas ref={canvas1Ref} className="cursor-pointer" />
           </div>
         </div>
 
-        {/* Polar Card B */}
+        {/* Polar Card B (Right Circle) */}
         <div
           className={`dark-box rounded-2xl p-5 relative border border-white/10 shadow-2xl flex flex-col items-center transition-all duration-700 ${
             animated ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
           }`}
           style={{ transitionDelay: '0.12s' }}
         >
+          {/* Header */}
           <div className="flex justify-between items-center w-full mb-3">
             <div className="relative px-2.5 py-1 rounded-lg bg-slate-950/90 border border-purple-400 font-hud text-xs sm:text-sm font-bold text-white flex items-center gap-2 top1-hero-glow">
               <SpiritFireCanvas />
@@ -360,25 +387,33 @@ export default function Slide09RolePolar({
               #1 LEADER
             </div>
           </div>
-          <div className="relative h-[380px] sm:h-[440px] w-full">
-            <canvas
-              ref={canvas2Ref}
-              onClick={(e) => {
-                const chart = chart2Ref.current;
-                if (!chart || !onElementClick) return;
-                const elems = chart.getElementsAtEventForMode(
-                  e.nativeEvent,
-                  'nearest',
-                  { intersect: false },
-                  false
-                );
-                if (elems.length > 0) {
-                  const idx = elems[0].index;
-                  const roleKeys = ['rusher', 'support', 'sniper', 'bomber'];
-                  onElementClick(e, 's8', roleKeys[idx % 4], `${ps.lbls[idx]} Role Color`);
+
+          {/* Right Circle Role Color Selectors */}
+          <div className="flex items-center justify-center gap-1.5 flex-wrap w-full mb-2">
+            {[
+              { key: 'b_rusher', label: 'RUSHER', col: roleColsB[0] },
+              { key: 'b_support', label: 'SUPPORT', col: roleColsB[1] },
+              { key: 'b_sniper', label: 'SNIPER', col: roleColsB[2] },
+              { key: 'b_bomber', label: 'BOMBER', col: roleColsB[3] },
+            ].map((role) => (
+              <button
+                key={role.key}
+                type="button"
+                onClick={(e) =>
+                  onElementClick?.(e, 's8', role.key, `Right Circle: ${role.label} Color`)
                 }
-              }}
-            />
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-950/90 border border-white/15 hover:border-purple-400 font-hud text-xs font-bold cursor-pointer transition-all"
+                title={`Click to change Right Circle ${role.label} color`}
+              >
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: role.col }} />
+                <span style={{ color: role.col }}>{role.label}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* Canvas */}
+          <div className="relative h-[380px] sm:h-[440px] w-full">
+            <canvas ref={canvas2Ref} className="cursor-pointer" />
           </div>
         </div>
       </div>

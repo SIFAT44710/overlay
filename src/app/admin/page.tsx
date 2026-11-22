@@ -275,7 +275,7 @@ export default function AdminPage() {
     <AuthGate onLogout={handleLogout}>
       <div
         className={`${bgClasses[bgMode]} ${currentMode === 'admin' ? 'mode-admin' : ''} min-h-screen flex flex-col justify-start p-3 sm:p-5 font-hud select-none overflow-y-auto overflow-x-hidden relative`}
-        onClick={() => setPopover((prev) => ({ ...prev, isOpen: false }))}
+        onClick={handleClosePopover}
       >
         {/* Top Broadcast Control Bar */}
         <header id="topBar" className="max-w-[1440px] mx-auto w-full space-y-2 mb-2 z-40 relative">
@@ -537,6 +537,9 @@ export default function AdminPage() {
               theme={draftTheme}
               replayKey={replayKey}
               onElementClick={handleOpenColorPopover}
+              onSaveLogo={(url) =>
+                handleUpdateCustom({ ...(draftTheme.custom || {}), s2Logo: url })
+              }
             />
           )}
           {currentSlide === 3 && (

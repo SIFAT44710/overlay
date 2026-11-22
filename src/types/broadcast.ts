@@ -150,7 +150,21 @@ export interface BroadcastThemeConfig {
   s5: Record<string, string>; // c0..c11
   s6: { rank1: string; rank2: string; outerBox: string };
   s7: { kills: string; damage: string };
-  s8: { rusher: string; support: string; sniper: string; bomber: string };
+  s8: {
+    rusher: string;
+    support: string;
+    sniper: string;
+    bomber: string;
+    a_rusher?: string;
+    a_support?: string;
+    a_sniper?: string;
+    a_bomber?: string;
+    b_rusher?: string;
+    b_support?: string;
+    b_sniper?: string;
+    b_bomber?: string;
+    [key: string]: string | undefined;
+  };
   s9: { kills: string; damage: string };
   sources?: Record<number, string>;
   custom?: {
@@ -162,6 +176,8 @@ export interface BroadcastThemeConfig {
     gBIdx?: number;
     rAIdx?: number;
     rBIdx?: number;
+    s2Logo?: string;
+    [key: string]: any;
   };
 }
 
