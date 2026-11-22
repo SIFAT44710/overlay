@@ -185,34 +185,68 @@ export default function Slide10DualColumn({
       afterDatasetsDraw(chart: any) {
         const { ctx } = chart;
         ctx.save();
-        chart.data.datasets.forEach((ds: any, dsIdx: number) => {
-          const meta = chart.getDatasetMeta(dsIdx);
-          if (meta.hidden) return;
-          const isKills = dsIdx === 0;
-          ctx.font = '800 18px "GFF Latin", "Teko", sans-serif';
-          ctx.textBaseline = 'bottom';
 
-          meta.data.forEach((el: any, i: number) => {
-            const raw = ds.data[i];
-            if (raw === 0 || raw == null) return;
-            const pos = el.tooltipPosition();
-            const fullTxt = formatNumber(raw);
-            const textCol = isKills ? currentTheme.kills : currentTheme.damage;
-            ctx.fillStyle = textCol;
-            ctx.strokeStyle = 'rgba(0,0,0,0.96)';
-            ctx.lineWidth = 4.5;
-            // Yellow aligns right slightly left of its center; Blue aligns center directly above its candle
-            if (isKills) {
-              ctx.textAlign = 'right';
-              ctx.strokeText(fullTxt, pos.x - 3, pos.y - 12);
-              ctx.fillText(fullTxt, pos.x - 3, pos.y - 12);
-            } else {
-              ctx.textAlign = 'center';
-              ctx.strokeText(fullTxt, pos.x - 2, pos.y - 12);
-              ctx.fillText(fullTxt, pos.x - 2, pos.y - 12);
-            }
-          });
-        });
+        const meta0 = chart.getDatasetMeta(0);
+        const meta1 = chart.getDatasetMeta(1);
+        if (!meta0 || !meta1) {
+          ctx.restore();
+          return;
+        }
+
+        const ds0 = chart.data.datasets[0];
+        const ds1 = chart.data.datasets[1];
+        const total = Math.max(meta0.data.length, meta1.data.length);
+
+        ctx.font = '800 19px "GFF Latin", "Teko", sans-serif';
+        ctx.textBaseline = 'bottom';
+        ctx.lineWidth = 4.5;
+        ctx.strokeStyle = 'rgba(0,0,0,0.96)';
+
+        for (let i = 0; i < total; i++) {
+          const el0 = meta0.data[i];
+          const el1 = meta1.data[i];
+          const raw0 = ds0?.data[i];
+          const raw1 = ds1?.data[i];
+
+          const p0 = el0 ? el0.tooltipPosition() : null;
+          const p1 = el1 ? el1.tooltipPosition() : null;
+
+          const has0 = raw0 != null && raw0 > 0 && p0;
+          const has1 = raw1 != null && raw1 > 0 && p1;
+
+          // Calculate vertical distance between candle tops
+          const dy = (p0 && p1) ? Math.abs(p0.y - p1.y) : 999;
+          const isNear = dy < 28;
+
+          // Determine Y coordinates
+          let y0 = p0 ? p0.y - 10 : 0;
+          let y1 = p1 ? p1.y - 10 : 0;
+
+          // When candles are near identical height (e.g. UE, NK, 7OB, JG),
+          // elevate Blue Damage to float comfortably above so text NEVER collides!
+          if (has0 && has1 && isNear) {
+            y1 = Math.min(p0.y, p1.y) - 28;
+          }
+
+          // Draw Yellow (Kills) label cleanly centered directly above yellow candle
+          if (has0) {
+            const txt0 = formatNumber(raw0);
+            ctx.textAlign = 'center';
+            ctx.fillStyle = currentTheme.kills;
+            ctx.strokeText(txt0, p0.x, y0);
+            ctx.fillText(txt0, p0.x, y0);
+          }
+
+          // Draw Blue (Damage) label cleanly centered directly above blue candle
+          if (has1) {
+            const txt1 = formatNumber(raw1);
+            ctx.textAlign = 'center';
+            ctx.fillStyle = currentTheme.damage;
+            ctx.strokeText(txt1, p1.x, y1);
+            ctx.fillText(txt1, p1.x, y1);
+          }
+        }
+
         ctx.restore();
       },
     };
@@ -329,8 +363,9 @@ export default function Slide10DualColumn({
             backgroundColor: currentTheme.kills,
             borderRadius: 5,
             yAxisID: 'y',
-            barThickness: 16,
-            maxBarThickness: 18,
+            maxBarThickness: 22,
+            categoryPercentage: 0.85,
+            barPercentage: 0.9,
           },
           {
             label: currentCfg.lbl2,
@@ -338,8 +373,9 @@ export default function Slide10DualColumn({
             backgroundColor: currentTheme.damage,
             borderRadius: 6,
             yAxisID: 'y1',
-            barThickness: 26,
-            maxBarThickness: 28,
+            maxBarThickness: 22,
+            categoryPercentage: 0.85,
+            barPercentage: 0.9,
           },
         ],
       },
@@ -356,7 +392,7 @@ export default function Slide10DualColumn({
             onElementClick(evt.nativeEvent, 's9', 'damage', `${latestRef.current.cfg.lbl2} Candle`);
           }
         },
-        layout: { padding: { top: 52, bottom: 94, left: 10, right: 10 } },
+        layout: { padding: { top: 62, bottom: 94, left: 10, right: 10 } },
         animation: {
           duration: 1350,
           delay: (c: any) => c.dataIndex * 80 + c.datasetIndex * 55,
@@ -382,7 +418,7 @@ export default function Slide10DualColumn({
           y: {
             position: 'left',
             beginAtZero: true,
-            grace: '18%',
+            grace: '22%',
             grid: { color: 'rgba(100,116,139,0.25)' },
             title: {
               display: true,
@@ -399,7 +435,7 @@ export default function Slide10DualColumn({
           y1: {
             position: 'right',
             beginAtZero: true,
-            grace: '18%',
+            grace: '22%',
             grid: { display: false },
             title: {
               display: true,
@@ -432,19 +468,25 @@ export default function Slide10DualColumn({
     const chart = chartInstanceRef.current;
     if (!chart) return;
     chart.data.labels = cfg.tags;
+    (chart.options as any).categoryPercentage = 0.85;
+    (chart.options as any).barPercentage = 0.9;
     if (chart.data.datasets[0]) {
       chart.data.datasets[0].data = cfg.d1;
       chart.data.datasets[0].label = cfg.lbl1;
       chart.data.datasets[0].backgroundColor = themeS9.kills;
-      (chart.data.datasets[0] as any).barThickness = 16;
-      (chart.data.datasets[0] as any).maxBarThickness = 18;
+      delete (chart.data.datasets[0] as any).barThickness;
+      (chart.data.datasets[0] as any).maxBarThickness = 22;
+      (chart.data.datasets[0] as any).categoryPercentage = 0.85;
+      (chart.data.datasets[0] as any).barPercentage = 0.9;
     }
     if (chart.data.datasets[1]) {
       chart.data.datasets[1].data = cfg.d2;
       chart.data.datasets[1].label = cfg.lbl2;
       chart.data.datasets[1].backgroundColor = themeS9.damage;
-      (chart.data.datasets[1] as any).barThickness = 26;
-      (chart.data.datasets[1] as any).maxBarThickness = 28;
+      delete (chart.data.datasets[1] as any).barThickness;
+      (chart.data.datasets[1] as any).maxBarThickness = 22;
+      (chart.data.datasets[1] as any).categoryPercentage = 0.85;
+      (chart.data.datasets[1] as any).barPercentage = 0.9;
     }
     const scales = chart.options.scales as any;
     if (scales?.y?.title) {
