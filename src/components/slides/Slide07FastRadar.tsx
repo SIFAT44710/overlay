@@ -9,17 +9,19 @@ import { formatNumber } from '@/lib/sheetParsers';
 interface SlideProps {
   sheetData?: SheetDataPayload;
   theme?: BroadcastThemeConfig;
+  replayKey?: number;
   onElementClick?: (e: React.MouseEvent, group: string, key: string, label: string) => void;
 }
 
-export default function Slide07FastRadar({ sheetData, theme, onElementClick }: SlideProps) {
+export default function Slide07FastRadar({ sheetData, theme, replayKey, onElementClick }: SlideProps) {
   const [mounted, setMounted] = useState(false);
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
 
   useEffect(() => {
+    setMounted(false);
     const timer = setTimeout(() => setMounted(true), 80);
     return () => clearTimeout(timer);
-  }, []);
+  }, [replayKey]);
 
   const themeS6 = theme?.s6 || { rank1: '#E11D48', rank2: '#A78BFA', outerBox: '#090b12' };
   const custom = theme?.custom;

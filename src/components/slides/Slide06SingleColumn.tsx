@@ -12,10 +12,16 @@ Chart.register(...registerables);
 interface SlideProps {
   sheetData?: SheetDataPayload;
   theme?: BroadcastThemeConfig;
+  replayKey?: number;
   onElementClick?: (e: React.MouseEvent, group: string, key: string, label: string) => void;
 }
 
-export default function Slide06SingleColumn({ sheetData, theme, onElementClick }: SlideProps) {
+export default function Slide06SingleColumn({
+  sheetData,
+  theme,
+  replayKey = 0,
+  onElementClick,
+}: SlideProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
 
@@ -98,11 +104,11 @@ export default function Slide06SingleColumn({ sheetData, theme, onElementClick }
   } else if (source === 'top10_plrs' && pl.length > 0) {
     cfg = {
       badge: '#1 TOP FRAGGER',
-      leader: pl[0].name,
+      leader: `${pl[0].name} (${pl[0].tag})`,
       valTxt: `${formatNumber(pl[0].kills)} KILLS`,
-      tags: pl.map((p) => p.tag),
-      names: pl.map((p) => `${p.name} (${p.team})`),
-      vals: pl.map((p) => p.kills),
+      tags: pl.slice(0, 10).map((p) => p.name),
+      names: pl.slice(0, 10).map((p) => `${p.name} - ${p.team}`),
+      vals: pl.slice(0, 10).map((p) => p.kills),
     };
   } else if (st12.length > 0) {
     cfg = {
@@ -115,12 +121,39 @@ export default function Slide06SingleColumn({ sheetData, theme, onElementClick }
     };
   }
 
+  // Resolve Drive Logo for each team
+  const teamLogoMap: Record<string, string> = {};
+  if (sheetData?.standing12) {
+    sheetData.standing12.forEach((st) => {
+      if (st.logoUrl) {
+        teamLogoMap[st.tag.toUpperCase()] = st.logoUrl;
+        teamLogoMap[st.name.toUpperCase()] = st.logoUrl;
+      }
+    });
+  }
+
+  // Destroy on replayKey change
+  useEffect(() => {
+    if (chartInstanceRef.current) {
+      chartInstanceRef.current.destroy();
+      chartInstanceRef.current = null;
+    }
+  }, [replayKey]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    // Smooth in-place update if chart already exists
     if (chartInstanceRef.current) {
-      chartInstanceRef.current.destroy();
+      const chart = chartInstanceRef.current;
+      chart.data.labels = cfg.tags;
+      if (chart.data.datasets[0]) {
+        chart.data.datasets[0].data = cfg.vals;
+        chart.data.datasets[0].backgroundColor = barColors.slice(0, cfg.tags.length);
+      }
+      chart.update('none');
+      return;
     }
 
     // Custom Plugin: Exact Comma Full Numbers (Zero 'K')
@@ -218,84 +251,116 @@ export default function Slide06SingleColumn({ sheetData, theme, onElementClick }
           {
             data: cfg.vals,
             backgroundColor: barColors.slice(0, cfg.tags.length),
-            borderRadius: 10,
+            borderColor: 'rgba(255,255,255,0.22)',
+            borderWidth: 1.5,
+            borderRadius: 8,
           },
         ],
       },
-      plugins: [valuePlugin, logoAxisPlugin],
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        onClick: (evt: any, elems: any[]) => {
-          if (!elems.length || !onElementClick) return;
-          const idx = elems[0].index;
-          onElementClick(evt.native, 's5', `c${idx}`, `${cfg.tags[idx]} Candle`);
-        },
-        layout: { padding: { top: 44, bottom: 132 } },
         animation: {
-          duration: 1350,
-          delay: (c: any) => c.dataIndex * 85,
-          easing: 'easeOutBounce',
+          duration: 1400,
+          easing: 'easeOutQuart',
+        },
+        layout: {
+          padding: {
+            top: 36,
+            bottom: 132, // Accommodates 72px hex logos + 22px tag labels
+            left: 10,
+            right: 10,
+          },
+        },
+        scales: {
+          x: {
+            display: false,
+          },
+          y: {
+            grid: {
+              color: 'rgba(148,163,184,0.18)',
+            },
+            ticks: {
+              color: '#ffffff',
+              font: {
+                size: 20,
+                weight: 'bold',
+                family: '"GFF Latin", "Teko", sans-serif',
+              },
+              callback: (val) => formatNumber(val),
+            },
+          },
         },
         plugins: {
           legend: { display: false },
           tooltip: {
-            enabled: true,
-            backgroundColor: 'rgba(9, 11, 18, 0.95)',
-            titleColor: '#F5B700',
-            bodyColor: '#ffffff',
-            padding: 12,
-            cornerRadius: 8,
             callbacks: {
               title: (items: any) => cfg.names[items[0].dataIndex] || items[0].label,
               label: (item: any) => `Value: ${formatNumber(item.raw)}`,
             },
           },
         },
-        scales: {
-          x: { display: false },
-          y: {
-            beginAtZero: true,
-            grid: { color: 'rgba(100,116,139,0.34)' },
-            ticks: {
-              color: '#ffffff',
-              font: { size: 18, weight: 'bold' },
-              callback: (v: any) => formatNumber(v),
-            },
-          },
-        },
       },
+      plugins: [valuePlugin, logoAxisPlugin],
     });
 
     chartInstanceRef.current = newChart;
 
     return () => {
       newChart.destroy();
+      chartInstanceRef.current = null;
     };
-  }, [cfg.tags, cfg.vals, barColors, onElementClick]);
+  }, [cfg, barColors]);
+
+  const topTeam = st12[0];
 
   return (
-    <div className="w-full max-w-[1340px] pt-18 relative font-hud">
-      {/* Top Right #1 Leader Pill with Spirit Flame */}
-      <div className="absolute top-1 right-3 sm:right-6 z-30">
-        <div className="relative px-4 py-1.5 rounded-xl bg-slate-950/90 border border-purple-400 font-hud text-2xl sm:text-3xl font-bold text-white flex items-center gap-3.5 shadow-2xl top1-hero-glow">
-          <SpiritFireCanvas />
-          <TeamLogoBadge
-            tag={cfg.tags[0]}
-            name={cfg.names[0]}
-            color={barColors[0]}
-            sizeCls="w-16 h-16"
-          />
-          <span className="text-amber-400">{cfg.badge}</span>
-          <span>{cfg.leader}</span>
-          <span className="px-3.5 py-0.5 rounded bg-amber-400 text-black font-bold text-2xl sm:text-3xl">
-            {cfg.valTxt}
-          </span>
+    <div className="w-full max-w-[1340px] pt-14 relative font-hud select-none">
+      {/* Top-Right Leader Pill */}
+      {topTeam && (
+        <div className="absolute top-1 right-3 sm:right-6 z-30">
+          <div className="relative px-4 py-1.5 rounded-xl bg-slate-950/90 border border-purple-400/70 font-hud text-2xl sm:text-3xl font-bold text-white flex items-center gap-3.5 shadow-2xl top1-hero-glow">
+            <SpiritFireCanvas />
+            <TeamLogoBadge
+              tag={topTeam.tag}
+              name={topTeam.name}
+              logoUrl={teamLogoMap[topTeam.tag.toUpperCase()] || teamLogoMap[topTeam.name.toUpperCase()]}
+              color={barColors[0]}
+              sizeCls="w-16 h-16"
+            />
+            <span className="text-amber-400 font-extrabold">{cfg.badge}</span>
+            <span className="font-extrabold">{cfg.leader}</span>
+            <span className="px-3.5 py-0.5 rounded bg-amber-400 text-black font-extrabold text-2xl sm:text-3xl">
+              {cfg.valTxt}
+            </span>
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="relative h-[430px] sm:h-[520px] w-full">
-        <canvas ref={canvasRef} />
+      {/* Chart Canvas Area */}
+      <div className="w-full h-[520px] relative">
+        <canvas
+          ref={canvasRef}
+          onClick={(e) => {
+            const chart = chartInstanceRef.current;
+            if (!chart) return;
+            const points = chart.getElementsAtEventForMode(
+              e.nativeEvent,
+              'nearest',
+              { intersect: true },
+              true
+            );
+            if (points.length > 0) {
+              const idx = points[0].index;
+              onElementClick?.(
+                e,
+                's5',
+                `c${idx}`,
+                `${cfg.tags[idx]} Bar Color`
+              );
+            }
+          }}
+        />
       </div>
     </div>
   );

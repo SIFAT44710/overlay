@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import AuthGate from '@/components/AuthGate';
 import ColorPopover from '@/components/ColorPopover';
@@ -8,6 +8,7 @@ import SheetDataDrawer from '@/components/SheetDataDrawer';
 import SheetConfigModal from '@/components/SheetConfigModal';
 import { useLiveSheetData } from '@/hooks/useLiveSheetData';
 import { useBroadcastTheme, DEFAULT_THEMES } from '@/hooks/useBroadcastTheme';
+import { BroadcastThemeConfig } from '@/types/broadcast';
 
 // Import the 10 Pure Live Broadcast Slide Components
 import Slide01PointsRace from '@/components/slides/Slide01PointsRace';
@@ -66,6 +67,19 @@ export default function AdminPage() {
   const { sheetData, refreshNow } = useLiveSheetData();
   const { themes, saveThemeUpdates } = useBroadcastTheme();
 
+  // Local optimistic theme state to prevent UI flicker while editing
+  const [draftTheme, setDraftTheme] = useState<BroadcastThemeConfig>(themes);
+  const isEditingRef = useRef(false);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingUpdatesRef = useRef<Record<string, any>>({});
+
+  // Sync draftTheme with incoming SWR updates only when not currently editing
+  useEffect(() => {
+    if (!popover.isOpen && !isEditingRef.current) {
+      setDraftTheme(themes);
+    }
+  }, [themes, popover.isOpen]);
+
   // Autoplay timer
   useEffect(() => {
     let timer: any;
@@ -94,7 +108,8 @@ export default function AdminPage() {
   const handleOpenColorPopover = useCallback(
     (e: React.MouseEvent, group: string, key: string, label: string) => {
       e.stopPropagation();
-      const currentVal = (themes as any)?.[group]?.[key] || '#ffffff';
+      isEditingRef.current = true;
+      const currentVal = (draftTheme as any)?.[group]?.[key] || '#ffffff';
       setPopover({
         isOpen: true,
         x: e.clientX,
@@ -106,18 +121,57 @@ export default function AdminPage() {
         showExtras: false,
       });
     },
-    [themes]
+    [draftTheme]
   );
 
-  const handleColorChange = async (newColor: string) => {
-    const updated = {
-      [popover.group]: {
-        ...((themes as any)[popover.group] || {}),
+  const handleClosePopover = useCallback(async () => {
+    setPopover((prev) => ({ ...prev, isOpen: false }));
+    isEditingRef.current = false;
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+    if (Object.keys(pendingUpdatesRef.current).length > 0) {
+      const toSend = { ...pendingUpdatesRef.current };
+      pendingUpdatesRef.current = {};
+      await saveThemeUpdates(toSend);
+    }
+  }, [saveThemeUpdates]);
+
+  const handleColorChange = useCallback(
+    (newColor: string) => {
+      // 1. Instant optimistic update in local state for 60fps responsiveness
+      setDraftTheme((prev: BroadcastThemeConfig) => {
+        const groupObj = (prev as any)?.[popover.group] || {};
+        return {
+          ...prev,
+          [popover.group]: {
+            ...groupObj,
+            [popover.key]: newColor,
+          },
+        };
+      });
+
+      // 2. Queue into pending updates
+      pendingUpdatesRef.current[popover.group] = {
+        ...(pendingUpdatesRef.current[popover.group] || (draftTheme as any)[popover.group] || {}),
         [popover.key]: newColor,
-      },
-    };
-    await saveThemeUpdates(updated);
-  };
+      };
+
+      // 3. Debounce POST /api/theme by 350ms to protect Google Sheets quota & avoid re-render stutters
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      debounceTimerRef.current = setTimeout(async () => {
+        if (Object.keys(pendingUpdatesRef.current).length > 0) {
+          const toSend = { ...pendingUpdatesRef.current };
+          pendingUpdatesRef.current = {};
+          await saveThemeUpdates(toSend);
+        }
+      }, 350);
+    },
+    [popover.group, popover.key, draftTheme, saveThemeUpdates]
+  );
 
   const handleSyncDriveLogos = async () => {
     setSyncStatus('↻ SYNCING DRIVE LOGOS...');
@@ -140,25 +194,27 @@ export default function AdminPage() {
     let updates: any = {};
     if (preset === 'rtb') {
       updates = {
-        global: { ...themes.global, boxBg: '#120824', boxBorder: '#a855f7' },
-        s9: { ...themes.s9, kills: '#F5B700', damage: '#a855f7' },
+        global: { ...draftTheme.global, boxBg: '#120824', boxBorder: '#a855f7' },
+        s9: { ...draftTheme.s9, kills: '#F5B700', damage: '#a855f7' },
       };
     } else if (preset === 'ffws') {
       updates = {
-        global: { ...themes.global, boxBg: '#0a0c16', boxBorder: '#F5B700' },
-        s9: { ...themes.s9, kills: '#F5B700', damage: '#2dd4bf' },
+        global: { ...draftTheme.global, boxBg: '#0a0c16', boxBorder: '#F5B700' },
+        s9: { ...draftTheme.s9, kills: '#F5B700', damage: '#2dd4bf' },
       };
     } else if (preset === 'cyber') {
       updates = {
-        global: { ...themes.global, boxBg: '#04121c', boxBorder: '#22d3ee' },
-        s9: { ...themes.s9, kills: '#22d3ee', damage: '#f43f5e' },
+        global: { ...draftTheme.global, boxBg: '#04121c', boxBorder: '#22d3ee' },
+        s9: { ...draftTheme.s9, kills: '#22d3ee', damage: '#f43f5e' },
       };
     }
+    setDraftTheme((prev: BroadcastThemeConfig) => ({ ...prev, ...updates }));
     await saveThemeUpdates(updates);
   };
 
   const handleResetThemes = async () => {
     if (confirm('Are you sure you want to reset all themes to default?')) {
+      setDraftTheme(DEFAULT_THEMES);
       await saveThemeUpdates({ themes: DEFAULT_THEMES });
     }
   };
@@ -176,13 +232,15 @@ export default function AdminPage() {
 
   const handleSelectSource = async (sourceId: string) => {
     const updatedSources = {
-      ...(themes.sources || {}),
+      ...(draftTheme.sources || {}),
       [currentSlide]: sourceId,
     };
+    setDraftTheme((prev: BroadcastThemeConfig) => ({ ...prev, sources: updatedSources }));
     await saveThemeUpdates({ sources: updatedSources });
   };
 
   const handleUpdateCustom = async (newCustom: any) => {
+    setDraftTheme((prev: BroadcastThemeConfig) => ({ ...prev, custom: newCustom }));
     await saveThemeUpdates({ custom: newCustom });
   };
 
@@ -372,14 +430,14 @@ export default function AdminPage() {
           initialColor={popover.initialColor}
           showExtras={popover.showExtras}
           onColorChange={handleColorChange}
-          onClose={() => setPopover((prev) => ({ ...prev, isOpen: false }))}
+          onClose={handleClosePopover}
           onSelectGlobalText={() => {
             setPopover((prev) => ({
               ...prev,
               group: 'global',
               key: 'textColor',
               label: 'All Text Color',
-              initialColor: themes.global?.textColor || '#ffffff',
+              initialColor: draftTheme.global?.textColor || '#ffffff',
             }));
           }}
           onSelectGlobalBox={() => {
@@ -388,7 +446,7 @@ export default function AdminPage() {
               group: 'global',
               key: 'boxBg',
               label: 'Black Box Background',
-              initialColor: themes.global?.boxBg || '#0a0c16',
+              initialColor: draftTheme.global?.boxBg || '#0a0c16',
             }));
           }}
         />
@@ -406,8 +464,8 @@ export default function AdminPage() {
         <SheetDataDrawer
           currentSlide={currentSlide}
           slideTitle={SLIDES[currentSlide].label}
-          activeSourceId={themes?.sources?.[currentSlide] || ''}
-          customSettings={themes?.custom || {}}
+          activeSourceId={draftTheme?.sources?.[currentSlide] || ''}
+          customSettings={draftTheme?.custom || {}}
           sheetData={sheetData}
           onSelectSource={handleSelectSource}
           onUpdateCustom={handleUpdateCustom}
@@ -422,70 +480,80 @@ export default function AdminPage() {
           {currentSlide === 0 && (
             <Slide01PointsRace
               sheetData={sheetData}
-              theme={themes}
+              theme={draftTheme}
+              replayKey={replayKey}
               onElementClick={handleOpenColorPopover}
             />
           )}
           {currentSlide === 1 && (
             <Slide02PlayerClash
               sheetData={sheetData}
-              theme={themes}
+              theme={draftTheme}
+              replayKey={replayKey}
               onElementClick={handleOpenColorPopover}
             />
           )}
           {currentSlide === 2 && (
             <Slide03WeaponRings
               sheetData={sheetData}
-              theme={themes}
+              theme={draftTheme}
+              replayKey={replayKey}
               onElementClick={handleOpenColorPopover}
             />
           )}
           {currentSlide === 3 && (
             <Slide04TeamH2H
               sheetData={sheetData}
-              theme={themes}
+              theme={draftTheme}
+              replayKey={replayKey}
               onElementClick={handleOpenColorPopover}
             />
           )}
           {currentSlide === 4 && (
             <Slide05GroupAverages
               sheetData={sheetData}
-              theme={themes}
+              theme={draftTheme}
+              replayKey={replayKey}
               onElementClick={handleOpenColorPopover}
             />
           )}
           {currentSlide === 5 && (
             <Slide06SingleColumn
               sheetData={sheetData}
-              theme={themes}
+              theme={draftTheme}
+              replayKey={replayKey}
               onElementClick={handleOpenColorPopover}
             />
           )}
           {currentSlide === 6 && (
             <Slide07FastRadar
               sheetData={sheetData}
-              theme={themes}
+              theme={draftTheme}
+              replayKey={replayKey}
               onElementClick={handleOpenColorPopover}
             />
           )}
           {currentSlide === 7 && (
             <Slide08KillsDmgLine
               sheetData={sheetData}
-              theme={themes}
+              theme={draftTheme}
+              replayKey={replayKey}
               onElementClick={handleOpenColorPopover}
             />
           )}
           {currentSlide === 8 && (
             <Slide09RolePolar
               sheetData={sheetData}
-              theme={themes}
+              theme={draftTheme}
+              replayKey={replayKey}
               onElementClick={handleOpenColorPopover}
             />
           )}
           {currentSlide === 9 && (
             <Slide10DualColumn
               sheetData={sheetData}
-              theme={themes}
+              theme={draftTheme}
+              replayKey={replayKey}
               onElementClick={handleOpenColorPopover}
             />
           )}

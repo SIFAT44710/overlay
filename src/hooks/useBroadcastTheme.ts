@@ -1,9 +1,9 @@
 // SWR Client Hook for Live Theme Sync & CSS Variables Application
-// Polls /api/theme every 2.0s so admin changes update live in vMix/OBS without reload
+// Polls /api/theme with snapshot memoization to eliminate flickering in vMix/OBS
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import useSWR from 'swr';
 import { BroadcastThemeConfig } from '@/types/broadcast';
 
@@ -49,24 +49,40 @@ export function useBroadcastTheme() {
     themes: BroadcastThemeConfig;
     meta?: any;
   }>('/api/theme', fetcher, {
-    refreshInterval: 2000, // Poll every 2 seconds
-    revalidateOnFocus: true,
-    dedupingInterval: 1500,
+    refreshInterval: 3000,
+    revalidateOnFocus: false,
+    dedupingInterval: 2000,
     keepPreviousData: true,
   });
 
-  const themes: BroadcastThemeConfig = data?.themes || DEFAULT_THEMES;
+  const [stableThemes, setStableThemes] = useState<BroadcastThemeConfig>(data?.themes || DEFAULT_THEMES);
+  const lastSnapshotRef = useRef<string>('');
 
-  // Apply CSS custom properties to root document
   useEffect(() => {
-    if (typeof document !== 'undefined' && themes?.global) {
-      const root = document.documentElement;
-      root.style.setProperty('--ui-text', themes.global.textColor || '#ffffff');
-      root.style.setProperty('--ui-box-bg', themes.global.boxBg || '#0a0c16');
-      root.style.setProperty('--ui-box-border', themes.global.boxBorder || '#8b5cf6');
-      root.style.setProperty('--ui-box-alpha', String(themes.global.boxAlpha ?? 0.94));
+    if (!data?.themes) return;
+    const snap = JSON.stringify(data.themes);
+    if (snap !== lastSnapshotRef.current) {
+      lastSnapshotRef.current = snap;
+      setStableThemes(data.themes);
     }
-  }, [themes]);
+  }, [data?.themes]);
+
+  // Apply CSS custom properties to root document ONLY when global tokens actually change
+  const lastGlobalTokensRef = useRef<string>('');
+  useEffect(() => {
+    if (typeof document !== 'undefined' && stableThemes?.global) {
+      const g = stableThemes.global;
+      const tokenSignature = `${g.textColor}_${g.boxBg}_${g.boxBorder}_${g.boxAlpha}`;
+      if (tokenSignature !== lastGlobalTokensRef.current) {
+        lastGlobalTokensRef.current = tokenSignature;
+        const root = document.documentElement;
+        root.style.setProperty('--ui-text', g.textColor || '#ffffff');
+        root.style.setProperty('--ui-box-bg', g.boxBg || '#0a0c16');
+        root.style.setProperty('--ui-box-border', g.boxBorder || '#8b5cf6');
+        root.style.setProperty('--ui-box-alpha', String(g.boxAlpha ?? 0.94));
+      }
+    }
+  }, [stableThemes?.global]);
 
   const saveThemeUpdates = async (payload: Record<string, any>): Promise<boolean> => {
     try {
@@ -86,10 +102,10 @@ export function useBroadcastTheme() {
   };
 
   return {
-    themes,
-    isLoading,
+    themes: stableThemes,
+    isLoading: isLoading && !data,
     isError: !!error,
     saveThemeUpdates,
-    refreshTheme: () => mutate(),
+    mutateTheme: () => mutate(),
   };
 }

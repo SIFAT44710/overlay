@@ -11,10 +11,16 @@ Chart.register(...registerables);
 interface SlideProps {
   sheetData?: SheetDataPayload;
   theme?: BroadcastThemeConfig;
+  replayKey?: number;
   onElementClick?: (e: React.MouseEvent, group: string, key: string, label: string) => void;
 }
 
-export default function Slide09RolePolar({ sheetData, theme, onElementClick }: SlideProps) {
+export default function Slide09RolePolar({
+  sheetData,
+  theme,
+  replayKey = 0,
+  onElementClick,
+}: SlideProps) {
   const canvas1Ref = useRef<HTMLCanvasElement | null>(null);
   const canvas2Ref = useRef<HTMLCanvasElement | null>(null);
   const chart1Ref = useRef<Chart | null>(null);
@@ -88,27 +94,60 @@ export default function Slide09RolePolar({ sheetData, theme, onElementClick }: S
     },
     top4_teams: {
       lbls: ['TOP', 'EXE', 'S9x', 'CME'],
-      dA: [94, 76, 62, 58],
-      dB: [40, 22, 34, 35],
-      titleA: '#1 TOP 4 KILLS',
-      leadA: 'TOP • 94',
-      titleB: '#1 PLACE PTS',
-      leadB: 'TOP • 40',
+      dA: [134, 98, 96, 93],
+      dB: [57261, 42349, 39120, 48750],
+      titleA: '#1 TEAM PTS',
+      leadA: 'TOP • 134',
+      titleB: '#1 TEAM DMG',
+      leadB: 'TOP • 57,261',
       badgeColA: '#F5B700',
       badgeColB: '#F5B700',
     },
   };
 
+  // If live data has rolesPolar, use it
+  if (source === 'role_avg' && sheetData?.rolesPolar && sheetData.rolesPolar.length === 4) {
+    polarSets.role_avg.dA = sheetData.rolesPolar.map((r) => r.kills);
+    polarSets.role_avg.dB = sheetData.rolesPolar.map((r) => r.damage);
+  }
+
   const ps = polarSets[source] || polarSets.role_avg;
   const roleCols = [themeS8.rusher, themeS8.support, themeS8.sniper, themeS8.bomber];
 
+  // Destroy on replayKey change
   useEffect(() => {
-    const cvs1 = canvas1Ref.current;
-    const cvs2 = canvas2Ref.current;
-    if (!cvs1 || !cvs2) return;
+    if (chart1Ref.current) {
+      chart1Ref.current.destroy();
+      chart1Ref.current = null;
+    }
+    if (chart2Ref.current) {
+      chart2Ref.current.destroy();
+      chart2Ref.current = null;
+    }
+  }, [replayKey]);
 
-    if (chart1Ref.current) chart1Ref.current.destroy();
-    if (chart2Ref.current) chart2Ref.current.destroy();
+  useEffect(() => {
+    const c1 = canvas1Ref.current;
+    const c2 = canvas2Ref.current;
+    if (!c1 || !c2) return;
+
+    // Smooth in-place update if both charts exist
+    if (chart1Ref.current && chart2Ref.current) {
+      chart1Ref.current.data.labels = ps.lbls;
+      if (chart1Ref.current.data.datasets[0]) {
+        chart1Ref.current.data.datasets[0].data = ps.dA;
+        chart1Ref.current.data.datasets[0].backgroundColor = roleCols.map((c) => `${c}D9`);
+      }
+      chart1Ref.current.update('none');
+
+      chart2Ref.current.data.labels = ps.lbls;
+      if (chart2Ref.current.data.datasets[0]) {
+        chart2Ref.current.data.datasets[0].data = ps.dB;
+        chart2Ref.current.data.datasets[0].backgroundColor = roleCols.map((c) => `${c}D9`);
+      }
+      chart2Ref.current.update('none');
+      return;
+    }
 
     // Value Plugin for Polar Area Charts
     const polarValuePlugin = {
@@ -158,65 +197,87 @@ export default function Slide09RolePolar({ sheetData, theme, onElementClick }: S
           maintainAspectRatio: false,
           animation: { animateRotate: true, animateScale: true, duration: 1550 },
           onClick: (evt: any, elems: any[]) => {
-            if (!elems.length || !onElementClick) return;
-            const idx = elems[0].index;
-            const keys = ['rusher', 'support', 'sniper', 'bomber'];
-            onElementClick(evt.native, 's8', keys[idx] || 'rusher', `${ps.lbls[idx]} Role Color`);
-          },
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              enabled: true,
-              backgroundColor: 'rgba(9, 11, 18, 0.95)',
-              titleColor: '#F5B700',
-              bodyColor: '#ffffff',
-              padding: 12,
-              cornerRadius: 8,
-              callbacks: {
-                label: (item: any) => `Value: ${formatNumber(item.raw)}`,
-              },
-            },
+            if (elems.length > 0) {
+              const idx = elems[0].index;
+              const roleKeys = ['rusher', 'support', 'sniper', 'bomber'];
+              const key = roleKeys[idx % 4];
+              onElementClick?.(
+                evt.nativeEvent,
+                's8',
+                key,
+                `${ps.lbls[idx]} Role Color`
+              );
+            }
           },
           scales: {
             r: {
-              grid: { color: 'rgba(226,232,240,0.22)' },
+              grid: { color: 'rgba(148,163,184,0.18)' },
+              angleLines: { color: 'rgba(148,163,184,0.25)' },
               ticks: { display: false },
+            },
+          },
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: '#ffffff',
+                font: { size: 18, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
+              },
+            },
+            tooltip: {
+              callbacks: {
+                label: (item: any) => `${item.label}: ${formatNumber(item.raw)}`,
+              },
             },
           },
         },
       });
 
-    chart1Ref.current = mk(cvs1, ps.dA);
-    chart2Ref.current = mk(cvs2, ps.dB);
+    chart1Ref.current = mk(c1, ps.dA);
+    chart2Ref.current = mk(c2, ps.dB);
 
     return () => {
       chart1Ref.current?.destroy();
       chart2Ref.current?.destroy();
+      chart1Ref.current = null;
+      chart2Ref.current = null;
     };
-  }, [ps, roleCols, onElementClick]);
+  }, [ps, roleCols]);
 
   return (
-    <div className="w-full max-w-[1340px] grid grid-cols-1 md:grid-cols-2 gap-6 font-hud">
-      {/* Left Polar Chart */}
-      <div className="flex flex-col items-center">
-        <div className="mb-2 px-4 py-1.5 rounded-xl bg-slate-950/80 border border-purple-400 font-hud text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2.5 relative shadow-xl top1-hero-glow">
-          <SpiritFireCanvas />
-          <span style={{ color: ps.badgeColA }}>{ps.titleA}</span>
-          <span>{ps.leadA}</span>
+    <div className="w-full max-w-[1340px] pt-14 grid grid-cols-1 md:grid-cols-2 gap-6 relative font-hud select-none">
+      {/* Polar Card A */}
+      <div className="dark-box rounded-2xl p-6 relative">
+        <div className="flex justify-between items-center mb-3">
+          <div className="px-3 py-1 rounded-lg bg-slate-900 border border-white/10 font-hud text-lg font-bold text-slate-300">
+            {ps.titleA}
+          </div>
+          <div
+            className="px-3 py-1 rounded-lg font-hud text-xl font-extrabold text-black"
+            style={{ backgroundColor: ps.badgeColA }}
+          >
+            {ps.leadA}
+          </div>
         </div>
-        <div className="relative h-[380px] sm:h-[440px] w-full">
+        <div className="w-full h-[420px] relative">
           <canvas ref={canvas1Ref} />
         </div>
       </div>
 
-      {/* Right Polar Chart */}
-      <div className="flex flex-col items-center">
-        <div className="mb-2 px-4 py-1.5 rounded-xl bg-slate-950/80 border border-purple-400 font-hud text-xl sm:text-2xl font-extrabold text-white flex items-center gap-2.5 relative shadow-xl top1-hero-glow">
-          <SpiritFireCanvas />
-          <span style={{ color: ps.badgeColB }}>{ps.titleB}</span>
-          <span>{ps.leadB}</span>
+      {/* Polar Card B */}
+      <div className="dark-box rounded-2xl p-6 relative">
+        <div className="flex justify-between items-center mb-3">
+          <div className="px-3 py-1 rounded-lg bg-slate-900 border border-white/10 font-hud text-lg font-bold text-slate-300">
+            {ps.titleB}
+          </div>
+          <div
+            className="px-3 py-1 rounded-lg font-hud text-xl font-extrabold text-black"
+            style={{ backgroundColor: ps.badgeColB }}
+          >
+            {ps.leadB}
+          </div>
         </div>
-        <div className="relative h-[380px] sm:h-[440px] w-full">
+        <div className="w-full h-[420px] relative">
           <canvas ref={canvas2Ref} />
         </div>
       </div>

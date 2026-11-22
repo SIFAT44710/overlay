@@ -12,10 +12,11 @@ Chart.register(...registerables);
 interface SlideProps {
   sheetData?: SheetDataPayload;
   theme?: BroadcastThemeConfig;
+  replayKey?: number;
   onElementClick?: (e: React.MouseEvent, group: string, key: string, label: string) => void;
 }
 
-export default function Slide10DualColumn({ sheetData, theme, onElementClick }: SlideProps) {
+export default function Slide10DualColumn({ sheetData, theme, replayKey, onElementClick }: SlideProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
 
@@ -122,12 +123,32 @@ export default function Slide10DualColumn({ sheetData, theme, onElementClick }: 
     };
   }
 
+  // Destroy on replayKey change
+  useEffect(() => {
+    if (chartInstanceRef.current) {
+      chartInstanceRef.current.destroy();
+      chartInstanceRef.current = null;
+    }
+  }, [replayKey]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    // Smooth in-place update if chart already exists
     if (chartInstanceRef.current) {
-      chartInstanceRef.current.destroy();
+      const chart = chartInstanceRef.current;
+      chart.data.labels = cfg.tags;
+      if (chart.data.datasets[0]) {
+        chart.data.datasets[0].data = cfg.d1;
+        chart.data.datasets[0].backgroundColor = themeS9.kills;
+      }
+      if (chart.data.datasets[1]) {
+        chart.data.datasets[1].data = cfg.d2;
+        chart.data.datasets[1].backgroundColor = themeS9.damage;
+      }
+      chart.update('none');
+      return;
     }
 
     // Custom Plugin: Exact Comma Full Numbers (Zero 'K')

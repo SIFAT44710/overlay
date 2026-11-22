@@ -21,7 +21,7 @@ html, body {
   font-family: 'GFF Latin', 'Teko', sans-serif;
   margin: 0;
   padding: 0;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 body.obs-grid {
@@ -68,6 +68,10 @@ body.obs-white { background: #f8fafc !important; }
   stroke: rgba(9, 11, 18, 0.96);
   stroke-width: 3.8px;
   stroke-linejoin: round;
+}
+
+#stage svg text.no-stroke, #stage svg text[style*="stroke:none"], #stage svg text[style*="stroke: none"] {
+  stroke: none !important;
 }
 
 #stage .text-black, #stage .text-slate-950,

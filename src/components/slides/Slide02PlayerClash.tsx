@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { SheetDataPayload, BroadcastThemeConfig } from '@/types/broadcast';
 import TeamLogoBadge from '@/components/TeamLogoBadge';
 import SpiritFireCanvas from '@/components/SpiritFireCanvas';
@@ -9,16 +9,30 @@ import { formatNumber } from '@/lib/sheetParsers';
 interface SlideProps {
   sheetData?: SheetDataPayload;
   theme?: BroadcastThemeConfig;
+  replayKey?: number;
   onElementClick?: (e: React.MouseEvent, group: string, key: string, label: string) => void;
 }
 
-export default function Slide02PlayerClash({ sheetData, theme, onElementClick }: SlideProps) {
-  const [mounted, setMounted] = useState(false);
+export default function Slide02PlayerClash({
+  sheetData,
+  theme,
+  replayKey = 0,
+  onElementClick,
+}: SlideProps) {
+  const [animated, setAnimated] = useState(false);
+  const hasAnimatedRef = useRef(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setMounted(true), 120);
-    return () => clearTimeout(timer);
-  }, []);
+    setAnimated(false);
+    const rafId = requestAnimationFrame(() => {
+      const timer = setTimeout(() => {
+        setAnimated(true);
+        hasAnimatedRef.current = true;
+      }, 150);
+      return () => clearTimeout(timer);
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [replayKey]);
 
   const themeS1 = theme?.s1 || { p1: '#8b5cf6', p2: '#2dd4bf', accent: '#fbbf24' };
   const custom = theme?.custom;
@@ -51,6 +65,17 @@ export default function Slide02PlayerClash({ sheetData, theme, onElementClick }:
     p2 = { name: b.name, team: b.team, tag: b.tag, kills: b.kills, damage: b.dmg, hs: b.hs, assist: b.assist };
   }
 
+  // Resolve Drive Logo for each contender
+  const teamLogoMap: Record<string, string> = {};
+  if (sheetData?.standing12) {
+    sheetData.standing12.forEach((st) => {
+      if (st.logoUrl) {
+        teamLogoMap[st.tag.toUpperCase()] = st.logoUrl;
+        teamLogoMap[st.name.toUpperCase()] = st.logoUrl;
+      }
+    });
+  }
+
   const s1 = p1.kills * 100 + p1.damage * 0.1 + p1.hs * 40;
   const s2 = p2.kills * 100 + p2.damage * 0.1 + p2.hs * 40;
   const pct1 = Math.round((s1 / (s1 + s2 || 1)) * 100);
@@ -74,7 +99,7 @@ export default function Slide02PlayerClash({ sheetData, theme, onElementClick }:
   const winnerSide = s1 >= s2 ? 'p1' : 'p2';
 
   return (
-    <div className="w-full max-w-[1340px] space-y-5 font-hud">
+    <div className="w-full max-w-[1340px] space-y-5 font-hud select-none">
       {/* Top Contender Header Plates */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-start justify-between gap-4 w-full">
         {/* Contender 1 Card */}
@@ -89,6 +114,7 @@ export default function Slide02PlayerClash({ sheetData, theme, onElementClick }:
             <TeamLogoBadge
               tag={p1.tag}
               name={p1.team}
+              logoUrl={teamLogoMap[p1.tag.toUpperCase()] || teamLogoMap[p1.team.toUpperCase()]}
               color={themeS1.p1}
               sizeCls="w-16 h-16"
             />
@@ -131,6 +157,7 @@ export default function Slide02PlayerClash({ sheetData, theme, onElementClick }:
             <TeamLogoBadge
               tag={p2.tag}
               name={p2.team}
+              logoUrl={teamLogoMap[p2.tag.toUpperCase()] || teamLogoMap[p2.team.toUpperCase()]}
               color={themeS1.p2}
               sizeCls="w-16 h-16"
             />
@@ -180,9 +207,11 @@ export default function Slide02PlayerClash({ sheetData, theme, onElementClick }:
             className="arc-sweep"
             style={{
               strokeDasharray: ARC,
-              strokeDashoffset: mounted ? ARC * (1 - pct1 / 100) : ARC,
+              strokeDashoffset: animated ? ARC * (1 - pct1 / 100) : ARC,
               transition: 'stroke-dashoffset 1.85s cubic-bezier(0.22, 1.08, 0.36, 1)',
             }}
+            data-edit-group="s1"
+            data-edit-key="p1"
             onClick={(e) => onElementClick?.(e, 's1', 'p1', 'Contender 1 Color')}
           />
 
@@ -205,9 +234,11 @@ export default function Slide02PlayerClash({ sheetData, theme, onElementClick }:
             className="arc-sweep"
             style={{
               strokeDasharray: ARC,
-              strokeDashoffset: mounted ? ARC * (1 - pct2 / 100) : ARC,
+              strokeDashoffset: animated ? ARC * (1 - pct2 / 100) : ARC,
               transition: 'stroke-dashoffset 1.85s cubic-bezier(0.22, 1.08, 0.36, 1)',
             }}
+            data-edit-group="s1"
+            data-edit-key="p2"
             onClick={(e) => onElementClick?.(e, 's1', 'p2', 'Contender 2 Color')}
           />
 
@@ -220,7 +251,7 @@ export default function Slide02PlayerClash({ sheetData, theme, onElementClick }:
             stroke="#000000"
             strokeWidth="3.5"
             strokeLinecap="round"
-            className={mounted ? 'scanner-run' : ''}
+            className={animated ? 'scanner-run' : 'opacity-0'}
           />
 
           {/* Shockwave Burst */}
@@ -230,13 +261,13 @@ export default function Slide02PlayerClash({ sheetData, theme, onElementClick }:
             r="6"
             fill="none"
             stroke="#000000"
-            className={mounted ? 'shock-run' : ''}
+            className={animated ? 'shock-run' : 'opacity-0'}
           />
 
           {/* Spark Indicator */}
           <circle
-            cx={mounted ? px.toFixed(1) : '55'}
-            cy={mounted ? py.toFixed(1) : '170'}
+            cx={animated ? px.toFixed(1) : '55'}
+            cy={animated ? py.toFixed(1) : '170'}
             r="8"
             fill="#000000"
             stroke="#000000"
@@ -251,9 +282,9 @@ export default function Slide02PlayerClash({ sheetData, theme, onElementClick }:
         {/* Center Percentage VS Display */}
         <div className="absolute inset-x-0 bottom-2 flex justify-center">
           <div className="px-6 py-1.5 rounded-xl bg-slate-950/95 border border-purple-400/50 font-hud text-3xl sm:text-4xl font-extrabold text-white shadow-2xl">
-            <span style={{ color: themeS1.p1 }}>{mounted ? `${pct1}%` : '0%'}</span>
+            <span style={{ color: themeS1.p1 }}>{animated ? `${pct1}%` : '0%'}</span>
             <span className="text-amber-400 text-base mx-2">VS</span>
-            <span style={{ color: themeS1.p2 }}>{mounted ? `${pct2}%` : '0%'}</span>
+            <span style={{ color: themeS1.p2 }}>{animated ? `${pct2}%` : '0%'}</span>
           </div>
         </div>
       </div>
@@ -270,11 +301,11 @@ export default function Slide02PlayerClash({ sheetData, theme, onElementClick }:
               key={r.label}
               className="skew-box bg-slate-950/95 border border-white/20 rounded-xl overflow-hidden shadow-2xl"
               style={{
-                opacity: mounted ? 1 : 0,
-                transform: mounted
+                opacity: animated ? 1 : 0,
+                transform: animated
                   ? 'skewX(-10deg) translateY(0) scaleX(1)'
                   : 'skewX(-10deg) translateY(24px) scaleX(0.32)',
-                transition: `opacity 0.5s ease ${idx * 0.15}s, transform 0.65s cubic-bezier(0.22, 1.12, 0.36, 1) ${idx * 0.15}s`,
+                transition: `opacity 0.5s ease ${0.2 + idx * 0.15}s, transform 0.65s cubic-bezier(0.22, 1.12, 0.36, 1) ${0.2 + idx * 0.15}s`,
               }}
             >
               <div className="relative flex items-center h-14 w-full">
@@ -284,7 +315,7 @@ export default function Slide02PlayerClash({ sheetData, theme, onElementClick }:
                     className="bar-live h-full rounded-l-md flex items-center justify-start pl-6 overflow-hidden"
                     style={{
                       backgroundColor: themeS1.p1,
-                      width: mounted ? `${wA}%` : '0%',
+                      width: animated ? `${wA}%` : '0%',
                       transition: 'width 1.65s cubic-bezier(0.22, 1, 0.36, 1) 0.3s',
                     }}
                   >
@@ -300,7 +331,7 @@ export default function Slide02PlayerClash({ sheetData, theme, onElementClick }:
                     className="bar-live h-full rounded-r-md flex items-center justify-end pr-6 overflow-hidden"
                     style={{
                       backgroundColor: themeS1.p2,
-                      width: mounted ? `${wB}%` : '0%',
+                      width: animated ? `${wB}%` : '0%',
                       transition: 'width 1.65s cubic-bezier(0.22, 1, 0.36, 1) 0.3s',
                     }}
                   >
@@ -310,7 +341,7 @@ export default function Slide02PlayerClash({ sheetData, theme, onElementClick }:
                   </div>
                 </div>
 
-                {/* Center Badge Label */}
+                {/* Centered Stat Title Badge */}
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <span
                     className="unskew px-4 py-1 rounded-md text-sm sm:text-base font-extrabold tracking-widest border shadow-lg"

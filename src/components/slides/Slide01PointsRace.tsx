@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { SheetDataPayload, BroadcastThemeConfig } from '@/types/broadcast';
 import TeamLogoBadge from '@/components/TeamLogoBadge';
 import SpiritFireCanvas from '@/components/SpiritFireCanvas';
@@ -8,30 +8,86 @@ import SpiritFireCanvas from '@/components/SpiritFireCanvas';
 interface SlideProps {
   sheetData?: SheetDataPayload;
   theme?: BroadcastThemeConfig;
+  replayKey?: number;
   onElementClick?: (e: React.MouseEvent, group: string, key: string, label: string) => void;
 }
 
-export default function Slide01PointsRace({ sheetData, theme, onElementClick }: SlideProps) {
-  const [mounted, setMounted] = useState(false);
+// Exact spreadY collision resolver from ff_admin_and_live_vmix_suite.html
+function spreadY(
+  items: Array<{ y: number; origIdx: number }>,
+  minGap: number,
+  minY: number,
+  maxY: number
+): number[] {
+  const sorted = items
+    .map((it, idx) => ({ ...it, origIdx: idx, ly: it.y }))
+    .sort((a, b) => a.ly - b.ly);
 
+  for (let pass = 0; pass < 6; pass++) {
+    for (let i = 1; i < sorted.length; i++) {
+      const diff = sorted[i].ly - sorted[i - 1].ly;
+      if (diff < minGap) {
+        const push = (minGap - diff) / 2;
+        sorted[i - 1].ly -= push;
+        sorted[i].ly += push;
+      }
+    }
+    sorted.forEach((s) => {
+      s.ly = Math.max(minY, Math.min(maxY, s.ly));
+    });
+  }
+
+  const out = new Array(items.length);
+  sorted.forEach((s) => {
+    out[s.origIdx] = s.ly;
+  });
+  return out;
+}
+
+export default function Slide01PointsRace({
+  sheetData,
+  theme,
+  replayKey = 0,
+  onElementClick,
+}: SlideProps) {
+  const [animated, setAnimated] = useState(false);
+  const hasAnimatedRef = useRef(false);
+
+  // Run entrance animation once on initial mount or when replayKey changes
   useEffect(() => {
-    const timer = setTimeout(() => setMounted(true), 80);
-    return () => clearTimeout(timer);
-  }, []);
+    setAnimated(false);
+    const rafId = requestAnimationFrame(() => {
+      const timer = setTimeout(() => {
+        setAnimated(true);
+        hasAnimatedRef.current = true;
+      }, 140);
+      return () => clearTimeout(timer);
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [replayKey]);
 
-  const progression = sheetData?.matchProgression && sheetData.matchProgression.length >= 2
-    ? sheetData.matchProgression
-    : [
-        { tag: 'TOP', name: 'RAAD VAI YT', color: '#fbbf24', pts: [21, 67, 81, 104, 134] },
-        { tag: 'EXE', name: 'EXTREME EX', color: '#a78bfa', pts: [29, 34, 55, 73, 98] },
-        { tag: 'S9x', name: 'SNEAKY9X', color: '#2dd4bf', pts: [29, 31, 62, 93, 96] },
-        { tag: 'CME', name: 'COFFIN MAKERS ESP', color: '#f43f5e', pts: [14, 34, 56, 69, 93] },
-        { tag: 'TRX', name: 'TITANOVA REX', color: '#38bdf8', pts: [12, 27, 41, 67, 85] },
-      ];
+  const progression =
+    sheetData?.matchProgression && sheetData.matchProgression.length >= 2
+      ? sheetData.matchProgression
+      : [
+          { tag: 'TOP', name: 'RAAD VAI YT', color: '#fbbf24', pts: [21, 67, 81, 104, 134] },
+          { tag: 'EXE', name: 'EXTREME EX', color: '#a78bfa', pts: [29, 34, 55, 73, 98] },
+          { tag: 'S9x', name: 'SNEAKY9X', color: '#2dd4bf', pts: [29, 31, 62, 93, 96] },
+          { tag: 'CME', name: 'COFFIN MAKERS ESP', color: '#f43f5e', pts: [14, 34, 56, 69, 93] },
+          { tag: 'TRX', name: 'TITANOVA REX', color: '#38bdf8', pts: [12, 27, 41, 67, 85] },
+        ];
 
-  const themeS0 = theme?.s0 || { l0: '#fbbf24', l1: '#a78bfa', l2: '#2dd4bf', l3: '#f43f5e', l4: '#38bdf8' };
+  const themeS0 = theme?.s0 || {
+    l0: '#fbbf24',
+    l1: '#a78bfa',
+    l2: '#2dd4bf',
+    l3: '#f43f5e',
+    l4: '#38bdf8',
+  };
+
   const leader = progression[0];
 
+  // Canvas Dimensions
   const W = 1280;
   const H = 560;
   const padL = 88;
@@ -41,63 +97,65 @@ export default function Slide01PointsRace({ sheetData, theme, onElementClick }: 
   const cW = W - padL - padR;
   const cH = H - padT - padB;
 
-  // Find max value across all teams to scale Y axis (default 140)
+  // Find max value across all teams to scale Y axis (standard 140 default)
   const maxVal = Math.max(140, ...progression.flatMap((t) => t.pts));
 
-  const gridValues = [0, Math.round(maxVal * 0.25), Math.round(maxVal * 0.5), Math.round(maxVal * 0.75), maxVal];
+  const gridValues = [0, 35, 70, 105, 140];
 
-  // Calculate safe spread Y coordinates for endpoint tags
-  const rawYs = progression.map((t) => {
-    const lastVal = t.pts[t.pts.length - 1] || 0;
-    return padT + cH - (lastVal / maxVal) * cH;
-  });
-
-  const safeYs = [...rawYs];
-  const minGap = 58;
-  for (let pass = 0; pass < 6; pass++) {
-    for (let i = 1; i < safeYs.length; i++) {
-      const diff = safeYs[i] - safeYs[i - 1];
-      if (Math.abs(diff) < minGap) {
-        const push = (minGap - Math.abs(diff)) / 2;
-        if (diff >= 0) {
-          safeYs[i - 1] -= push;
-          safeYs[i] += push;
-        } else {
-          safeYs[i - 1] += push;
-          safeYs[i] -= push;
-        }
+  // Resolve Drive Logo for each team from sheetData.standing12
+  const teamLogoMap: Record<string, string> = {};
+  if (sheetData?.standing12) {
+    sheetData.standing12.forEach((st) => {
+      if (st.logoUrl) {
+        teamLogoMap[st.tag.toUpperCase()] = st.logoUrl;
+        teamLogoMap[st.name.toUpperCase()] = st.logoUrl;
       }
-    }
+    });
   }
 
+  // Calculate safe non-overlapping Y coordinates for endpoint tags
+  const rawYs = progression.map((t, idx) => {
+    const lastVal = t.pts[t.pts.length - 1] ?? 0;
+    return { y: padT + cH - (lastVal / maxVal) * cH, origIdx: idx };
+  });
+  const safeYs = spreadY(rawYs, 62, padT + 28, H - padB - 28);
+
   return (
-    <div className="w-full max-w-[1340px] pt-14 relative font-hud">
-      {/* Top-Right Leader Pill */}
+    <div className="w-full max-w-[1340px] pt-14 relative font-hud select-none">
+      {/* Top-Right #1 Leader Pill */}
       {leader && (
         <div className="absolute top-1 right-3 sm:right-6 z-30">
-          <div className="relative px-4 py-1.5 rounded-xl bg-slate-950/90 border border-purple-400/70 font-hud text-2xl sm:text-3xl font-bold text-white flex items-center gap-3.5 shadow-2xl top1-hero-glow">
+          <div
+            id="m2-top1-pill"
+            className={`transition-all duration-700 px-4 py-1.5 rounded-xl bg-slate-950/90 border border-purple-400/70 font-hud text-2xl sm:text-3xl font-bold text-white flex items-center gap-3.5 shadow-2xl top1-hero-glow ${
+              animated ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+            }`}
+          >
             <SpiritFireCanvas />
             <TeamLogoBadge
               tag={leader.tag}
               name={leader.name}
+              logoUrl={teamLogoMap[leader.tag.toUpperCase()] || teamLogoMap[leader.name.toUpperCase()]}
               color={themeS0.l0 || leader.color}
               sizeCls="w-16 h-16"
             />
-            <span className="text-amber-400">#1 LEADER</span>
-            <span>
+            <span className="text-amber-400 font-extrabold">#1 LEADER</span>
+            <span className="font-extrabold">
               {leader.name} ({leader.tag})
             </span>
-            <span className="px-3.5 py-0.5 rounded bg-amber-400 text-black font-bold text-2xl sm:text-3xl">
+            <span className="px-3.5 py-0.5 rounded bg-amber-400 text-black font-extrabold text-2xl sm:text-3xl">
               {leader.pts[leader.pts.length - 1]} PTS
             </span>
           </div>
         </div>
       )}
 
+      {/* Main SVG Graph */}
       <svg
         viewBox={`0 0 ${W} ${H}`}
         className="w-full overflow-visible drop-shadow-[0_6px_14px_rgba(0,0,0,0.45)]"
       >
+        {/* Background Box Frame */}
         <rect
           x={padL}
           y={padT}
@@ -108,7 +166,7 @@ export default function Slide01PointsRace({ sheetData, theme, onElementClick }: 
           stroke="rgba(192,132,252,0.22)"
         />
 
-        {/* Grid lines and Y-axis full numbers */}
+        {/* Horizontal Grid lines and Large 26px Y-Axis Numbers */}
         {gridValues.map((v) => {
           const y = padT + cH - (v / maxVal) * cH;
           return (
@@ -136,7 +194,7 @@ export default function Slide01PointsRace({ sheetData, theme, onElementClick }: 
           );
         })}
 
-        {/* X-axis Match 1–5 badges */}
+        {/* X-Axis Match 1–5 Badges */}
         {['MATCH 1', 'MATCH 2', 'MATCH 3', 'MATCH 4', 'MATCH 5'].map((m, i) => {
           const x = padL + (i / 4) * cW;
           return (
@@ -165,7 +223,7 @@ export default function Slide01PointsRace({ sheetData, theme, onElementClick }: 
           );
         })}
 
-        {/* Lines and Endpoints */}
+        {/* Dynamic Cubic Curve Lines & Right Endpoint Pills */}
         {progression.map((rawTeam, tIdx) => {
           const colKey = `l${tIdx}` as keyof typeof themeS0;
           const col = (themeS0 as any)[colKey] || rawTeam.color;
@@ -184,15 +242,20 @@ export default function Slide01PointsRace({ sheetData, theme, onElementClick }: 
           }
 
           const last = pts[pts.length - 1];
-          const ly = safeYs[tIdx] || last.y;
+          const ly = safeYs[tIdx] ?? last.y;
           const boxW = isLeader ? 268 : 248;
           const boxH = isLeader ? 58 : 52;
           const logoR = isLeader ? 23 : 20;
           const logoCx = last.x + 62;
           const isLightCol = col === '#fbbf24' || col === '#F5B700' || col === '#2dd4bf';
 
+          const teamLogoUrl =
+            teamLogoMap[rawTeam.tag.toUpperCase()] ||
+            teamLogoMap[rawTeam.name.toUpperCase()];
+
           return (
             <g key={rawTeam.tag}>
+              {/* Cubic Bezier Running Line */}
               <path
                 d={d}
                 fill="none"
@@ -202,9 +265,9 @@ export default function Slide01PointsRace({ sheetData, theme, onElementClick }: 
                 className="draw-line"
                 style={{
                   filter: `drop-shadow(0 0 6px ${col})`,
-                  strokeDasharray: mounted ? '0' : '2000',
-                  strokeDashoffset: mounted ? '0' : '2000',
-                  transition: 'stroke-dashoffset 2.0s cubic-bezier(0.22, 1, 0.36, 1)',
+                  strokeDasharray: '2000',
+                  strokeDashoffset: animated ? '0' : '2000',
+                  transition: `stroke-dashoffset 2.0s cubic-bezier(0.22, 1, 0.36, 1) ${tIdx * 0.18}s`,
                 }}
                 data-edit-group="s0"
                 data-edit-key={colKey}
@@ -213,6 +276,7 @@ export default function Slide01PointsRace({ sheetData, theme, onElementClick }: 
                 }
               />
 
+              {/* Data Point Nodes along line */}
               {pts.map((p, pIdx) => (
                 <circle
                   key={pIdx}
@@ -222,13 +286,21 @@ export default function Slide01PointsRace({ sheetData, theme, onElementClick }: 
                   fill={col}
                   stroke="#090b10"
                   strokeWidth="2"
-                  opacity={mounted ? 1 : 0}
-                  style={{ transition: 'opacity 0.5s ease 1.2s' }}
+                  opacity={animated ? 1 : 0}
+                  style={{
+                    transition: `opacity 0.5s ease ${1.1 + tIdx * 0.18}s`,
+                  }}
                 />
               ))}
 
-              {/* Endpoint pill with Drive logo badge, tag, and full points */}
-              <g opacity={mounted ? 1 : 0} style={{ transition: 'opacity 0.6s ease 1.3s' }}>
+              {/* Non-overlapping Endpoint Tag Pill */}
+              <g
+                opacity={animated ? 1 : 0}
+                style={{
+                  transition: `opacity 0.6s ease ${1.2 + tIdx * 0.18}s`,
+                }}
+              >
+                {/* Dashed connector line to spread tag position */}
                 <path
                   d={`M ${last.x + 6} ${last.y} L ${last.x + 20} ${last.y} L ${last.x + 32} ${ly}`}
                   fill="none"
@@ -236,6 +308,8 @@ export default function Slide01PointsRace({ sheetData, theme, onElementClick }: 
                   strokeWidth={isLeader ? 2.4 : 1.8}
                   strokeDasharray="3 2"
                 />
+
+                {/* Pill Background Box */}
                 <rect
                   x={last.x + 34}
                   y={ly - boxH / 2}
@@ -251,27 +325,28 @@ export default function Slide01PointsRace({ sheetData, theme, onElementClick }: 
                     onElementClick?.(e, 's0', colKey, `#${tIdx + 1} ${rawTeam.tag} Pill`)
                   }
                 />
-                {/* Team Logo Badge */}
-                <circle
-                  cx={logoCx}
-                  cy={ly}
-                  r={logoR}
-                  fill={col}
-                  stroke="#090b10"
-                  strokeWidth="2.4"
-                />
-                <text
-                  x={logoCx}
-                  y={ly + 5.5}
-                  textAnchor="middle"
-                  fill={isLightCol ? '#090b10' : '#ffffff'}
-                  fontSize="16"
-                  fontWeight="800"
-                  className="font-hud"
-                  style={{ stroke: 'none' }}
+
+                {/* Team Logo Badge: ForeignObject for real Drive Logo with Shield Fallback */}
+                <foreignObject
+                  x={logoCx - logoR}
+                  y={ly - logoR}
+                  width={logoR * 2}
+                  height={logoR * 2}
+                  className="overflow-visible"
                 >
-                  {rawTeam.tag.slice(0, 3)}
-                </text>
+                  <div className="w-full h-full flex items-center justify-center">
+                    <TeamLogoBadge
+                      tag={rawTeam.tag}
+                      name={rawTeam.name}
+                      logoUrl={teamLogoUrl}
+                      color={col}
+                      sizeCls={isLeader ? 'w-11 h-11' : 'w-10 h-10'}
+                      textSizeCls="text-sm"
+                    />
+                  </div>
+                </foreignObject>
+
+                {/* Team Tag Label */}
                 <text
                   x={logoCx + logoR + 11}
                   y={ly + 8}
@@ -282,6 +357,8 @@ export default function Slide01PointsRace({ sheetData, theme, onElementClick }: 
                 >
                   #{tIdx + 1} {rawTeam.tag}
                 </text>
+
+                {/* Points Full Text */}
                 <text
                   x={last.x + 34 + boxW - 12}
                   y={ly + 8}

@@ -12,22 +12,30 @@ Chart.register(...registerables);
 interface SlideProps {
   sheetData?: SheetDataPayload;
   theme?: BroadcastThemeConfig;
+  replayKey?: number;
   onElementClick?: (e: React.MouseEvent, group: string, key: string, label: string) => void;
 }
 
-export default function Slide08KillsDmgLine({ sheetData, theme, onElementClick }: SlideProps) {
+export default function Slide08KillsDmgLine({
+  sheetData,
+  theme,
+  replayKey = 0,
+  onElementClick,
+}: SlideProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
 
   const themeS7 = theme?.s7 || { kills: '#F5B700', damage: '#38BDF8' };
 
-  const killsData = sheetData?.matchTotals?.kills?.length === 5
-    ? sheetData.matchTotals.kills
-    : [114, 102, 97, 129, 114];
+  const killsData =
+    sheetData?.matchTotals?.kills?.length === 5
+      ? sheetData.matchTotals.kills
+      : [114, 102, 97, 129, 114];
 
-  const dmgData = sheetData?.matchTotals?.damage?.length === 5
-    ? sheetData.matchTotals.damage
-    : [74334, 67724, 60618, 75983, 71677];
+  const dmgData =
+    sheetData?.matchTotals?.damage?.length === 5
+      ? sheetData.matchTotals.damage
+      : [74334, 67724, 60618, 75983, 71677];
 
   // Find peak match
   let peakIdx = 0;
@@ -39,12 +47,33 @@ export default function Slide08KillsDmgLine({ sheetData, theme, onElementClick }
     }
   });
 
+  // Destroy on replayKey change
+  useEffect(() => {
+    if (chartInstanceRef.current) {
+      chartInstanceRef.current.destroy();
+      chartInstanceRef.current = null;
+    }
+  }, [replayKey]);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    // Smooth in-place update if chart already exists
     if (chartInstanceRef.current) {
-      chartInstanceRef.current.destroy();
+      const chart = chartInstanceRef.current;
+      if (chart.data.datasets[0]) {
+        chart.data.datasets[0].data = killsData;
+        chart.data.datasets[0].borderColor = themeS7.kills;
+        chart.data.datasets[0].backgroundColor = `${themeS7.kills}2A`;
+      }
+      if (chart.data.datasets[1]) {
+        chart.data.datasets[1].data = dmgData;
+        chart.data.datasets[1].borderColor = themeS7.damage;
+        chart.data.datasets[1].backgroundColor = `${themeS7.damage}22`;
+      }
+      chart.update('none');
+      return;
     }
 
     // Custom Plugin: Exact Comma Full Numbers (Zero 'K')
@@ -88,107 +117,123 @@ export default function Slide08KillsDmgLine({ sheetData, theme, onElementClick }
             yAxisID: 'y',
             tension: 0.36,
             fill: true,
-            borderWidth: 4,
             pointRadius: 7,
             pointBackgroundColor: themeS7.kills,
             pointBorderColor: '#090b10',
+            pointBorderWidth: 2.5,
           },
           {
             label: 'Total Damage',
             data: dmgData,
             borderColor: themeS7.damage,
-            backgroundColor: `${themeS7.damage}2A`,
+            backgroundColor: `${themeS7.damage}22`,
             yAxisID: 'y1',
             tension: 0.36,
             fill: true,
-            borderWidth: 4,
             pointRadius: 7,
             pointBackgroundColor: themeS7.damage,
             pointBorderColor: '#090b10',
+            pointBorderWidth: 2.5,
           },
         ],
       },
-      plugins: [valuePlugin],
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        layout: { padding: { top: 44, bottom: 20 } },
-        animation: { duration: 1800, easing: 'easeOutCubic' },
-        onClick: (evt: any, elems: any[]) => {
-          if (!elems.length || !onElementClick) return;
-          const dsIdx = elems[0].datasetIndex;
-          if (dsIdx === 0) {
-            onElementClick(evt.native, 's7', 'kills', 'Total Kills Line');
-          } else {
-            onElementClick(evt.native, 's7', 'damage', 'Total Damage Line');
-          }
+        animation: {
+          duration: 1400,
+          easing: 'easeOutQuart',
+        },
+        layout: {
+          padding: {
+            top: 36,
+            bottom: 20,
+            left: 20,
+            right: 20,
+          },
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(148,163,184,0.18)' },
+            ticks: {
+              color: '#ffffff',
+              font: { size: 22, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
+            },
+          },
+          y: {
+            type: 'linear',
+            position: 'left',
+            grid: { color: 'rgba(148,163,184,0.18)' },
+            ticks: {
+              color: themeS7.kills,
+              font: { size: 18, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
+              callback: (v) => `${v}K`,
+            },
+          },
+          y1: {
+            type: 'linear',
+            position: 'right',
+            grid: { drawOnChartArea: false },
+            ticks: {
+              color: themeS7.damage,
+              font: { size: 18, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
+              callback: (v) => formatNumber(v),
+            },
+          },
         },
         plugins: {
-          legend: { display: false },
+          legend: {
+            display: true,
+            labels: {
+              color: '#ffffff',
+              font: { size: 18, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
+            },
+          },
           tooltip: {
-            enabled: true,
-            backgroundColor: 'rgba(9, 11, 18, 0.95)',
-            titleColor: '#F5B700',
-            bodyColor: '#ffffff',
-            padding: 12,
-            cornerRadius: 8,
             callbacks: {
               label: (item: any) => `${item.dataset.label}: ${formatNumber(item.raw)}`,
             },
           },
         },
-        scales: {
-          x: {
-            ticks: { color: '#ffffff', font: { size: 20, weight: 'bold' } },
-            grid: { color: 'rgba(100,116,139,0.22)' },
-          },
-          y: {
-            position: 'left',
-            title: { display: true, text: 'KILLS', color: themeS7.kills, font: { size: 18, weight: 'bold' } },
-            ticks: {
-              color: '#fde047',
-              font: { size: 18, weight: 'bold' },
-              callback: (v: any) => formatNumber(v),
-            },
-            grid: { color: 'rgba(100,116,139,0.32)' },
-          },
-          y1: {
-            position: 'right',
-            grid: { display: false },
-            title: { display: true, text: 'DAMAGE', color: themeS7.damage, font: { size: 18, weight: 'bold' } },
-            ticks: {
-              color: '#7dd3fc',
-              font: { size: 18, weight: 'bold' },
-              callback: (v: any) => formatNumber(v),
-            },
-          },
-        },
       },
+      plugins: [valuePlugin],
     });
 
     chartInstanceRef.current = newChart;
 
     return () => {
       newChart.destroy();
+      chartInstanceRef.current = null;
     };
-  }, [killsData, dmgData, themeS7.kills, themeS7.damage, onElementClick]);
+  }, [killsData, dmgData, themeS7]);
 
   return (
-    <div className="w-full max-w-[1340px] pt-18 relative font-hud">
-      {/* Top Right Peak Match Pill with Spirit Flame */}
+    <div className="w-full max-w-[1340px] pt-14 relative font-hud select-none">
+      {/* Top Peak Badge */}
       <div className="absolute top-1 right-3 sm:right-6 z-30">
-        <div className="relative px-4 py-1.5 rounded-xl bg-slate-950/90 border border-purple-400 font-hud text-2xl sm:text-3xl font-bold text-white flex items-center gap-3.5 shadow-2xl top1-hero-glow">
+        <div className="relative px-4 py-1.5 rounded-xl bg-slate-950/90 border border-purple-400/70 font-hud text-2xl sm:text-3xl font-bold text-white flex items-center gap-3.5 shadow-2xl top1-hero-glow">
           <SpiritFireCanvas />
-          <TeamLogoBadge tag={`M${peakIdx + 1}`} color="#F5B700" sizeCls="w-16 h-16" />
-          <span className="text-amber-400">#1 PEAK MATCH • M{peakIdx + 1}</span>
-          <span className="text-amber-300">{killsData[peakIdx]} KILLS</span>
-          <span className="text-slate-500">|</span>
-          <span className="text-sky-300">{formatNumber(dmgData[peakIdx])} DMG</span>
+          <TeamLogoBadge
+            tag={`M${peakIdx + 1}`}
+            color={themeS7.kills}
+            sizeCls="w-16 h-16"
+          />
+          <span className="text-amber-400 font-extrabold">PEAK MATCH #{peakIdx + 1}</span>
+          <span className="font-extrabold">BLOODSHED</span>
+          <span className="px-3.5 py-0.5 rounded bg-amber-400 text-black font-extrabold text-2xl sm:text-3xl">
+            {killsData[peakIdx]} KILLS ({formatNumber(dmgData[peakIdx])} DMG)
+          </span>
         </div>
       </div>
 
-      <div className="relative h-[420px] sm:h-[500px] w-full">
-        <canvas ref={canvasRef} />
+      {/* Chart Canvas Area */}
+      <div className="w-full h-[520px] relative">
+        <canvas
+          ref={canvasRef}
+          onClick={(e) => {
+            onElementClick?.(e, 's7', 'kills', 'Line Chart Colors');
+          }}
+        />
       </div>
     </div>
   );

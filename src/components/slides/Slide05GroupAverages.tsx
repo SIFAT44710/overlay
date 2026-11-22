@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { SheetDataPayload, BroadcastThemeConfig } from '@/types/broadcast';
 import TeamLogoBadge from '@/components/TeamLogoBadge';
 import SpiritFireCanvas from '@/components/SpiritFireCanvas';
@@ -9,16 +9,30 @@ import { formatNumber } from '@/lib/sheetParsers';
 interface SlideProps {
   sheetData?: SheetDataPayload;
   theme?: BroadcastThemeConfig;
+  replayKey?: number;
   onElementClick?: (e: React.MouseEvent, group: string, key: string, label: string) => void;
 }
 
-export default function Slide05GroupAverages({ sheetData, theme, onElementClick }: SlideProps) {
-  const [mounted, setMounted] = useState(false);
+export default function Slide05GroupAverages({
+  sheetData,
+  theme,
+  replayKey = 0,
+  onElementClick,
+}: SlideProps) {
+  const [animated, setAnimated] = useState(false);
+  const hasAnimatedRef = useRef(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setMounted(true), 100);
-    return () => clearTimeout(timer);
-  }, []);
+    setAnimated(false);
+    const rafId = requestAnimationFrame(() => {
+      const timer = setTimeout(() => {
+        setAnimated(true);
+        hasAnimatedRef.current = true;
+      }, 120);
+      return () => clearTimeout(timer);
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [replayKey]);
 
   const themeS4 = theme?.s4 || { teamA: '#8b5cf6', teamB: '#2dd4bf' };
   const custom = theme?.custom;
@@ -47,6 +61,17 @@ export default function Slide05GroupAverages({ sheetData, theme, onElementClick 
     b = sheetData.allTeamsFull[1];
   }
 
+  // Resolve Drive Logo for each team
+  const teamLogoMap: Record<string, string> = {};
+  if (sheetData?.standing12) {
+    sheetData.standing12.forEach((st) => {
+      if (st.logoUrl) {
+        teamLogoMap[st.tag.toUpperCase()] = st.logoUrl;
+        teamLogoMap[st.name.toUpperCase()] = st.logoUrl;
+      }
+    });
+  }
+
   const R = 52;
   const CIRC = 2 * Math.PI * R;
   const R_IN = 36;
@@ -63,29 +88,41 @@ export default function Slide05GroupAverages({ sheetData, theme, onElementClick 
   const winnerTeam = b.avgDmg >= a.avgDmg ? 'b' : 'a';
 
   return (
-    <div className="w-full max-w-[1340px] pt-18 relative font-hud">
-      {/* Top Team Header Badges */}
+    <div className="w-full max-w-[1340px] pt-18 relative font-hud select-none">
+      {/* Top Team Header Badges with 64px Logos */}
       <div className="absolute top-1 inset-x-3 sm:inset-x-6 flex justify-between items-center text-2xl sm:text-3xl font-bold font-hud z-30">
         <div
           id="m14-team-a"
-          className="px-4 py-1.5 rounded-xl bg-violet-600/90 text-white inline-flex items-center gap-3.5 shadow-xl relative"
+          className="px-4 py-1.5 rounded-xl bg-violet-600/90 text-white inline-flex items-center gap-3.5 shadow-xl relative cursor-pointer"
           style={{ backgroundColor: colA }}
           onClick={(e) => onElementClick?.(e, 's4', 'teamA', `${a.name} Color`)}
         >
           {winnerTeam === 'a' && <SpiritFireCanvas />}
-          <TeamLogoBadge tag={a.tag} name={a.name} color={colA} sizeCls="w-16 h-16" />
+          <TeamLogoBadge
+            tag={a.tag}
+            name={a.name}
+            logoUrl={teamLogoMap[a.tag.toUpperCase()] || teamLogoMap[a.name.toUpperCase()]}
+            color={colA}
+            sizeCls="w-16 h-16"
+          />
           <span>{a.name}</span>
         </div>
 
         <div
           id="m14-team-b"
-          className="px-4 py-1.5 rounded-xl bg-teal-400/90 text-slate-950 inline-flex items-center gap-3.5 shadow-xl ml-auto relative"
+          className="px-4 py-1.5 rounded-xl bg-teal-400/90 text-slate-950 inline-flex items-center gap-3.5 shadow-xl ml-auto relative cursor-pointer"
           style={{ backgroundColor: colB }}
           onClick={(e) => onElementClick?.(e, 's4', 'teamB', `${b.name} Color`)}
         >
           {winnerTeam === 'b' && <SpiritFireCanvas />}
           <span>{b.name}</span>
-          <TeamLogoBadge tag={b.tag} name={b.name} color={colB} sizeCls="w-16 h-16" />
+          <TeamLogoBadge
+            tag={b.tag}
+            name={b.name}
+            logoUrl={teamLogoMap[b.tag.toUpperCase()] || teamLogoMap[b.name.toUpperCase()]}
+            color={colB}
+            sizeCls="w-16 h-16"
+          />
         </div>
       </div>
 
@@ -129,7 +166,7 @@ export default function Slide05GroupAverages({ sheetData, theme, onElementClick 
                   className="arc-sweep"
                   style={{
                     strokeDasharray: CIRC,
-                    strokeDashoffset: mounted ? targetOffsetA : CIRC,
+                    strokeDashoffset: animated ? targetOffsetA : CIRC,
                     transition: `stroke-dashoffset 1.8s cubic-bezier(0.22, 1.08, 0.36, 1) ${i * 0.15}s`,
                   }}
                 />
@@ -156,7 +193,7 @@ export default function Slide05GroupAverages({ sheetData, theme, onElementClick 
                   className="arc-sweep"
                   style={{
                     strokeDasharray: CIRC_IN,
-                    strokeDashoffset: mounted ? targetOffsetB : CIRC_IN,
+                    strokeDashoffset: animated ? targetOffsetB : CIRC_IN,
                     transition: `stroke-dashoffset 1.8s cubic-bezier(0.22, 1.08, 0.36, 1) ${0.1 + i * 0.15}s`,
                   }}
                 />

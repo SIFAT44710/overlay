@@ -1,8 +1,9 @@
 // SWR Client Hook for Live Tournament Data Sync
-// Polls /api/live-data every 2.5s for zero-flicker live updates in vMix / OBS
+// Polls /api/live-data with snapshot memoization to eliminate unwanted re-renders & flickering
 
 'use client';
 
+import { useRef, useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { SheetDataPayload } from '@/types/broadcast';
 
@@ -19,17 +20,31 @@ export function useLiveSheetData() {
     '/api/live-data',
     fetcher,
     {
-      refreshInterval: 2500, // Poll every 2.5 seconds
-      revalidateOnFocus: true,
-      revalidateOnReconnect: true,
-      dedupingInterval: 1800,
+      refreshInterval: 3000, // Poll every 3 seconds
+      revalidateOnFocus: false, // Don't trigger flash when switching window
+      dedupingInterval: 2000,
       keepPreviousData: true,
     }
   );
 
+  const [stableData, setStableData] = useState<SheetDataPayload | undefined>(data);
+  const lastSnapshotRef = useRef<string>('');
+
+  useEffect(() => {
+    if (!data) return;
+    // Strip volatile server timestamp before comparing
+    const { meta, ...payloadWithoutMeta } = data;
+    const currentSnapshot = JSON.stringify(payloadWithoutMeta);
+
+    if (currentSnapshot !== lastSnapshotRef.current) {
+      lastSnapshotRef.current = currentSnapshot;
+      setStableData(data);
+    }
+  }, [data]);
+
   return {
-    sheetData: data,
-    isLoading,
+    sheetData: stableData || data,
+    isLoading: isLoading && !stableData,
     isError: !!error,
     error,
     refreshNow: () => mutate(),

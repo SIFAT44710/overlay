@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { SheetDataPayload, BroadcastThemeConfig } from '@/types/broadcast';
 import TeamLogoBadge from '@/components/TeamLogoBadge';
 import SpiritFireCanvas from '@/components/SpiritFireCanvas';
@@ -9,16 +9,30 @@ import { formatNumber } from '@/lib/sheetParsers';
 interface SlideProps {
   sheetData?: SheetDataPayload;
   theme?: BroadcastThemeConfig;
+  replayKey?: number;
   onElementClick?: (e: React.MouseEvent, group: string, key: string, label: string) => void;
 }
 
-export default function Slide04TeamH2H({ sheetData, theme, onElementClick }: SlideProps) {
-  const [mounted, setMounted] = useState(false);
+export default function Slide04TeamH2H({
+  sheetData,
+  theme,
+  replayKey = 0,
+  onElementClick,
+}: SlideProps) {
+  const [animated, setAnimated] = useState(false);
+  const hasAnimatedRef = useRef(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setMounted(true), 120);
-    return () => clearTimeout(timer);
-  }, []);
+    setAnimated(false);
+    const rafId = requestAnimationFrame(() => {
+      const timer = setTimeout(() => {
+        setAnimated(true);
+        hasAnimatedRef.current = true;
+      }, 140);
+      return () => clearTimeout(timer);
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [replayKey]);
 
   const themeS3 = theme?.s3 || { teamA: '#8b5cf6', teamB: '#2dd4bf' };
   const custom = theme?.custom;
@@ -53,6 +67,17 @@ export default function Slide04TeamH2H({ sheetData, theme, onElementClick }: Sli
   } else if (source === 'day_top2_h2h' && sheetData?.allTeamsFull?.length) {
     a = sheetData.allTeamsFull[0];
     b = sheetData.allTeamsFull[1];
+  }
+
+  // Resolve Drive Logo for each team
+  const teamLogoMap: Record<string, string> = {};
+  if (sheetData?.standing12) {
+    sheetData.standing12.forEach((st) => {
+      if (st.logoUrl) {
+        teamLogoMap[st.tag.toUpperCase()] = st.logoUrl;
+        teamLogoMap[st.name.toUpperCase()] = st.logoUrl;
+      }
+    });
   }
 
   const totSum = Math.max(1, a.total + b.total);
@@ -93,8 +118,8 @@ export default function Slide04TeamH2H({ sheetData, theme, onElementClick }: Sli
   const winnerSide = a.total >= b.total ? 'a' : 'b';
 
   return (
-    <div className="w-full max-w-[1340px] pt-20 relative font-hud">
-      {/* Top Header Plates */}
+    <div className="w-full max-w-[1340px] pt-20 relative font-hud select-none">
+      {/* Top Header Plates with 64px Team Logos */}
       <div className="absolute top-1 inset-x-3 sm:inset-x-6 flex flex-row justify-between items-start gap-4 z-30">
         {/* Team A Card */}
         <div
@@ -105,7 +130,13 @@ export default function Slide04TeamH2H({ sheetData, theme, onElementClick }: Sli
         >
           {winnerSide === 'a' && <SpiritFireCanvas />}
           <div className="unskew flex items-center gap-3.5">
-            <TeamLogoBadge tag={a.tag} name={a.name} color={colA} sizeCls="w-16 h-16" />
+            <TeamLogoBadge
+              tag={a.tag}
+              name={a.name}
+              logoUrl={teamLogoMap[a.tag.toUpperCase()] || teamLogoMap[a.name.toUpperCase()]}
+              color={colA}
+              sizeCls="w-16 h-16"
+            />
             <div>
               <div className="text-sm font-bold leading-none" style={{ color: colA }}>
                 RANK #{a.rank}
@@ -140,7 +171,13 @@ export default function Slide04TeamH2H({ sheetData, theme, onElementClick }: Sli
                 {b.name}
               </div>
             </div>
-            <TeamLogoBadge tag={b.tag} name={b.name} color={colB} sizeCls="w-16 h-16" />
+            <TeamLogoBadge
+              tag={b.tag}
+              name={b.name}
+              logoUrl={teamLogoMap[b.tag.toUpperCase()] || teamLogoMap[b.name.toUpperCase()]}
+              color={colB}
+              sizeCls="w-16 h-16"
+            />
           </div>
         </div>
       </div>
@@ -218,7 +255,7 @@ export default function Slide04TeamH2H({ sheetData, theme, onElementClick }: Sli
               ))}
             </g>
 
-            {/* Vertex Top: KILLS */}
+            {/* Vertex Top: KILLS (Cleanly Outside) */}
             <text x={CX} y="30" textAnchor="middle" fill="#fff" fontSize="22" fontWeight="800" className="font-hud">
               KILLS
             </text>
@@ -226,7 +263,7 @@ export default function Slide04TeamH2H({ sheetData, theme, onElementClick }: Sli
               {a.kills} vs {b.kills}
             </text>
 
-            {/* Vertex Right: DAMAGE */}
+            {/* Vertex Right: DAMAGE (Cleanly Outside) */}
             <text x={CX + MAX_R + 14} y={CY - 4} textAnchor="start" fill="#fff" fontSize="22" fontWeight="800" className="font-hud">
               DAMAGE
             </text>
@@ -234,7 +271,7 @@ export default function Slide04TeamH2H({ sheetData, theme, onElementClick }: Sli
               {formatNumber(a.damage)} vs {formatNumber(b.damage)}
             </text>
 
-            {/* Vertex Bottom: HEADSHOTS */}
+            {/* Vertex Bottom: HEADSHOTS (Cleanly Outside) */}
             <text x={CX} y="294" textAnchor="middle" fill="#fff" fontSize="22" fontWeight="800" className="font-hud">
               HEADSHOTS
             </text>
@@ -242,7 +279,7 @@ export default function Slide04TeamH2H({ sheetData, theme, onElementClick }: Sli
               {a.hs} vs {b.hs}
             </text>
 
-            {/* Vertex Left: GLOO WALL */}
+            {/* Vertex Left: GLOO WALL (Cleanly Outside) */}
             <text x={CX - MAX_R - 14} y={CY - 4} textAnchor="end" fill="#fff" fontSize="22" fontWeight="800" className="font-hud">
               GLOO WALL
             </text>
@@ -252,45 +289,45 @@ export default function Slide04TeamH2H({ sheetData, theme, onElementClick }: Sli
           </svg>
         </div>
 
-        {/* Semi-Circle Percentage Clash Gauge */}
+        {/* Semi-Circle Head-to-Head Comparison Gauge on Right */}
         <div className="dark-box rounded-2xl p-6 flex flex-col items-center">
           <div className="relative w-full max-w-[440px]">
             <svg viewBox="0 0 320 175" className="w-full overflow-visible">
               <path d="M 45 155 A 115 115 0 0 1 275 155" fill="none" stroke="#0b0f19" strokeWidth="30" />
-              {/* Arc A */}
               <path
+                id="m12-a1"
+                className="arc-sweep"
                 d="M 45 155 A 115 115 0 0 1 275 155"
                 fill="none"
                 stroke={colA}
                 strokeWidth="24"
-                className="arc-sweep"
                 style={{
                   strokeDasharray: ARC,
-                  strokeDashoffset: mounted ? ARC * (1 - pctA / 100) : ARC,
+                  strokeDashoffset: animated ? ARC * (1 - pctA / 100) : ARC,
                   transition: 'stroke-dashoffset 1.8s cubic-bezier(0.22, 1.08, 0.36, 1)',
                 }}
               />
-              {/* Arc B */}
               <path
+                id="m12-a2"
+                className="arc-sweep"
                 d="M 275 155 A 115 115 0 0 0 45 155"
                 fill="none"
                 stroke={colB}
                 strokeWidth="24"
-                className="arc-sweep"
                 style={{
                   strokeDasharray: ARC,
-                  strokeDashoffset: mounted ? ARC * (1 - pctB / 100) : ARC,
+                  strokeDashoffset: animated ? ARC * (1 - pctB / 100) : ARC,
                   transition: 'stroke-dashoffset 1.8s cubic-bezier(0.22, 1.08, 0.36, 1)',
                 }}
               />
             </svg>
             <div className="absolute inset-x-0 bottom-3 text-center font-hud text-4xl sm:text-5xl font-extrabold text-white">
-              <span style={{ color: colA }}>{mounted ? `${pctA}%` : '0%'}</span> :{' '}
-              <span style={{ color: colB }}>{mounted ? `${pctB}%` : '0%'}</span>
+              <span style={{ color: colA }}>{animated ? `${pctA}%` : '0%'}</span> :{' '}
+              <span style={{ color: colB }}>{animated ? `${pctB}%` : '0%'}</span>
             </div>
           </div>
 
-          {/* Lower 3-stat Grid with Exact Full Numbers */}
+          {/* Lower 3 Metrics Summary */}
           <div className="w-full grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-white/15 text-center font-hud">
             <div>
               <div className="text-slate-400 text-xs">DAMAGE</div>
@@ -301,13 +338,13 @@ export default function Slide04TeamH2H({ sheetData, theme, onElementClick }: Sli
             <div>
               <div className="text-slate-400 text-xs">HEADSHOTS</div>
               <div className="font-extrabold text-white text-xl">
-                {a.hs} vs {b.hs}
+                {formatNumber(a.hs)} vs {formatNumber(b.hs)}
               </div>
             </div>
             <div>
               <div className="text-slate-400 text-xs">GLOO USED</div>
               <div className="font-extrabold text-white text-xl">
-                {a.gloo} vs {b.gloo}
+                {formatNumber(a.gloo)} vs {formatNumber(b.gloo)}
               </div>
             </div>
           </div>
