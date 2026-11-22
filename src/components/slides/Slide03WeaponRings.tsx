@@ -131,7 +131,7 @@ export default function Slide03WeaponRings({
           return (
             <div
               key={w.name}
-              className={`pop-card hud-card rounded-xl p-4 transition-all relative ${
+              className={`pop-card hud-card rounded-xl p-4 transition-all relative cursor-pointer hover:border-purple-400/80 ${
                 isTopWeapon ? 'top1-hero-glow' : ''
               }`}
               style={{
@@ -143,6 +143,8 @@ export default function Slide03WeaponRings({
                   : 'translateX(28px)',
                 transition: `transform 0.85s cubic-bezier(0.22, 1.15, 0.36, 1) ${i * 0.12}s, opacity 0.65s ease ${i * 0.12}s`,
               }}
+              onClick={(e) => onElementClick?.(e, 's2', colKey, `${w.name} Color`)}
+              title={`Click to change ${w.name} ring and bar color`}
             >
               {isTopWeapon && <SpiritFireCanvas />}
               <div className="flex justify-between items-center mb-1.5 relative z-10">

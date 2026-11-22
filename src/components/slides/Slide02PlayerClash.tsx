@@ -298,10 +298,30 @@ export default function Slide02PlayerClash({
 
         {/* Center Percentage VS Display */}
         <div className="absolute inset-x-0 bottom-2 flex justify-center">
-          <div className="px-6 py-1.5 rounded-xl bg-slate-950/95 border border-purple-400/50 font-hud text-3xl sm:text-4xl font-extrabold text-white shadow-2xl">
-            <span style={{ color: themeS1.p1 }}>{animated ? `${pct1}%` : '0%'}</span>
-            <span className="text-amber-400 text-base mx-2">VS</span>
-            <span style={{ color: themeS1.p2 }}>{animated ? `${pct2}%` : '0%'}</span>
+          <div className="px-6 py-1.5 rounded-xl bg-slate-950/95 border border-purple-400/50 font-hud text-3xl sm:text-4xl font-extrabold text-white shadow-2xl flex items-center">
+            <span
+              className="cursor-pointer hover:opacity-80"
+              style={{ color: themeS1.p1 }}
+              onClick={(e) => onElementClick?.(e, 's1', 'p1', `${p1.name} Color`)}
+              title="Click to change Contender 1 color"
+            >
+              {animated ? `${pct1}%` : '0%'}
+            </span>
+            <span
+              className="text-amber-400 text-base mx-2 cursor-pointer hover:scale-110 transition-transform"
+              onClick={(e) => onElementClick?.(e, 's1', 'accent', 'Accent Color')}
+              title="Click to change accent color"
+            >
+              VS
+            </span>
+            <span
+              className="cursor-pointer hover:opacity-80"
+              style={{ color: themeS1.p2 }}
+              onClick={(e) => onElementClick?.(e, 's1', 'p2', `${p2.name} Color`)}
+              title="Click to change Contender 2 color"
+            >
+              {animated ? `${pct2}%` : '0%'}
+            </span>
           </div>
         </div>
       </div>
@@ -327,7 +347,11 @@ export default function Slide02PlayerClash({
             >
               <div className="relative flex items-center h-14 w-full">
                 {/* Left Bar (Contender 1) */}
-                <div className="w-1/2 h-full flex justify-end overflow-hidden">
+                <div
+                  className="w-1/2 h-full flex justify-end overflow-hidden cursor-pointer"
+                  onClick={(e) => onElementClick?.(e, 's1', 'p1', `${p1.name} Bar Color`)}
+                  title="Click to change Contender 1 color"
+                >
                   <div
                     className="bar-live h-full rounded-l-md flex items-center justify-start pl-6 overflow-hidden"
                     style={{
@@ -343,7 +367,11 @@ export default function Slide02PlayerClash({
                 </div>
 
                 {/* Right Bar (Contender 2) */}
-                <div className="w-1/2 h-full flex justify-start overflow-hidden">
+                <div
+                  className="w-1/2 h-full flex justify-start overflow-hidden cursor-pointer"
+                  onClick={(e) => onElementClick?.(e, 's1', 'p2', `${p2.name} Bar Color`)}
+                  title="Click to change Contender 2 color"
+                >
                   <div
                     className="bar-live h-full rounded-r-md flex items-center justify-end pr-6 overflow-hidden"
                     style={{
@@ -359,14 +387,16 @@ export default function Slide02PlayerClash({
                 </div>
 
                 {/* Centered Stat Title Badge */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="absolute inset-0 flex items-center justify-center">
                   <span
-                    className="unskew px-4 py-1 rounded-md text-sm sm:text-base font-extrabold tracking-widest border shadow-lg"
+                    className="unskew px-4 py-1 rounded-md text-sm sm:text-base font-extrabold tracking-widest border shadow-lg cursor-pointer hover:scale-105 transition-transform"
                     style={{
                       color: themeS1.accent,
                       borderColor: themeS1.accent,
                       backgroundColor: 'var(--ui-box-bg, #0a0c16)',
                     }}
+                    onClick={(e) => onElementClick?.(e, 's1', 'accent', 'Accent Color')}
+                    title="Click to change accent color"
                   >
                     {r.label}
                   </span>

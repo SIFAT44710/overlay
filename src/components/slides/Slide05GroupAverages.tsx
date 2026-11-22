@@ -226,7 +226,7 @@ export default function Slide05GroupAverages({
                   strokeWidth="11"
                   strokeLinecap="round"
                   transform="rotate(-90 70 70)"
-                  className="arc-sweep ring-neon-glow"
+                  className="arc-sweep ring-neon-glow cursor-pointer hover:opacity-85"
                   style={{
                     color: colA,
                     strokeDasharray: `${CIRC} ${CIRC}`,
@@ -234,6 +234,7 @@ export default function Slide05GroupAverages({
                     transition: `stroke-dashoffset 1.35s cubic-bezier(0.22, 1, 0.36, 1) ${0.1 + i * 0.12}s`,
                     animationDelay: `${i * 0.25}s`,
                   }}
+                  onClick={(e) => onElementClick?.(e, 's4', 'teamA', `${a.name} Ring`)}
                 />
 
                 {/* Inner Ring Background Track */}
@@ -255,7 +256,7 @@ export default function Slide05GroupAverages({
                   strokeWidth="11"
                   strokeLinecap="round"
                   transform="rotate(-90 70 70)"
-                  className="arc-sweep ring-neon-glow"
+                  className="arc-sweep ring-neon-glow cursor-pointer hover:opacity-85"
                   style={{
                     color: colB,
                     strokeDasharray: `${CIRC_IN} ${CIRC_IN}`,
@@ -263,18 +264,29 @@ export default function Slide05GroupAverages({
                     transition: `stroke-dashoffset 1.35s cubic-bezier(0.22, 1, 0.36, 1) ${0.18 + i * 0.12}s`,
                     animationDelay: `${0.15 + i * 0.25}s`,
                   }}
+                  onClick={(e) => onElementClick?.(e, 's4', 'teamB', `${b.name} Ring`)}
                 />
               </svg>
 
               {/* Exact Full Comma Numbers with Smooth 60fps Count-up */}
               <div className="w-full flex justify-between mt-4 pt-3 border-t border-white/15 font-hud text-2xl sm:text-3xl font-extrabold">
-                <span style={{ color: colA }}>
+                <span
+                  className="cursor-pointer hover:opacity-80"
+                  style={{ color: colA }}
+                  onClick={(e) => onElementClick?.(e, 's4', 'teamA', `${a.name} Color`)}
+                  title={`Click to change ${a.name} color`}
+                >
                   {c.dec > 0
                     ? displayVals[i].a.toFixed(c.dec)
                     : formatNumber(Math.round(displayVals[i].a))}
                   {c.suf}
                 </span>
-                <span style={{ color: colB }}>
+                <span
+                  className="cursor-pointer hover:opacity-80"
+                  style={{ color: colB }}
+                  onClick={(e) => onElementClick?.(e, 's4', 'teamB', `${b.name} Color`)}
+                  title={`Click to change ${b.name} color`}
+                >
                   {c.dec > 0
                     ? displayVals[i].b.toFixed(c.dec)
                     : formatNumber(Math.round(displayVals[i].b))}

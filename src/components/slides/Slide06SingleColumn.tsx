@@ -406,9 +406,11 @@ export default function Slide06SingleColumn({
       {/* Top-Right Compact Leader Pill with Smooth Entrance Animation */}
       <div className="absolute top-1 right-3 sm:right-6 z-30">
         <div
-          className={`relative px-3 py-1 rounded-lg bg-slate-950/90 border border-purple-400/80 font-hud text-sm sm:text-base font-bold text-white flex items-center gap-2.5 shadow-xl transition-all duration-700 ${
+          className={`relative px-3 py-1 rounded-lg bg-slate-950/90 border border-purple-400/80 font-hud text-sm sm:text-base font-bold text-white flex items-center gap-2.5 shadow-xl transition-all duration-700 cursor-pointer hover:border-amber-400 ${
             animated ? 'top1-hero-glow top1-scale opacity-100 translate-y-0' : 'opacity-0 -translate-y-3 scale-95'
           }`}
+          onClick={(e) => onElementClick?.(e, 's5', 'c0', `${cfg.tags[0]} Leader Color`)}
+          title={`Click to change ${cfg.tags[0]} leader color`}
         >
           <SpiritFireCanvas />
           <TeamLogoBadge
@@ -433,19 +435,27 @@ export default function Slide06SingleColumn({
           onClick={(e) => {
             const chart = chartInstanceRef.current;
             if (!chart) return;
-            const elements = chart.getElementsAtEventForMode(
+            let elements = chart.getElementsAtEventForMode(
               e.nativeEvent,
               'nearest',
               { intersect: true },
               false
             );
+            if (!elements.length) {
+              elements = chart.getElementsAtEventForMode(
+                e.nativeEvent,
+                'index',
+                { intersect: false },
+                false
+              );
+            }
             if (elements.length > 0) {
               const idx = elements[0].index;
               onElementClick?.(
                 e,
                 's5',
                 `c${idx}`,
-                `${cfg.tags[idx]} Team Color`
+                `${cfg.tags[idx]} Candle Color`
               );
             }
           }}

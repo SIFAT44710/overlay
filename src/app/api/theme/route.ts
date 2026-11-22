@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { updates, slideKey, colors, themes, sources, custom, config } = body;
+    const { updates, slideKey, colors, themes, sources, custom, config, ...rest } = body;
 
     const payloadToSave: Record<string, any> = {};
 
@@ -127,6 +127,17 @@ export async function POST(req: NextRequest) {
       if (config.sheetId) payloadToSave._config_sheetId = config.sheetId;
       if (config.driveFolderId !== undefined) payloadToSave._config_driveFolderId = config.driveFolderId;
       if (config.apiKey !== undefined) payloadToSave._config_apiKey = config.apiKey;
+    }
+
+    // Accept direct group keys passed at root level (e.g. { s9: { kills: '#F5B700' } } or { global: { ... } })
+    for (const [k, v] of Object.entries(rest)) {
+      if (v !== undefined) {
+        if (typeof v === 'object' && v !== null && !Array.isArray(v) && typeof payloadToSave[k] === 'object') {
+          payloadToSave[k] = { ...payloadToSave[k], ...v };
+        } else {
+          payloadToSave[k] = v;
+        }
+      }
     }
 
     if (Object.keys(payloadToSave).length === 0) {

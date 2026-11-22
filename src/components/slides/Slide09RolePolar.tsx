@@ -276,53 +276,110 @@ export default function Slide09RolePolar({
   }, [ps.lbls.join(','), ps.dA.join(','), ps.dB.join(','), roleCols.join(',')]);
 
   return (
-    <div className="w-full max-w-[1340px] pt-14 grid grid-cols-1 md:grid-cols-2 gap-6 relative font-hud select-none">
-      {/* Polar Card A */}
-      <div
-        className={`dark-box rounded-2xl p-5 relative border border-white/10 shadow-2xl flex flex-col items-center transition-all duration-700 ${
-          animated ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
-        }`}
-      >
-        <div className="flex justify-between items-center w-full mb-3">
-          <div className="relative px-2.5 py-1 rounded-lg bg-slate-950/90 border border-purple-400 font-hud text-xs sm:text-sm font-bold text-white flex items-center gap-2 top1-hero-glow">
-            <SpiritFireCanvas />
-            <span className="text-amber-400 font-extrabold">{ps.titleA}</span>
-            <span className="font-extrabold">{ps.leadA}</span>
-          </div>
-          <div
-            className="px-2 py-0.5 rounded-md font-hud text-xs sm:text-sm font-extrabold text-black"
-            style={{ backgroundColor: ps.badgeColA }}
+    <div className="w-full max-w-[1340px] pt-14 flex flex-col gap-4 relative font-hud select-none">
+      {/* Top 4 Clickable Role Legends */}
+      <div className="flex items-center justify-center gap-2 flex-wrap z-30">
+        {[
+          { key: 'rusher', label: 'RUSHER', col: roleCols[0] },
+          { key: 'support', label: 'SUPPORT', col: roleCols[1] },
+          { key: 'sniper', label: 'SNIPER', col: roleCols[2] },
+          { key: 'bomber', label: 'BOMBER', col: roleCols[3] },
+        ].map((role) => (
+          <button
+            key={role.key}
+            type="button"
+            onClick={(e) => onElementClick?.(e, 's8', role.key, `${role.label} Role Color`)}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-950/90 border border-white/15 hover:border-purple-400 font-hud text-xs sm:text-sm font-bold cursor-pointer transition-all"
+            title={`Click to change ${role.label} color`}
           >
-            #1 LEADER
-          </div>
-        </div>
-        <div className="relative h-[380px] sm:h-[440px] w-full">
-          <canvas ref={canvas1Ref} />
-        </div>
+            <span className="w-3 h-3 rounded-full" style={{ backgroundColor: role.col }} />
+            <span style={{ color: role.col }}>{role.label}</span>
+          </button>
+        ))}
       </div>
 
-      {/* Polar Card B */}
-      <div
-        className={`dark-box rounded-2xl p-5 relative border border-white/10 shadow-2xl flex flex-col items-center transition-all duration-700 ${
-          animated ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
-        }`}
-        style={{ transitionDelay: '0.12s' }}
-      >
-        <div className="flex justify-between items-center w-full mb-3">
-          <div className="relative px-2.5 py-1 rounded-lg bg-slate-950/90 border border-purple-400 font-hud text-xs sm:text-sm font-bold text-white flex items-center gap-2 top1-hero-glow">
-            <SpiritFireCanvas />
-            <span className="text-amber-400 font-extrabold">{ps.titleB}</span>
-            <span className="font-extrabold">{ps.leadB}</span>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+        {/* Polar Card A */}
+        <div
+          className={`dark-box rounded-2xl p-5 relative border border-white/10 shadow-2xl flex flex-col items-center transition-all duration-700 ${
+            animated ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
+          }`}
+        >
+          <div className="flex justify-between items-center w-full mb-3">
+            <div className="relative px-2.5 py-1 rounded-lg bg-slate-950/90 border border-purple-400 font-hud text-xs sm:text-sm font-bold text-white flex items-center gap-2 top1-hero-glow">
+              <SpiritFireCanvas />
+              <span className="text-amber-400 font-extrabold">{ps.titleA}</span>
+              <span className="font-extrabold">{ps.leadA}</span>
+            </div>
+            <div
+              className="px-2 py-0.5 rounded-md font-hud text-xs sm:text-sm font-extrabold text-black"
+              style={{ backgroundColor: ps.badgeColA }}
+            >
+              #1 LEADER
+            </div>
           </div>
-          <div
-            className="px-2 py-0.5 rounded-md font-hud text-xs sm:text-sm font-extrabold text-black"
-            style={{ backgroundColor: ps.badgeColB }}
-          >
-            #1 LEADER
+          <div className="relative h-[380px] sm:h-[440px] w-full">
+            <canvas
+              ref={canvas1Ref}
+              onClick={(e) => {
+                const chart = chart1Ref.current;
+                if (!chart || !onElementClick) return;
+                const elems = chart.getElementsAtEventForMode(
+                  e.nativeEvent,
+                  'nearest',
+                  { intersect: false },
+                  false
+                );
+                if (elems.length > 0) {
+                  const idx = elems[0].index;
+                  const roleKeys = ['rusher', 'support', 'sniper', 'bomber'];
+                  onElementClick(e, 's8', roleKeys[idx % 4], `${ps.lbls[idx]} Role Color`);
+                }
+              }}
+            />
           </div>
         </div>
-        <div className="relative h-[380px] sm:h-[440px] w-full">
-          <canvas ref={canvas2Ref} />
+
+        {/* Polar Card B */}
+        <div
+          className={`dark-box rounded-2xl p-5 relative border border-white/10 shadow-2xl flex flex-col items-center transition-all duration-700 ${
+            animated ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
+          }`}
+          style={{ transitionDelay: '0.12s' }}
+        >
+          <div className="flex justify-between items-center w-full mb-3">
+            <div className="relative px-2.5 py-1 rounded-lg bg-slate-950/90 border border-purple-400 font-hud text-xs sm:text-sm font-bold text-white flex items-center gap-2 top1-hero-glow">
+              <SpiritFireCanvas />
+              <span className="text-amber-400 font-extrabold">{ps.titleB}</span>
+              <span className="font-extrabold">{ps.leadB}</span>
+            </div>
+            <div
+              className="px-2 py-0.5 rounded-md font-hud text-xs sm:text-sm font-extrabold text-black"
+              style={{ backgroundColor: ps.badgeColB }}
+            >
+              #1 LEADER
+            </div>
+          </div>
+          <div className="relative h-[380px] sm:h-[440px] w-full">
+            <canvas
+              ref={canvas2Ref}
+              onClick={(e) => {
+                const chart = chart2Ref.current;
+                if (!chart || !onElementClick) return;
+                const elems = chart.getElementsAtEventForMode(
+                  e.nativeEvent,
+                  'nearest',
+                  { intersect: false },
+                  false
+                );
+                if (elems.length > 0) {
+                  const idx = elems[0].index;
+                  const roleKeys = ['rusher', 'support', 'sniper', 'bomber'];
+                  onElementClick(e, 's8', roleKeys[idx % 4], `${ps.lbls[idx]} Role Color`);
+                }
+              }}
+            />
+          </div>
         </div>
       </div>
     </div>

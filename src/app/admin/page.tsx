@@ -74,12 +74,12 @@ export default function AdminPage() {
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const pendingUpdatesRef = useRef<Record<string, any>>({});
 
-  // Sync draftTheme with incoming SWR updates only when not currently editing
+  // Sync draftTheme with incoming SWR updates without wiping out recent user edits
   useEffect(() => {
-    if (!popover.isOpen && !isEditingRef.current) {
-      setDraftTheme(themes);
+    if (!isEditingRef.current) {
+      setDraftTheme((prev) => ({ ...prev, ...themes }));
     }
-  }, [themes, popover.isOpen]);
+  }, [themes]);
 
   // Autoplay timer
   useEffect(() => {
@@ -123,7 +123,7 @@ export default function AdminPage() {
         showExtras: false,
       });
     },
-    [draftTheme]
+    [draftTheme, currentMode]
   );
 
   const handleClosePopover = useCallback(async () => {
@@ -136,7 +136,14 @@ export default function AdminPage() {
     if (Object.keys(pendingUpdatesRef.current).length > 0) {
       const toSend = { ...pendingUpdatesRef.current };
       pendingUpdatesRef.current = {};
-      await saveThemeUpdates(toSend);
+      setSyncStatus('↻ SAVING COLOR...');
+      const ok = await saveThemeUpdates(toSend);
+      if (ok) {
+        setSyncStatus('✓ COLOR SAVED');
+      } else {
+        setSyncStatus('⚠️ FAILED TO SAVE COLOR');
+      }
+      setTimeout(() => setSyncStatus('● DRIVE LOGOS & FULL NUMBERS ACTIVE'), 3000);
     }
   }, [saveThemeUpdates]);
 
@@ -160,7 +167,7 @@ export default function AdminPage() {
         [popover.key]: newColor,
       };
 
-      // 3. Debounce POST /api/theme by 350ms to protect Google Sheets quota & avoid re-render stutters
+      // 3. Debounce POST /api/theme by 400ms to protect Google Sheets quota & avoid re-render stutters
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
       }
@@ -168,9 +175,14 @@ export default function AdminPage() {
         if (Object.keys(pendingUpdatesRef.current).length > 0) {
           const toSend = { ...pendingUpdatesRef.current };
           pendingUpdatesRef.current = {};
-          await saveThemeUpdates(toSend);
+          setSyncStatus('↻ SAVING COLOR...');
+          const ok = await saveThemeUpdates(toSend);
+          if (ok) {
+            setSyncStatus('✓ COLOR SAVED');
+          }
+          setTimeout(() => setSyncStatus('● DRIVE LOGOS & FULL NUMBERS ACTIVE'), 3000);
         }
-      }, 350);
+      }, 400);
     },
     [popover.group, popover.key, draftTheme, saveThemeUpdates]
   );
@@ -262,7 +274,7 @@ export default function AdminPage() {
   return (
     <AuthGate onLogout={handleLogout}>
       <div
-        className={`${bgClasses[bgMode]} ${currentMode === 'admin' ? 'mode-admin' : ''} min-h-screen flex flex-col justify-between p-3 sm:p-5 font-hud select-none`}
+        className={`${bgClasses[bgMode]} ${currentMode === 'admin' ? 'mode-admin' : ''} min-h-screen flex flex-col justify-start p-3 sm:p-5 font-hud select-none overflow-y-auto overflow-x-hidden relative`}
         onClick={() => setPopover((prev) => ({ ...prev, isOpen: false }))}
       >
         {/* Top Broadcast Control Bar */}
@@ -501,7 +513,7 @@ export default function AdminPage() {
         <main
           id="stage"
           key={replayKey}
-          className="flex-1 flex items-center justify-center w-full max-w-[1440px] min-h-[calc(100vh-84px)] mx-auto px-2 sm:px-6 py-2 relative"
+          className="flex-1 flex items-center justify-center w-full max-w-[1440px] min-h-[580px] my-auto mx-auto px-2 sm:px-6 py-4 relative"
         >
           {currentSlide === 0 && (
             <Slide01PointsRace

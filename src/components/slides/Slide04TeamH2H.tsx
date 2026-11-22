@@ -403,7 +403,7 @@ export default function Slide04TeamH2H({
               <path d="M 45 155 A 115 115 0 0 1 275 155" fill="none" stroke="#0b0f19" strokeWidth="30" />
               <path
                 id="m12-a1"
-                className="arc-sweep"
+                className="arc-sweep cursor-pointer hover:opacity-85"
                 d="M 45 155 A 115 115 0 0 1 275 155"
                 fill="none"
                 stroke={colA}
@@ -415,10 +415,11 @@ export default function Slide04TeamH2H({
                   transition: 'stroke-dashoffset 1.4s cubic-bezier(0.22, 1, 0.36, 1)',
                   filter: `drop-shadow(0 0 8px ${colA})`,
                 }}
+                onClick={(e) => onElementClick?.(e, 's3', 'teamA', `${a.name} Color`)}
               />
               <path
                 id="m12-a2"
-                className="arc-sweep"
+                className="arc-sweep cursor-pointer hover:opacity-85"
                 d="M 275 155 A 115 115 0 0 0 45 155"
                 fill="none"
                 stroke={colB}
@@ -430,11 +431,27 @@ export default function Slide04TeamH2H({
                   transition: 'stroke-dashoffset 1.4s cubic-bezier(0.22, 1, 0.36, 1)',
                   filter: `drop-shadow(0 0 8px ${colB})`,
                 }}
+                onClick={(e) => onElementClick?.(e, 's3', 'teamB', `${b.name} Color`)}
               />
             </svg>
             <div className="absolute inset-x-0 bottom-3 text-center font-hud text-4xl sm:text-5xl font-extrabold text-white">
-              <span style={{ color: colA }}>{displayPctA}%</span> :{' '}
-              <span style={{ color: colB }}>{displayPctB}%</span>
+              <span
+                className="cursor-pointer hover:opacity-80"
+                style={{ color: colA }}
+                onClick={(e) => onElementClick?.(e, 's3', 'teamA', `${a.name} Color`)}
+                title={`Click to change ${a.name} color`}
+              >
+                {displayPctA}%
+              </span>{' '}
+              :{' '}
+              <span
+                className="cursor-pointer hover:opacity-80"
+                style={{ color: colB }}
+                onClick={(e) => onElementClick?.(e, 's3', 'teamB', `${b.name} Color`)}
+                title={`Click to change ${b.name} color`}
+              >
+                {displayPctB}%
+              </span>
             </div>
           </div>
 

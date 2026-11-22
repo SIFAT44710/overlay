@@ -166,6 +166,16 @@ export default function ColorPopover({
           ))}
         </div>
 
+        {/* Quick Save & Close Button */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full py-1.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-hud font-bold text-sm shadow-lg flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-98"
+        >
+          <span>✓</span>
+          <span>কালার সেভ করুন (SAVE COLOR)</span>
+        </button>
+
         {showExtras && (
           <div className="pt-2 border-t border-white/10 flex items-center justify-between gap-2">
             <button

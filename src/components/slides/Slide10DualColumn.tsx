@@ -575,19 +575,49 @@ export default function Slide10DualColumn({
         </div>
 
         <div className="flex items-center gap-3 font-hud text-sm sm:text-base font-bold">
-          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-950/80 border border-white/10">
+          <button
+            type="button"
+            onClick={(e) => onElementClick?.(e, 's9', 'kills', `${cfg.lbl1} Candle Color`)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-950/80 border border-white/10 hover:border-amber-400 cursor-pointer transition-all"
+            title={`Click to change ${cfg.lbl1} candle color`}
+          >
             <span className="w-3 h-3 rounded-xs" style={{ backgroundColor: themeS9.kills }} />
             <span style={{ color: themeS9.kills }}>{cfg.lbl1}</span>
-          </span>
-          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-950/80 border border-white/10">
+          </button>
+          <button
+            type="button"
+            onClick={(e) => onElementClick?.(e, 's9', 'damage', `${cfg.lbl2} Candle Color`)}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-950/80 border border-white/10 hover:border-sky-400 cursor-pointer transition-all"
+            title={`Click to change ${cfg.lbl2} candle color`}
+          >
             <span className="w-3 h-3 rounded-xs" style={{ backgroundColor: themeS9.damage }} />
             <span style={{ color: themeS9.damage }}>{cfg.lbl2}</span>
-          </span>
+          </button>
         </div>
       </div>
 
       <div className="relative h-[460px] sm:h-[540px] w-full">
-        <canvas ref={canvasRef} />
+        <canvas
+          ref={canvasRef}
+          onClick={(e) => {
+            const chart = chartInstanceRef.current;
+            if (!chart || !onElementClick) return;
+            const elements = chart.getElementsAtEventForMode(
+              e.nativeEvent,
+              'nearest',
+              { intersect: false },
+              false
+            );
+            if (elements.length > 0) {
+              const dsIdx = elements[0].datasetIndex;
+              if (dsIdx === 0) {
+                onElementClick(e, 's9', 'kills', `${latestRef.current.cfg.lbl1} Candle Color`);
+              } else {
+                onElementClick(e, 's9', 'damage', `${latestRef.current.cfg.lbl2} Candle Color`);
+              }
+            }
+          }}
+        />
       </div>
     </div>
   );

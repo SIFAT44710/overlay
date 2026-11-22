@@ -267,7 +267,7 @@ export default function Slide01PointsRace({
                 stroke={col}
                 strokeWidth={isLeader ? 5.8 : 4}
                 strokeLinecap="round"
-                className="draw-line"
+                className="draw-line cursor-pointer"
                 style={{
                   filter: `drop-shadow(0 0 6px ${col})`,
                   strokeDasharray: '2000',
@@ -292,9 +292,13 @@ export default function Slide01PointsRace({
                   stroke="#090b10"
                   strokeWidth="2"
                   opacity={animated ? 1 : 0}
+                  className="cursor-pointer"
                   style={{
                     transition: `opacity 0.5s ease ${1.1 + tIdx * 0.18}s`,
                   }}
+                  onClick={(e) =>
+                    onElementClick?.(e, 's0', colKey, `#${tIdx + 1} ${rawTeam.tag} Node`)
+                  }
                 />
               ))}
 

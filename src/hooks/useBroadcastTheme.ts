@@ -89,10 +89,16 @@ export function useBroadcastTheme() {
       const res = await fetch('/api/theme', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ updates: payload, ...payload }),
       });
       if (res.ok) {
-        mutate();
+        const json = await res.json().catch(() => ({}));
+        if (json.themes) {
+          setStableThemes((prev) => ({ ...prev, ...json.themes }));
+          mutate(json, false);
+        } else {
+          mutate();
+        }
         return true;
       }
       return false;

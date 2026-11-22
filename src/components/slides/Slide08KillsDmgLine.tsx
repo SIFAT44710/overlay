@@ -145,6 +145,17 @@ export default function Slide08KillsDmgLine({
           duration: 1600,
           easing: 'easeOutCubic',
         },
+        onClick: (evt: any, elems: any[]) => {
+          if (!onElementClick) return;
+          if (elems.length > 0) {
+            const dsIdx = elems[0].datasetIndex;
+            if (dsIdx === 0) {
+              onElementClick(evt.nativeEvent, 's7', 'kills', 'Kills Line Color');
+            } else {
+              onElementClick(evt.nativeEvent, 's7', 'damage', 'Damage Line Color');
+            }
+          }
+        },
         layout: {
           padding: {
             top: 48,
@@ -238,6 +249,28 @@ export default function Slide08KillsDmgLine({
 
   return (
     <div className="w-full max-w-[1340px] pt-14 relative font-hud select-none">
+      {/* Top Left Clickable Legend */}
+      <div className="absolute top-1 left-3 sm:left-6 z-30 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={(e) => onElementClick?.(e, 's7', 'kills', 'Kills Line Color')}
+          className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-950/90 border border-white/15 hover:border-amber-400 font-hud text-xs sm:text-sm font-bold cursor-pointer transition-all"
+          title="Click to change Kills line color"
+        >
+          <span className="w-3 h-3 rounded-full" style={{ backgroundColor: themeS7.kills }} />
+          <span style={{ color: themeS7.kills }}>KILLS LINE</span>
+        </button>
+        <button
+          type="button"
+          onClick={(e) => onElementClick?.(e, 's7', 'damage', 'Damage Line Color')}
+          className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-950/90 border border-white/15 hover:border-sky-400 font-hud text-xs sm:text-sm font-bold cursor-pointer transition-all"
+          title="Click to change Damage line color"
+        >
+          <span className="w-3 h-3 rounded-full" style={{ backgroundColor: themeS7.damage }} />
+          <span style={{ color: themeS7.damage }}>DAMAGE LINE</span>
+        </button>
+      </div>
+
       {/* Top Peak Badge with Smooth Animated Entrance */}
       <div className="absolute top-1 right-3 sm:right-6 z-30">
         <div
@@ -253,9 +286,21 @@ export default function Slide08KillsDmgLine({
             sizeCls="w-8 h-8 sm:w-9 sm:h-9"
           />
           <span className="text-amber-400 font-extrabold text-xs sm:text-sm">#1 PEAK MATCH • M{peakIdx + 1}</span>
-          <span className="text-amber-300 font-extrabold text-xs sm:text-sm">{killsData[peakIdx]} KILLS</span>
+          <span
+            className="text-amber-300 font-extrabold text-xs sm:text-sm cursor-pointer hover:underline"
+            onClick={(e) => onElementClick?.(e, 's7', 'kills', 'Kills Line Color')}
+            title="Click to change Kills line color"
+          >
+            {killsData[peakIdx]} KILLS
+          </span>
           <span className="text-slate-500">|</span>
-          <span className="text-sky-300 font-extrabold text-xs sm:text-sm">{Number(dmgData[peakIdx]).toLocaleString()} DMG</span>
+          <span
+            className="text-sky-300 font-extrabold text-xs sm:text-sm cursor-pointer hover:underline"
+            onClick={(e) => onElementClick?.(e, 's7', 'damage', 'Damage Line Color')}
+            title="Click to change Damage line color"
+          >
+            {Number(dmgData[peakIdx]).toLocaleString()} DMG
+          </span>
         </div>
       </div>
 
@@ -264,7 +309,24 @@ export default function Slide08KillsDmgLine({
         <canvas
           ref={canvasRef}
           onClick={(e) => {
-            onElementClick?.(e, 's7', 'kills', 'Line Chart Colors');
+            const chart = chartInstanceRef.current;
+            if (!chart || !onElementClick) return;
+            const elements = chart.getElementsAtEventForMode(
+              e.nativeEvent,
+              'nearest',
+              { intersect: false },
+              false
+            );
+            if (elements.length > 0) {
+              const dsIdx = elements[0].datasetIndex;
+              if (dsIdx === 0) {
+                onElementClick(e, 's7', 'kills', 'Kills Line Color');
+              } else {
+                onElementClick(e, 's7', 'damage', 'Damage Line Color');
+              }
+            } else {
+              onElementClick(e, 's7', 'kills', 'Kills Line Color');
+            }
           }}
         />
       </div>
