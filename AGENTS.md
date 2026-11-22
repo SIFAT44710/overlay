@@ -51,3 +51,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Only **GFF Latin** and **Teko** typography.
 - **ZERO 'K' abbreviations:** Numbers like `57261` or `115964` are rendered in full with comma separators (`57,261`, `115,964`).
 - Hexagon team logos in Chart.js have 72px diameter with `padding.bottom: 132` to guarantee high broadcast visibility in vMix.
+
+---
+
+## 5. Known Gotchas & Architecture Solutions (Updated 2026-11-22)
+- **Chart.js vs React SyntheticEvent in Canvas Click**: In Chart.js `options.onClick(event, elements)`, `event.native` holds the native DOM event, NOT `event.nativeEvent`. Always attach a direct React `onClick={(e) => { e.stopPropagation(); ... }}` on the `<canvas>` tag with `getElementsAtEventForMode(e.nativeEvent, 'nearest', ...)` to prevent click events from bubbling up and triggering background dismiss handlers (`handleClosePopover`).
+- **Theme Deep-Merge**: In `saveThemeConfigToSheet` and `POST /api/theme`, always perform deep object merging for nested theme keys (`s9`, `global`, etc.) instead of shallow `Object.assign`, ensuring sibling keys (like `damage` when updating `kills`) are never erased.
