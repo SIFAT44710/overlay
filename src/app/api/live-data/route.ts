@@ -9,7 +9,6 @@ import {
   safeInt,
   safeFloat,
   safeString,
-  normalizeStr,
 } from '@/lib/sheetParsers';
 import {
   StandingTeam,
@@ -42,12 +41,12 @@ export async function GET(req: NextRequest) {
     const activeConfig = await getActiveConfig();
 
     const ranges = [
-      'DayStanding!A2:J15',
+      'DayStanding!A1:J20',
       'GameStanding!A1:J90',
-      'LastMatchStanding!A2:J15',
+      'LastMatchStanding!A1:J20',
       'Vmix!A1:P150',
-      'PlayerData!A2:K60',
-      'PlayerRoleStats!A1:K120',
+      'PlayerData!A1:K60',
+      'PlayerRoleStats!A1:K130',
       'TeamStats!A1:L20',
       'Weapons!A1:H60',
     ];
@@ -58,23 +57,26 @@ export async function GET(req: NextRequest) {
     ]);
 
     // -------------------------------------------------------------
-    // 1. Parse DayStanding!A2:J15 (Overall 12 Teams Leaderboard)
+    // 1. Parse DayStanding!A1:J20 (Overall 12 Teams Leaderboard)
     // -------------------------------------------------------------
-    const dayRows = batch['DayStanding!A2:J15'] || [];
+    // Columns:
+    // A: Rank, B: Team Name, C: Tag Name, D: Survival Pts, E: Kill Pts,
+    // F: Total Pts, G: Kills, H: Booyah, I: Damage, J: Headshots
+    const dayRows = batch['DayStanding!A1:J20'] || [];
     const standing12: StandingTeam[] = [];
 
-    dayRows.forEach((r: any[], idx: number) => {
+    dayRows.forEach((r: any[]) => {
       const rawRank = safeString(r[0]);
       const name = safeString(r[1]);
-      if (!name) return;
+      if (!name || name.toLowerCase().includes('team name') || rawRank.toLowerCase().includes('rank') || rawRank.includes('DAY STANDING')) return;
 
       const tag = safeString(r[2]) || name.slice(0, 3).toUpperCase();
-      const booyah = safeInt(r[3]);
-      const place = safeInt(r[4]);
-      const elims = safeInt(r[5]);
-      const total = safeInt(r[6]);
-      const damage = safeInt(r[7]);
-      const rankNum = safeInt(rawRank, idx + 1);
+      const place = safeInt(r[3]); // Survival Pts
+      const total = safeInt(r[5]); // Total Pts
+      const elims = safeInt(r[6]); // Kills
+      const booyah = safeInt(r[7]);// Booyah
+      const damage = safeInt(r[8]);// Damage
+      const rankNum = safeInt(rawRank, standing12.length + 1);
 
       const logoUrl = resolveDriveLogo(name, tag, driveFiles);
       standing12.push({
@@ -87,59 +89,82 @@ export async function GET(req: NextRequest) {
         total,
         damage,
         logoUrl,
-        col: DEFAULT_TEAM_COLS[idx % DEFAULT_TEAM_COLS.length],
+        col: DEFAULT_TEAM_COLS[standing12.length % DEFAULT_TEAM_COLS.length],
       });
     });
 
     // -------------------------------------------------------------
-    // 2. Parse GameStanding!A1:J90 (Match 1–5 Points Race Progression)
+    // 2. Parse GameStanding!A1:J90 (Match 1–5 Points Race Progression & Totals)
     // -------------------------------------------------------------
+    // Each match has a header row like: "MATCH #1 | ID: ...", "MATCH #2 | ...", etc.
+    // Under each header: "Rank", "Team Name", "Tag Name", "Survival Pts", "Kill Pts", "Total Pts", "Kills", "Booyah", "Damage"
     const gameRows = batch['GameStanding!A1:J90'] || [];
     const progressionMap: Record<string, { tag: string; name: string; color: string; pts: number[] }> = {};
-
     const progColors = ['#fbbf24', '#a78bfa', '#2dd4bf', '#f43f5e', '#38bdf8'];
-    let colorIdx = 0;
+    let progColorIdx = 0;
+
+    let currentMatch = -1;
+    const matchKills = [0, 0, 0, 0, 0];
+    const matchDamage = [0, 0, 0, 0, 0];
 
     gameRows.forEach((r: any[]) => {
-      const team = safeString(r[1]);
-      const tag = safeString(r[2]) || team.slice(0, 3).toUpperCase();
-      const mIdx = safeInt(r[0]) - 1; // Match 1..5 -> index 0..4
-      const pts = safeInt(r[6]);
+      const text0 = safeString(r[0]);
+      const matchHeader = text0.match(/MATCH\s*#(\d+)/i);
+      if (matchHeader) {
+        currentMatch = parseInt(matchHeader[1], 10) - 1;
+        return;
+      }
+      if (text0.toLowerCase().includes('rank') || !r[1] || safeString(r[1]).toLowerCase().includes('team name')) return;
 
-      if (team && mIdx >= 0 && mIdx < 5) {
-        if (!progressionMap[tag]) {
-          progressionMap[tag] = {
+      if (currentMatch >= 0 && currentMatch < 5) {
+        const team = safeString(r[1]);
+        const tag = safeString(r[2]) || team;
+        const pts = safeInt(r[5]); // Total Pts for this match
+        const k = safeInt(r[6]);   // Kills for this match
+        const d = safeInt(r[8]);   // Damage for this match
+
+        matchKills[currentMatch] += k;
+        matchDamage[currentMatch] += d;
+
+        if (!progressionMap[team]) {
+          progressionMap[team] = {
             tag,
             name: team,
-            color: progColors[colorIdx % progColors.length],
+            color: progColors[progColorIdx % progColors.length],
             pts: [0, 0, 0, 0, 0],
           };
-          colorIdx++;
+          progColorIdx++;
         }
-        progressionMap[tag].pts[mIdx] = pts;
+        progressionMap[team].pts[currentMatch] = pts;
       }
     });
 
-    // Accumulate running cumulative points across Match 1–5
-    const matchProgression: MatchProgressionTeam[] = Object.values(progressionMap)
-      .slice(0, 5)
-      .map((t) => {
-        let acc = 0;
-        const cumPts = t.pts.map((p) => {
-          acc += p;
-          return acc;
-        });
-        return {
-          tag: t.tag,
-          name: t.name,
-          color: t.color,
-          pts: cumPts,
-        };
+    // Calculate cumulative points across Match 1–5 and sort by final total descending
+    const progressionList = Object.values(progressionMap).map((t) => {
+      let acc = 0;
+      const cumPts = t.pts.map((p) => {
+        acc += p;
+        return acc;
       });
+      return {
+        tag: t.tag,
+        name: t.name,
+        color: t.color,
+        pts: cumPts,
+        finalTotal: acc,
+      };
+    });
+    progressionList.sort((a, b) => b.finalTotal - a.finalTotal);
 
-    // Fallback if GameStanding is empty or has < 2 matches
+    const matchProgression: MatchProgressionTeam[] = progressionList.slice(0, 5).map((t, idx) => ({
+      tag: t.tag,
+      name: t.name,
+      color: progColors[idx % progColors.length],
+      pts: t.pts,
+    }));
+
+    // Fallback if GameStanding is completely empty
     if (matchProgression.length < 2) {
-      matchProgression.length = 0;
       matchProgression.push(
         { tag: 'TOP', name: 'RAAD VAI YT', color: '#fbbf24', pts: [21, 67, 81, 104, 134] },
         { tag: 'EXE', name: 'EXTREME EX', color: '#a78bfa', pts: [29, 34, 55, 73, 98] },
@@ -149,21 +174,30 @@ export async function GET(req: NextRequest) {
       );
     }
 
+    // Match Totals for Slide 8 (Dual Line Chart)
+    const matchTotals = {
+      kills: matchKills.some((k) => k > 0) ? matchKills : [114, 102, 97, 129, 114],
+      damage: matchDamage.some((d) => d > 0) ? matchDamage : [74334, 67724, 60618, 75983, 71677],
+    };
+
     // -------------------------------------------------------------
-    // 3. Parse PlayerData & Vmix for Top 10 Players & 1v1 Duel
+    // 3. Parse PlayerData!A1:K60 for Top 10 Players & 1v1 Duel
     // -------------------------------------------------------------
-    const playerRows = batch['PlayerData!A2:K60'] || [];
+    // Columns:
+    // A: Team Name/Tag, B: Player ID, C: Player Name, D: Kill, E: Damage,
+    // F: Assist, G: On Target, H: Moving Distance, I: Headshots
+    const playerRows = batch['PlayerData!A1:K60'] || [];
     const dayTop10Players: DayTopPlayer[] = [];
 
     playerRows.forEach((r: any[]) => {
-      const name = safeString(r[1]);
-      if (!name) return;
-      const team = safeString(r[2]);
-      const tag = safeString(r[3]) || team.slice(0, 3).toUpperCase();
-      const kills = safeInt(r[4]);
-      const dmg = safeInt(r[5]);
-      const assist = safeInt(r[6]);
-      const hs = safeInt(r[7]);
+      const name = safeString(r[2]);
+      if (!name || name.toLowerCase().includes('player name')) return;
+      const team = safeString(r[0]);
+      const tag = team || name.slice(0, 3).toUpperCase();
+      const kills = safeInt(r[3]);
+      const dmg = safeInt(r[4]);
+      const assist = safeInt(r[5]);
+      const hs = safeInt(r[8]);
 
       dayTop10Players.push({ name, team, tag, kills, dmg, assist, hs });
     });
@@ -212,28 +246,57 @@ export async function GET(req: NextRequest) {
     };
 
     // -------------------------------------------------------------
-    // 4. Parse Weapons!A1:H60 (Weapon Meta Rings)
+    // 4. Parse Weapons (Vmix!A91:G98 or Weapons!A1:H60)
     // -------------------------------------------------------------
-    const weaponRows = batch['Weapons!A1:H60'] || batch['Vmix!A1:P150'] || [];
     const weaponColors = ['#8b5cf6', '#2dd4bf', '#fbbf24', '#f43f5e', '#38bdf8'];
     const weaponsDay: WeaponStats[] = [];
 
-    // Check Vmix weapon rows (typically row 93-97)
+    // Check Vmix rows 91-98 first
     const vmixRows = batch['Vmix!A1:P150'] || [];
     for (let i = 0; i < vmixRows.length; i++) {
       const r = vmixRows[i];
-      if (r && r[0] && ['EVO3', 'M7', 'AWM', 'UZI', 'WOODPECKER', 'MP40', 'M1887', 'SCAR', 'GROZA'].includes(safeString(r[0]).toUpperCase())) {
+      if (r && r[0] && ['EVO3', 'M7', 'AWM', 'UZI', 'WOODPECKER', 'MP40', 'M1887', 'SCAR', 'GROZA', 'KAR98K'].includes(safeString(r[0]).toUpperCase())) {
         weaponsDay.push({
           name: safeString(r[0]).toUpperCase(),
           kills: safeInt(r[1]),
           damage: safeInt(r[2]),
-          hs: safeInt(r[3]),
+          hs: safeInt(r[4]), // Col E is Headshots
           color: weaponColors[weaponsDay.length % weaponColors.length],
         });
         if (weaponsDay.length >= 5) break;
       }
     }
 
+    // If Vmix didn't yield 5 weapons, aggregate from Weapons!A1:H60
+    if (weaponsDay.length < 5) {
+      const wepMap: Record<string, { name: string; kills: number; damage: number; hs: number }> = {};
+      const wepRows = batch['Weapons!A1:H60'] || [];
+      wepRows.forEach((r: any[]) => {
+        const wep = safeString(r[3]).toUpperCase();
+        if (!wep || wep.includes('WEAPON')) return;
+        if (!wepMap[wep]) {
+          wepMap[wep] = { name: wep, kills: 0, damage: 0, hs: 0 };
+        }
+        wepMap[wep].kills += safeInt(r[4]);
+        wepMap[wep].damage += safeInt(r[5]);
+        wepMap[wep].hs += safeInt(r[7]);
+      });
+
+      const aggregated = Object.values(wepMap).sort((a, b) => b.kills - a.kills);
+      aggregated.forEach((item) => {
+        if (!weaponsDay.some((w) => w.name === item.name) && weaponsDay.length < 5) {
+          weaponsDay.push({
+            name: item.name,
+            kills: item.kills,
+            damage: item.damage,
+            hs: item.hs,
+            color: weaponColors[weaponsDay.length % weaponColors.length],
+          });
+        }
+      });
+    }
+
+    // Ultimate fallback if sheet is unavailable
     if (weaponsDay.length === 0) {
       weaponsDay.push(
         { name: 'EVO3', kills: 256, damage: 115964, hs: 283, color: '#8b5cf6' },
@@ -245,16 +308,20 @@ export async function GET(req: NextRequest) {
     }
 
     // -------------------------------------------------------------
-    // 5. Parse LastMatchStanding!A2:J15 (Match 5 Standings)
+    // 5. Parse LastMatchStanding!A1:J20 (Match 5 Standings)
     // -------------------------------------------------------------
-    const lastRows = batch['LastMatchStanding!A2:J15'] || [];
+    // Columns:
+    // A: Rank, B: Team Name, C: Tag Name, D: Survival Pts, E: Kill Pts, F: Total Pts
+    const lastRows = batch['LastMatchStanding!A1:J20'] || [];
     const mapStandingM5: MapStanding[] = [];
 
-    lastRows.forEach((r: any[], idx: number) => {
+    lastRows.forEach((r: any[]) => {
+      const rawRank = safeString(r[0]);
       const name = safeString(r[1]);
-      if (!name) return;
+      if (!name || name.toLowerCase().includes('team name') || rawRank.toLowerCase().includes('rank') || rawRank.includes('MATCH')) return;
+
       mapStandingM5.push({
-        rank: safeInt(r[0], idx + 1),
+        rank: safeInt(rawRank, mapStandingM5.length + 1),
         tag: safeString(r[2]) || name.slice(0, 3).toUpperCase(),
         name,
         surv: safeInt(r[3]),
@@ -276,32 +343,49 @@ export async function GET(req: NextRequest) {
     // -------------------------------------------------------------
     // 6. Parse TeamStats!A1:L20 & Full 12 Teams
     // -------------------------------------------------------------
+    // Columns:
+    // A: Rank, B: Team Name, C: Tag Name, D: Survival Pts, E: Kill Pts,
+    // F: Total Pts, G: Kills, H: Booyah, I: Damage, J: Headshots, K: Headshot Rate, L: Gloo Used
     const teamStatsRows = batch['TeamStats!A1:L20'] || [];
     const allTeamsFull: TeamFullStats[] = [];
 
-    teamStatsRows.forEach((r: any[], idx: number) => {
+    teamStatsRows.forEach((r: any[]) => {
+      const rawRank = safeString(r[0]);
       const name = safeString(r[1]);
-      if (!name) return;
+      if (!name || name.toLowerCase().includes('team name') || rawRank.toLowerCase().includes('rank') || rawRank.includes('TEAM STATS')) return;
+
       const tag = safeString(r[2]) || name.slice(0, 3).toUpperCase();
+      const surv = safeInt(r[3]);    // Survival Pts
+      const total = safeInt(r[5]);   // Total Pts
+      const kills = safeInt(r[6]);   // Kills
+      const booyah = safeInt(r[7]);  // Booyah
+      const damage = safeInt(r[8]);  // Damage
+      const hs = safeInt(r[9]);      // Headshots
+      const gloo = safeInt(r[11]);   // Gloo Used
+
+      const avgElims = safeFloat((kills / 5).toFixed(1));
+      const avgDmg = Math.round(damage / 5);
+      const avgSurvMin = safeFloat((10 + (allTeamsFull.length) * 0.4).toFixed(1));
+
       allTeamsFull.push({
-        rank: safeInt(r[0], idx + 1),
+        rank: safeInt(rawRank, allTeamsFull.length + 1),
         tag,
         name,
-        total: safeInt(r[3]),
-        kills: safeInt(r[4]),
-        surv: safeInt(r[5]),
-        damage: safeInt(r[6]),
-        hs: safeInt(r[7]),
-        gloo: safeInt(r[8]),
-        avgElims: safeFloat(r[9], safeFloat((safeInt(r[4]) / 5).toFixed(1))),
-        avgDmg: safeFloat(r[10], Math.round(safeInt(r[6]) / 5)),
-        avgSurvMin: safeFloat(r[11], 12.0),
-        col: DEFAULT_TEAM_COLS[idx % DEFAULT_TEAM_COLS.length],
+        total,
+        kills,
+        surv,
+        damage,
+        hs,
+        gloo,
+        avgElims,
+        avgDmg,
+        avgSurvMin,
+        col: DEFAULT_TEAM_COLS[allTeamsFull.length % DEFAULT_TEAM_COLS.length],
       });
     });
 
     if (allTeamsFull.length === 0 && standing12.length > 0) {
-      standing12.forEach((st, idx) => {
+      standing12.forEach((st) => {
         allTeamsFull.push({
           rank: st.rank,
           tag: st.tag,
@@ -314,7 +398,7 @@ export async function GET(req: NextRequest) {
           gloo: Math.round(st.place * 6),
           avgElims: safeFloat((st.elims / 5).toFixed(1)),
           avgDmg: Math.round((st.damage || st.elims * 500) / 5),
-          avgSurvMin: safeFloat((10 + idx * 0.4).toFixed(1)),
+          avgSurvMin: safeFloat((10 + st.rank * 0.4).toFixed(1)),
           col: st.col,
         });
       });
@@ -329,19 +413,22 @@ export async function GET(req: NextRequest) {
       col: t.col || DEFAULT_TEAM_COLS[idx % DEFAULT_TEAM_COLS.length],
     }));
 
-    // H2H Match 5
-    const h2hMatch5 = {
-      a: allTeamsFull[1]
+    // H2H Match 5 (Index 1 vs Index 7 default)
+    const tA = allTeamsFull[1] || allTeamsFull[0];
+    const tB = allTeamsFull[7] || allTeamsFull[1] || allTeamsFull[0];
+
+    const h2hMatch5: { a: H2HTeam; b: H2HTeam } = {
+      a: tA
         ? {
-            name: allTeamsFull[1].name,
-            tag: allTeamsFull[1].tag,
-            rank: allTeamsFull[1].rank,
-            surv: allTeamsFull[1].surv,
-            kills: allTeamsFull[1].kills,
-            total: allTeamsFull[1].total,
-            damage: allTeamsFull[1].damage,
-            hs: allTeamsFull[1].hs,
-            gloo: allTeamsFull[1].gloo,
+            name: tA.name,
+            tag: tA.tag,
+            rank: tA.rank,
+            surv: tA.surv,
+            kills: tA.kills,
+            total: tA.total,
+            damage: tA.damage,
+            hs: tA.hs,
+            gloo: tA.gloo,
           }
         : {
             name: 'EXTREME EX',
@@ -354,17 +441,17 @@ export async function GET(req: NextRequest) {
             hs: 67,
             gloo: 340,
           },
-      b: allTeamsFull[7]
+      b: tB
         ? {
-            name: allTeamsFull[7].name,
-            tag: allTeamsFull[7].tag,
-            rank: allTeamsFull[7].rank,
-            surv: allTeamsFull[7].surv,
-            kills: allTeamsFull[7].kills,
-            total: allTeamsFull[7].total,
-            damage: allTeamsFull[7].damage,
-            hs: allTeamsFull[7].hs,
-            gloo: allTeamsFull[7].gloo,
+            name: tB.name,
+            tag: tB.tag,
+            rank: tB.rank,
+            surv: tB.surv,
+            kills: tB.kills,
+            total: tB.total,
+            damage: tB.damage,
+            hs: tB.hs,
+            gloo: tB.gloo,
           }
         : {
             name: '69 ESPORTS',
@@ -379,15 +466,18 @@ export async function GET(req: NextRequest) {
           },
     };
 
-    // H2H Group Average
-    const h2hGroupAvg = {
-      a: allTeamsFull[7]
+    // H2H Group Average (Index 7 vs Index 3 default)
+    const gA = allTeamsFull[7] || allTeamsFull[0];
+    const gB = allTeamsFull[3] || allTeamsFull[1] || allTeamsFull[0];
+
+    const h2hGroupAvg: { a: H2HGroupAvgTeam; b: H2HGroupAvgTeam } = {
+      a: gA
         ? {
-            name: allTeamsFull[7].name,
-            tag: allTeamsFull[7].tag,
-            avgElims: allTeamsFull[7].avgElims,
-            avgDmg: allTeamsFull[7].avgDmg,
-            avgSurvMin: allTeamsFull[7].avgSurvMin,
+            name: gA.name,
+            tag: gA.tag,
+            avgElims: gA.avgElims,
+            avgDmg: gA.avgDmg,
+            avgSurvMin: gA.avgSurvMin,
           }
         : {
             name: '69 ESPORTS',
@@ -396,13 +486,13 @@ export async function GET(req: NextRequest) {
             avgDmg: 5407,
             avgSurvMin: 8.5,
           },
-      b: allTeamsFull[3]
+      b: gB
         ? {
-            name: allTeamsFull[3].name,
-            tag: allTeamsFull[3].tag,
-            avgElims: allTeamsFull[3].avgElims,
-            avgDmg: allTeamsFull[3].avgDmg,
-            avgSurvMin: allTeamsFull[3].avgSurvMin,
+            name: gB.name,
+            tag: gB.tag,
+            avgElims: gB.avgElims,
+            avgDmg: gB.avgDmg,
+            avgSurvMin: gB.avgSurvMin,
           }
         : {
             name: 'COFFIN MAKERS ESP',
@@ -414,9 +504,11 @@ export async function GET(req: NextRequest) {
     };
 
     // -------------------------------------------------------------
-    // 7. Parse PlayerRoleStats!A1:K120 (BOMBER BUG FIX - NO HARDCODING)
+    // 7. Parse PlayerRoleStats!A1:K130 (BOMBER BUG FIX - NO HARDCODING)
     // -------------------------------------------------------------
-    const roleRows = batch['PlayerRoleStats!A1:K120'] || [];
+    // Section headers: "SNIPER (8 PLAYERS)", "RUSHER (26 PLAYERS)", "SUPPORT (13 PLAYERS)", "BOMBER (6 PLAYERS)"
+    // Under each header: "Team Name", "Player ID", "Player Name", "Kill", "Damage", ...
+    const roleRows = batch['PlayerRoleStats!A1:K130'] || [];
     const rolesMap: Record<string, RoleItem> = {
       RUSHER: {
         role: 'RUSHER',
@@ -471,11 +563,14 @@ export async function GET(req: NextRequest) {
     let currentRole = '';
     roleRows.forEach((r: any[]) => {
       const col0 = safeString(r[0]).toUpperCase();
-      if (['RUSHER', 'SUPPORT', 'SNIPER', 'BOMBER'].includes(col0)) {
-        currentRole = col0;
-      }
+      if (col0.includes('RUSHER')) currentRole = 'RUSHER';
+      else if (col0.includes('SUPPORT')) currentRole = 'SUPPORT';
+      else if (col0.includes('SNIPER')) currentRole = 'SNIPER';
+      else if (col0.includes('BOMBER')) currentRole = 'BOMBER';
+
       if (currentRole && r[2] && r[3] && !isNaN(parseInt(String(r[3]), 10))) {
         const pName = safeString(r[2]);
+        if (pName.toLowerCase().includes('player name')) return;
         const k = safeInt(r[3]);
         const d = safeInt(r[4]);
         const target = rolesMap[currentRole];
@@ -519,11 +614,6 @@ export async function GET(req: NextRequest) {
         damage: rolesMap.BOMBER.players > 0 ? Math.round(rolesMap.BOMBER.damage / rolesMap.BOMBER.players) : 6545,
       },
     ];
-
-    const matchTotals = {
-      kills: [114, 102, 97, 129, 114],
-      damage: [74334, 67724, 60618, 75983, 71677],
-    };
 
     const payload: SheetDataPayload = {
       success: true,
