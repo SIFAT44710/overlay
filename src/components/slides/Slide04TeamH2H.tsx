@@ -20,24 +20,9 @@ export default function Slide04TeamH2H({
   onElementClick,
 }: SlideProps) {
   const [animated, setAnimated] = useState(false);
-  const [prevKey, setPrevKey] = useState(replayKey);
-  const hasAnimatedRef = useRef(false);
-
-  if (replayKey !== prevKey) {
-    setPrevKey(replayKey);
-    setAnimated(false);
-  }
-
-  useEffect(() => {
-    const rafId = requestAnimationFrame(() => {
-      const timer = setTimeout(() => {
-        setAnimated(true);
-        hasAnimatedRef.current = true;
-      }, 140);
-      return () => clearTimeout(timer);
-    });
-    return () => cancelAnimationFrame(rafId);
-  }, [replayKey]);
+  const [displayPctA, setDisplayPctA] = useState(0);
+  const [displayPctB, setDisplayPctB] = useState(0);
+  const [radarScale, setRadarScale] = useState(0);
 
   const themeS3 = theme?.s3 || { teamA: '#8b5cf6', teamB: '#2dd4bf' };
   const custom = theme?.custom;
@@ -89,6 +74,45 @@ export default function Slide04TeamH2H({
   const pctA = Math.round((a.total / totSum) * 100);
   const pctB = 100 - pctA;
 
+  // Smooth 60fps Entrance & Counter Animation
+  useEffect(() => {
+    setAnimated(false);
+    setDisplayPctA(0);
+    setDisplayPctB(0);
+    setRadarScale(0);
+
+    let rafId: number;
+    let start: number | null = null;
+    const duration = 1600;
+
+    const timer = setTimeout(() => {
+      setAnimated(true);
+
+      const step = (timestamp: number) => {
+        if (!start) start = timestamp;
+        const elapsed = timestamp - start;
+        const progress = Math.min(elapsed / duration, 1);
+        // Smooth easeOutCubic curve
+        const ease = 1 - Math.pow(1 - progress, 3);
+
+        setDisplayPctA(Math.round(pctA * ease));
+        setDisplayPctB(Math.round(pctB * ease));
+        setRadarScale(ease);
+
+        if (progress < 1) {
+          rafId = requestAnimationFrame(step);
+        }
+      };
+
+      rafId = requestAnimationFrame(step);
+    }, 200);
+
+    return () => {
+      clearTimeout(timer);
+      cancelAnimationFrame(rafId);
+    };
+  }, [replayKey, pctA, pctB]);
+
   const R = 115;
   const ARC = Math.PI * R;
   const CX = 210;
@@ -129,8 +153,15 @@ export default function Slide04TeamH2H({
         {/* Team A Card */}
         <div
           id="m12-card-a"
-          className="skew-box dark-box border-l-4 px-3 py-1 rounded-lg transition-all duration-500 w-fit max-w-[340px] relative cursor-pointer"
-          style={{ borderLeftColor: colA }}
+          className={`skew-box dark-box border-l-4 px-3 py-1 rounded-lg transition-all duration-500 w-fit max-w-[340px] relative cursor-pointer ${
+            winnerSide === 'a' && animated ? 'top1-hero-glow fire-winner-card top1-scale' : ''
+          }`}
+          style={{
+            borderLeftColor: colA,
+            transform: animated ? 'translateY(0)' : 'translateY(-14px)',
+            opacity: animated ? 1 : 0,
+            transition: 'transform 0.5s cubic-bezier(0.22,1,0.36,1), opacity 0.4s ease',
+          }}
           onClick={(e) => onElementClick?.(e, 's3', 'teamA', `${a.name} Color`)}
         >
           {winnerSide === 'a' && <SpiritFireCanvas />}
@@ -159,8 +190,15 @@ export default function Slide04TeamH2H({
         {/* Team B Card */}
         <div
           id="m12-card-b"
-          className="skew-box dark-box border-r-4 px-3 py-1 rounded-lg transition-all duration-500 w-fit max-w-[340px] ml-auto relative cursor-pointer"
-          style={{ borderRightColor: colB }}
+          className={`skew-box dark-box border-r-4 px-3 py-1 rounded-lg transition-all duration-500 w-fit max-w-[340px] ml-auto relative cursor-pointer ${
+            winnerSide === 'b' && animated ? 'top1-hero-glow fire-winner-card top1-scale' : ''
+          }`}
+          style={{
+            borderRightColor: colB,
+            transform: animated ? 'translateY(0)' : 'translateY(-14px)',
+            opacity: animated ? 1 : 0,
+            transition: 'transform 0.5s cubic-bezier(0.22,1,0.36,1), opacity 0.4s ease',
+          }}
           onClick={(e) => onElementClick?.(e, 's3', 'teamB', `${b.name} Color`)}
         >
           {winnerSide === 'b' && <SpiritFireCanvas />}
@@ -198,20 +236,38 @@ export default function Slide04TeamH2H({
               fill="rgba(9,11,18,0.88)"
               stroke="rgba(192,132,252,0.5)"
               strokeWidth="2"
+              style={{
+                transformOrigin: `${CX}px ${CY}px`,
+                transform: animated ? 'scale(1)' : 'scale(0.85)',
+                opacity: animated ? 1 : 0,
+                transition: 'transform 0.6s cubic-bezier(0.22,1,0.36,1), opacity 0.4s ease',
+              }}
             />
             {/* Inner Diamond Frame */}
             <polygon
               points={`${CX},${CY - MAX_R * 0.64} ${CX + MAX_R * 0.64},${CY} ${CX},${CY + MAX_R * 0.64} ${CX - MAX_R * 0.64},${CY}`}
               fill="none"
               stroke="rgba(148,163,184,0.3)"
+              style={{
+                transformOrigin: `${CX}px ${CY}px`,
+                transform: animated ? 'scale(1)' : 'scale(0.85)',
+                opacity: animated ? 1 : 0,
+                transition: 'transform 0.6s cubic-bezier(0.22,1,0.36,1), opacity 0.4s ease',
+              }}
             />
             <line x1={CX} y1={CY - MAX_R} x2={CX} y2={CY + MAX_R} stroke="rgba(148,163,184,0.24)" />
             <line x1={CX - MAX_R} y1={CY} x2={CX + MAX_R} y2={CY} stroke="rgba(148,163,184,0.24)" />
 
-            {/* Team A Polygon */}
+            {/* Team A Polygon with Smooth Scale Bloom */}
             <g
               data-edit-group="s3"
               data-edit-key="teamA"
+              style={{
+                transformOrigin: `${CX}px ${CY}px`,
+                transform: `scale(${radarScale})`,
+                opacity: animated ? 1 : 0,
+                transition: 'opacity 0.4s ease',
+              }}
               onClick={(e) => onElementClick?.(e, 's3', 'teamA', `${a.name} Color`)}
             >
               <polygon
@@ -219,7 +275,6 @@ export default function Slide04TeamH2H({
                 fill={`${colA}4A`}
                 stroke={colA}
                 strokeWidth="3.6"
-                className="transition-all duration-700"
               />
               {ptsA.map((pt, i) => (
                 <circle
@@ -234,10 +289,16 @@ export default function Slide04TeamH2H({
               ))}
             </g>
 
-            {/* Team B Polygon */}
+            {/* Team B Polygon with Smooth Scale Bloom */}
             <g
               data-edit-group="s3"
               data-edit-key="teamB"
+              style={{
+                transformOrigin: `${CX}px ${CY}px`,
+                transform: `scale(${radarScale})`,
+                opacity: animated ? 1 : 0,
+                transition: 'opacity 0.4s ease',
+              }}
               onClick={(e) => onElementClick?.(e, 's3', 'teamB', `${b.name} Color`)}
             >
               <polygon
@@ -245,7 +306,6 @@ export default function Slide04TeamH2H({
                 fill={`${colB}3E`}
                 stroke={colB}
                 strokeWidth="3.6"
-                className="transition-all duration-700"
               />
               {ptsB.map((pt, i) => (
                 <circle
@@ -260,37 +320,45 @@ export default function Slide04TeamH2H({
               ))}
             </g>
 
-            {/* Vertex Top: KILLS (Cleanly Outside) */}
-            <text x={CX} y="30" textAnchor="middle" fill="#fff" fontSize="22" fontWeight="800" className="font-hud">
-              KILLS
-            </text>
-            <text x={CX} y="52" textAnchor="middle" fill="#fde047" fontSize="20" fontWeight="800" className="font-hud">
-              {a.kills} vs {b.kills}
-            </text>
+            {/* Vertex Labels with Smooth Fade */}
+            <g
+              style={{
+                opacity: animated ? 1 : 0,
+                transition: 'opacity 0.6s ease 0.2s',
+              }}
+            >
+              {/* Vertex Top: KILLS (Cleanly Outside) */}
+              <text x={CX} y="30" textAnchor="middle" fill="#fff" fontSize="22" fontWeight="800" className="font-hud">
+                KILLS
+              </text>
+              <text x={CX} y="52" textAnchor="middle" fill="#fde047" fontSize="20" fontWeight="800" className="font-hud">
+                {a.kills} vs {b.kills}
+              </text>
 
-            {/* Vertex Right: DAMAGE (Cleanly Outside) */}
-            <text x={CX + MAX_R + 14} y={CY - 4} textAnchor="start" fill="#fff" fontSize="22" fontWeight="800" className="font-hud">
-              DAMAGE
-            </text>
-            <text x={CX + MAX_R + 14} y={CY + 18} textAnchor="start" fill="#7dd3fc" fontSize="18" fontWeight="800" className="font-hud">
-              {formatNumber(a.damage)} vs {formatNumber(b.damage)}
-            </text>
+              {/* Vertex Right: DAMAGE (Cleanly Outside) */}
+              <text x={CX + MAX_R + 14} y={CY - 4} textAnchor="start" fill="#fff" fontSize="22" fontWeight="800" className="font-hud">
+                DAMAGE
+              </text>
+              <text x={CX + MAX_R + 14} y={CY + 18} textAnchor="start" fill="#7dd3fc" fontSize="18" fontWeight="800" className="font-hud">
+                {formatNumber(a.damage)} vs {formatNumber(b.damage)}
+              </text>
 
-            {/* Vertex Bottom: HEADSHOTS (Cleanly Outside) */}
-            <text x={CX} y="294" textAnchor="middle" fill="#fff" fontSize="22" fontWeight="800" className="font-hud">
-              HEADSHOTS
-            </text>
-            <text x={CX} y="316" textAnchor="middle" fill="#fde047" fontSize="20" fontWeight="800" className="font-hud">
-              {a.hs} vs {b.hs}
-            </text>
+              {/* Vertex Bottom: HEADSHOTS (Cleanly Outside) */}
+              <text x={CX} y="294" textAnchor="middle" fill="#fff" fontSize="22" fontWeight="800" className="font-hud">
+                HEADSHOTS
+              </text>
+              <text x={CX} y="316" textAnchor="middle" fill="#fde047" fontSize="20" fontWeight="800" className="font-hud">
+                {a.hs} vs {b.hs}
+              </text>
 
-            {/* Vertex Left: GLOO WALL (Cleanly Outside) */}
-            <text x={CX - MAX_R - 14} y={CY - 4} textAnchor="end" fill="#fff" fontSize="22" fontWeight="800" className="font-hud">
-              GLOO WALL
-            </text>
-            <text x={CX - MAX_R - 14} y={CY + 18} textAnchor="end" fill="#5eead4" fontSize="20" fontWeight="800" className="font-hud">
-              {a.gloo} vs {b.gloo}
-            </text>
+              {/* Vertex Left: GLOO WALL (Cleanly Outside) */}
+              <text x={CX - MAX_R - 14} y={CY - 4} textAnchor="end" fill="#fff" fontSize="22" fontWeight="800" className="font-hud">
+                GLOO WALL
+              </text>
+              <text x={CX - MAX_R - 14} y={CY + 18} textAnchor="end" fill="#5eead4" fontSize="20" fontWeight="800" className="font-hud">
+                {a.gloo} vs {b.gloo}
+              </text>
+            </g>
           </svg>
         </div>
 
@@ -306,10 +374,11 @@ export default function Slide04TeamH2H({
                 fill="none"
                 stroke={colA}
                 strokeWidth="24"
+                strokeLinecap="round"
                 style={{
-                  strokeDasharray: ARC,
-                  strokeDashoffset: animated ? ARC * (1 - pctA / 100) : ARC,
-                  transition: 'stroke-dashoffset 1.8s cubic-bezier(0.22, 1.08, 0.36, 1)',
+                  strokeDasharray: `${ARC} ${ARC}`,
+                  strokeDashoffset: ARC * (1 - (pctA * (radarScale || (animated ? 1 : 0))) / 100),
+                  transition: 'stroke-dashoffset 0.1s linear',
                 }}
               />
               <path
@@ -319,21 +388,29 @@ export default function Slide04TeamH2H({
                 fill="none"
                 stroke={colB}
                 strokeWidth="24"
+                strokeLinecap="round"
                 style={{
-                  strokeDasharray: ARC,
-                  strokeDashoffset: animated ? ARC * (1 - pctB / 100) : ARC,
-                  transition: 'stroke-dashoffset 1.8s cubic-bezier(0.22, 1.08, 0.36, 1)',
+                  strokeDasharray: `${ARC} ${ARC}`,
+                  strokeDashoffset: ARC * (1 - (pctB * (radarScale || (animated ? 1 : 0))) / 100),
+                  transition: 'stroke-dashoffset 0.1s linear',
                 }}
               />
             </svg>
             <div className="absolute inset-x-0 bottom-3 text-center font-hud text-4xl sm:text-5xl font-extrabold text-white">
-              <span style={{ color: colA }}>{animated ? `${pctA}%` : '0%'}</span> :{' '}
-              <span style={{ color: colB }}>{animated ? `${pctB}%` : '0%'}</span>
+              <span style={{ color: colA }}>{displayPctA}%</span> :{' '}
+              <span style={{ color: colB }}>{displayPctB}%</span>
             </div>
           </div>
 
           {/* Lower 3 Metrics Summary */}
-          <div className="w-full grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-white/15 text-center font-hud">
+          <div
+            className="w-full grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-white/15 text-center font-hud"
+            style={{
+              opacity: animated ? 1 : 0,
+              transform: animated ? 'translateY(0)' : 'translateY(10px)',
+              transition: 'opacity 0.6s ease 0.3s, transform 0.6s ease 0.3s',
+            }}
+          >
             <div>
               <div className="text-slate-400 text-xs">DAMAGE</div>
               <div className="font-extrabold text-white text-xl">
