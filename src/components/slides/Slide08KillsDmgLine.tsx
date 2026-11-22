@@ -5,7 +5,6 @@ import { Chart, registerables } from 'chart.js';
 import { SheetDataPayload, BroadcastThemeConfig } from '@/types/broadcast';
 import TeamLogoBadge from '@/components/TeamLogoBadge';
 import SpiritFireCanvas from '@/components/SpiritFireCanvas';
-import { formatNumber } from '@/lib/sheetParsers';
 
 Chart.register(...registerables);
 
@@ -47,34 +46,25 @@ export default function Slide08KillsDmgLine({
     }
   });
 
-  // Destroy on replayKey change
+  const latestRef = useRef({ killsData, dmgData, themeS7 });
   useEffect(() => {
-    if (chartInstanceRef.current) {
-      chartInstanceRef.current.destroy();
-      chartInstanceRef.current = null;
-    }
-  }, [replayKey]);
+    latestRef.current = { killsData, dmgData, themeS7 };
+  });
 
+  // 1. Initial Mount & ReplayKey: Create Chart ONCE
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Smooth in-place update if chart already exists
+    // Clean up any stale chart on this canvas
+    const existing = Chart.getChart(canvas);
+    if (existing) existing.destroy();
     if (chartInstanceRef.current) {
-      const chart = chartInstanceRef.current;
-      if (chart.data.datasets[0]) {
-        chart.data.datasets[0].data = killsData;
-        chart.data.datasets[0].borderColor = themeS7.kills;
-        chart.data.datasets[0].backgroundColor = `${themeS7.kills}2A`;
-      }
-      if (chart.data.datasets[1]) {
-        chart.data.datasets[1].data = dmgData;
-        chart.data.datasets[1].borderColor = themeS7.damage;
-        chart.data.datasets[1].backgroundColor = `${themeS7.damage}22`;
-      }
-      chart.update('none');
-      return;
+      chartInstanceRef.current.destroy();
+      chartInstanceRef.current = null;
     }
+
+    const { killsData: initialKills, dmgData: initialDmg, themeS7: initialTheme } = latestRef.current;
 
     // Custom Plugin: Exact Comma Full Numbers (Zero 'K')
     const valuePlugin = {
@@ -111,29 +101,29 @@ export default function Slide08KillsDmgLine({
         datasets: [
           {
             label: 'Total Kills',
-            data: killsData,
-            borderColor: themeS7.kills,
-            backgroundColor: `${themeS7.kills}2A`,
+            data: initialKills,
+            borderColor: initialTheme.kills,
+            backgroundColor: `${initialTheme.kills}2A`,
             yAxisID: 'y',
             tension: 0.36,
             fill: true,
             borderWidth: 4,
             pointRadius: 7,
-            pointBackgroundColor: themeS7.kills,
+            pointBackgroundColor: initialTheme.kills,
             pointBorderColor: '#090b10',
             pointBorderWidth: 2.5,
           },
           {
             label: 'Total Damage',
-            data: dmgData,
-            borderColor: themeS7.damage,
-            backgroundColor: `${themeS7.damage}22`,
+            data: initialDmg,
+            borderColor: initialTheme.damage,
+            backgroundColor: `${initialTheme.damage}22`,
             yAxisID: 'y1',
             tension: 0.36,
             fill: true,
             borderWidth: 4,
             pointRadius: 7,
-            pointBackgroundColor: themeS7.damage,
+            pointBackgroundColor: initialTheme.damage,
             pointBorderColor: '#090b10',
             pointBorderWidth: 2.5,
           },
@@ -169,7 +159,7 @@ export default function Slide08KillsDmgLine({
             title: {
               display: true,
               text: 'KILLS',
-              color: themeS7.kills,
+              color: initialTheme.kills,
               font: { size: 18, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
             },
             ticks: {
@@ -185,7 +175,7 @@ export default function Slide08KillsDmgLine({
             title: {
               display: true,
               text: 'DAMAGE',
-              color: themeS7.damage,
+              color: initialTheme.damage,
               font: { size: 18, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
             },
             ticks: {
@@ -196,9 +186,7 @@ export default function Slide08KillsDmgLine({
           },
         },
         plugins: {
-          legend: {
-            display: false,
-          },
+          legend: { display: false },
           tooltip: {
             callbacks: {
               label: (item: any) => `${item.dataset.label}: ${Number(item.raw).toLocaleString()}`,
@@ -213,9 +201,30 @@ export default function Slide08KillsDmgLine({
 
     return () => {
       newChart.destroy();
-      chartInstanceRef.current = null;
+      if (chartInstanceRef.current === newChart) {
+        chartInstanceRef.current = null;
+      }
     };
-  }, [killsData, dmgData, themeS7]);
+  }, [replayKey]);
+
+  // 2. Data & Theme Background Update: Update in-place silently WITHOUT rebuilding
+  useEffect(() => {
+    const chart = chartInstanceRef.current;
+    if (!chart) return;
+    if (chart.data.datasets[0]) {
+      chart.data.datasets[0].data = killsData;
+      chart.data.datasets[0].borderColor = themeS7.kills;
+      chart.data.datasets[0].backgroundColor = `${themeS7.kills}2A`;
+      (chart.data.datasets[0] as any).pointBackgroundColor = themeS7.kills;
+    }
+    if (chart.data.datasets[1]) {
+      chart.data.datasets[1].data = dmgData;
+      chart.data.datasets[1].borderColor = themeS7.damage;
+      chart.data.datasets[1].backgroundColor = `${themeS7.damage}22`;
+      (chart.data.datasets[1] as any).pointBackgroundColor = themeS7.damage;
+    }
+    chart.update('none');
+  }, [killsData.join(','), dmgData.join(','), themeS7.kills, themeS7.damage]);
 
   return (
     <div className="w-full max-w-[1340px] pt-14 relative font-hud select-none">

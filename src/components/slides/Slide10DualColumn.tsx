@@ -16,7 +16,12 @@ interface SlideProps {
   onElementClick?: (e: React.MouseEvent, group: string, key: string, label: string) => void;
 }
 
-export default function Slide10DualColumn({ sheetData, theme, replayKey, onElementClick }: SlideProps) {
+export default function Slide10DualColumn({
+  sheetData,
+  theme,
+  replayKey = 0,
+  onElementClick,
+}: SlideProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
   const imgCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
@@ -42,9 +47,10 @@ export default function Slide10DualColumn({ sheetData, theme, replayKey, onEleme
   const st12 = sheetData?.standing12 || [];
   const m5 = sheetData?.mapStandingM5 || [];
   const pl = sheetData?.dayTop10Players || [];
-  const hs12 = sheetData?.allTeamsFull && sheetData.allTeamsFull.length > 0
-    ? sheetData.allTeamsFull.map((t) => t.hs)
-    : [89, 67, 51, 70, 61, 41, 51, 65, 44, 47, 24, 3];
+  const hs12 =
+    sheetData?.allTeamsFull && sheetData.allTeamsFull.length > 0
+      ? sheetData.allTeamsFull.map((t) => t.hs)
+      : [89, 67, 51, 70, 61, 41, 51, 65, 44, 47, 24, 3];
 
   // Resolve Drive Logo for each team
   const teamLogoMap: Record<string, string> = {};
@@ -137,33 +143,25 @@ export default function Slide10DualColumn({ sheetData, theme, replayKey, onEleme
     };
   }
 
-  // Destroy on replayKey change
+  const latestRef = useRef({ cfg, themeS9, teamLogoMap });
   useEffect(() => {
-    if (chartInstanceRef.current) {
-      chartInstanceRef.current.destroy();
-      chartInstanceRef.current = null;
-    }
-  }, [replayKey]);
+    latestRef.current = { cfg, themeS9, teamLogoMap };
+  });
 
+  // 1. Initial Mount & ReplayKey: Create Chart ONCE
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Smooth in-place update if chart already exists
+    // Clean up any stale chart on this canvas
+    const existing = Chart.getChart(canvas);
+    if (existing) existing.destroy();
     if (chartInstanceRef.current) {
-      const chart = chartInstanceRef.current;
-      chart.data.labels = cfg.tags;
-      if (chart.data.datasets[0]) {
-        chart.data.datasets[0].data = cfg.d1;
-        chart.data.datasets[0].backgroundColor = themeS9.kills;
-      }
-      if (chart.data.datasets[1]) {
-        chart.data.datasets[1].data = cfg.d2;
-        chart.data.datasets[1].backgroundColor = themeS9.damage;
-      }
-      chart.update('none');
-      return;
+      chartInstanceRef.current.destroy();
+      chartInstanceRef.current = null;
     }
+
+    const { cfg: currentCfg, themeS9: currentTheme } = latestRef.current;
 
     // Custom Plugin: Exact Comma Full Numbers (Zero 'K')
     const valuePlugin = {
@@ -203,23 +201,23 @@ export default function Slide10DualColumn({ sheetData, theme, replayKey, onEleme
         const yBase = chart.chartArea.bottom + 14;
         ctx.save();
 
-        cfg.tags.forEach((tag, i) => {
+        const cur = latestRef.current;
+        cur.cfg.tags.forEach((tag, i) => {
           const cx = xScale.getPixelForValue(i);
-          const col = cfg.cols[i % cfg.cols.length];
+          const col = cur.cfg.cols[i % cur.cfg.cols.length] || '#8b5cf6';
           const isLight = col === '#F5B700' || col === '#2DD4BF' || col === '#00DF82';
           const r = 36; // 72px diameter
           const cy = yBase + r;
 
-          // Check if Drive logo exists in cache or needs preloading
           const logoUrl =
-            teamLogoMap[tag.toUpperCase()] ||
-            teamLogoMap[cfg.names[i]?.toUpperCase()] ||
+            cur.teamLogoMap[tag.toUpperCase()] ||
+            cur.teamLogoMap[cur.cfg.names[i]?.toUpperCase()] ||
             '';
           let img: HTMLImageElement | undefined;
           if (logoUrl) {
             if (!imgCacheRef.current.has(logoUrl)) {
               const newImg = new Image();
-              newImg.crossOrigin = 'anonymous';
+              // Do NOT set crossOrigin='anonymous' to avoid CORS block
               newImg.src = logoUrl;
               newImg.onload = () => {
                 if (chartInstanceRef.current) {
@@ -298,21 +296,21 @@ export default function Slide10DualColumn({ sheetData, theme, replayKey, onEleme
     const newChart = new Chart(canvas, {
       type: 'bar',
       data: {
-        labels: cfg.tags,
+        labels: currentCfg.tags,
         datasets: [
           {
-            label: cfg.lbl1,
-            data: cfg.d1,
-            backgroundColor: themeS9.kills,
+            label: currentCfg.lbl1,
+            data: currentCfg.d1,
+            backgroundColor: currentTheme.kills,
             borderRadius: 8,
             yAxisID: 'y',
             barPercentage: 0.86,
             categoryPercentage: 0.72,
           },
           {
-            label: cfg.lbl2,
-            data: cfg.d2,
-            backgroundColor: themeS9.damage,
+            label: currentCfg.lbl2,
+            data: currentCfg.d2,
+            backgroundColor: currentTheme.damage,
             borderRadius: 8,
             yAxisID: 'y1',
             barPercentage: 0.86,
@@ -328,9 +326,9 @@ export default function Slide10DualColumn({ sheetData, theme, replayKey, onEleme
           if (!elems.length || !onElementClick) return;
           const dsIdx = elems[0].datasetIndex;
           if (dsIdx === 0) {
-            onElementClick(evt.native, 's9', 'kills', `${cfg.lbl1} Candle`);
+            onElementClick(evt.nativeEvent, 's9', 'kills', `${latestRef.current.cfg.lbl1} Candle`);
           } else {
-            onElementClick(evt.native, 's9', 'damage', `${cfg.lbl2} Candle`);
+            onElementClick(evt.nativeEvent, 's9', 'damage', `${latestRef.current.cfg.lbl2} Candle`);
           }
         },
         layout: { padding: { top: 48, bottom: 132, left: 10, right: 10 } },
@@ -349,7 +347,7 @@ export default function Slide10DualColumn({ sheetData, theme, replayKey, onEleme
             padding: 12,
             cornerRadius: 8,
             callbacks: {
-              title: (items: any) => cfg.names[items[0].dataIndex] || items[0].label,
+              title: (items: any) => latestRef.current.cfg.names[items[0].dataIndex] || items[0].label,
               label: (item: any) => `${item.dataset.label}: ${formatNumber(item.raw)}`,
             },
           },
@@ -362,8 +360,8 @@ export default function Slide10DualColumn({ sheetData, theme, replayKey, onEleme
             grid: { color: 'rgba(100,116,139,0.32)' },
             title: {
               display: true,
-              text: cfg.lbl1,
-              color: themeS9.kills,
+              text: currentCfg.lbl1,
+              color: currentTheme.kills,
               font: { size: 18, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
             },
             ticks: {
@@ -378,8 +376,8 @@ export default function Slide10DualColumn({ sheetData, theme, replayKey, onEleme
             grid: { display: false },
             title: {
               display: true,
-              text: cfg.lbl2,
-              color: themeS9.damage,
+              text: currentCfg.lbl2,
+              color: currentTheme.damage,
               font: { size: 18, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
             },
             ticks: {
@@ -396,8 +394,29 @@ export default function Slide10DualColumn({ sheetData, theme, replayKey, onEleme
 
     return () => {
       newChart.destroy();
+      if (chartInstanceRef.current === newChart) {
+        chartInstanceRef.current = null;
+      }
     };
-  }, [cfg, themeS9.kills, themeS9.damage, onElementClick]);
+  }, [replayKey]);
+
+  // 2. Data & Theme Background Update: Update in-place silently WITHOUT rebuilding
+  useEffect(() => {
+    const chart = chartInstanceRef.current;
+    if (!chart) return;
+    chart.data.labels = cfg.tags;
+    if (chart.data.datasets[0]) {
+      chart.data.datasets[0].data = cfg.d1;
+      chart.data.datasets[0].label = cfg.lbl1;
+      chart.data.datasets[0].backgroundColor = themeS9.kills;
+    }
+    if (chart.data.datasets[1]) {
+      chart.data.datasets[1].data = cfg.d2;
+      chart.data.datasets[1].label = cfg.lbl2;
+      chart.data.datasets[1].backgroundColor = themeS9.damage;
+    }
+    chart.update('none');
+  }, [cfg.tags.join(','), cfg.d1.join(','), cfg.d2.join(','), themeS9.kills, themeS9.damage]);
 
   return (
     <div className="w-full max-w-[1340px] pt-18 relative font-hud select-none">
@@ -412,9 +431,9 @@ export default function Slide10DualColumn({ sheetData, theme, replayKey, onEleme
             color={cfg.cols[0]}
             sizeCls="w-16 h-16"
           />
-          <span className="text-amber-400">{cfg.badge}</span>
-          <span>{cfg.leader}</span>
-          <span className="px-3.5 py-0.5 rounded bg-amber-400 text-black font-bold text-2xl sm:text-3xl">
+          <span className="text-amber-400 font-extrabold">{cfg.badge}</span>
+          <span className="font-extrabold">{cfg.leader}</span>
+          <span className="px-3.5 py-0.5 rounded bg-amber-400 text-black font-extrabold text-2xl sm:text-3xl">
             {cfg.valTxt}
           </span>
         </div>

@@ -133,29 +133,26 @@ export default function Slide06SingleColumn({
     });
   }
 
-  // Destroy on replayKey change
+  // Store latest refs so custom plugins always read current state
+  const latestDataRef = useRef({ cfg, barColors, teamLogoMap });
   useEffect(() => {
-    if (chartInstanceRef.current) {
-      chartInstanceRef.current.destroy();
-      chartInstanceRef.current = null;
-    }
-  }, [replayKey]);
+    latestDataRef.current = { cfg, barColors, teamLogoMap };
+  });
 
+  // 1. Initial Mount & Replay: create Chart instance ONCE
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    // Smooth in-place update if chart already exists
+    // Clean up any stale chart on this canvas
+    const existing = Chart.getChart(canvas);
+    if (existing) existing.destroy();
     if (chartInstanceRef.current) {
-      const chart = chartInstanceRef.current;
-      chart.data.labels = cfg.tags;
-      if (chart.data.datasets[0]) {
-        chart.data.datasets[0].data = cfg.vals;
-        chart.data.datasets[0].backgroundColor = barColors.slice(0, cfg.tags.length);
-      }
-      chart.update('none');
-      return;
+      chartInstanceRef.current.destroy();
+      chartInstanceRef.current = null;
     }
+
+    const { cfg: currentCfg, barColors: currentCols, teamLogoMap: currentLogos } = latestDataRef.current;
 
     // Custom Plugin: Exact Comma Full Numbers (Zero 'K')
     const valuePlugin = {
@@ -195,23 +192,23 @@ export default function Slide06SingleColumn({
         const yBase = chart.chartArea.bottom + 14;
         ctx.save();
 
-        cfg.tags.forEach((tag, i) => {
+        const cur = latestDataRef.current;
+        cur.cfg.tags.forEach((tag, i) => {
           const cx = xScale.getPixelForValue(i);
-          const col = barColors[i % barColors.length];
+          const col = cur.barColors[i % cur.barColors.length];
           const isLight = col === '#F5B700' || col === '#2DD4BF' || col === '#00DF82';
           const r = 36; // 72px diameter
           const cy = yBase + r;
 
-          // Check if Drive logo exists in cache or needs preloading
           const logoUrl =
-            teamLogoMap[tag.toUpperCase()] ||
-            teamLogoMap[cfg.names[i]?.toUpperCase()] ||
+            cur.teamLogoMap[tag.toUpperCase()] ||
+            cur.teamLogoMap[cur.cfg.names[i]?.toUpperCase()] ||
             '';
           let img: HTMLImageElement | undefined;
           if (logoUrl) {
             if (!imgCacheRef.current.has(logoUrl)) {
               const newImg = new Image();
-              newImg.crossOrigin = 'anonymous';
+              // Do NOT set crossOrigin='anonymous' to prevent Google Drive / ui-avatars CORS errors
               newImg.src = logoUrl;
               newImg.onload = () => {
                 if (chartInstanceRef.current) {
@@ -290,11 +287,11 @@ export default function Slide06SingleColumn({
     const newChart = new Chart(canvas, {
       type: 'bar',
       data: {
-        labels: cfg.tags,
+        labels: currentCfg.tags,
         datasets: [
           {
-            data: cfg.vals,
-            backgroundColor: barColors.slice(0, cfg.tags.length),
+            data: currentCfg.vals,
+            backgroundColor: currentCols.slice(0, currentCfg.tags.length),
             borderColor: 'rgba(255,255,255,0.22)',
             borderWidth: 1.5,
             borderRadius: 8,
@@ -311,19 +308,15 @@ export default function Slide06SingleColumn({
         layout: {
           padding: {
             top: 48,
-            bottom: 132, // Accommodates 72px hex logos + 22px tag labels
+            bottom: 132,
             left: 10,
             right: 10,
           },
         },
         scales: {
-          x: {
-            display: false,
-          },
+          x: { display: false },
           y: {
-            grid: {
-              color: 'rgba(148,163,184,0.18)',
-            },
+            grid: { color: 'rgba(148,163,184,0.18)' },
             ticks: {
               color: '#ffffff',
               font: {
@@ -339,7 +332,7 @@ export default function Slide06SingleColumn({
           legend: { display: false },
           tooltip: {
             callbacks: {
-              title: (items: any) => cfg.names[items[0].dataIndex] || items[0].label,
+              title: (items: any) => latestDataRef.current.cfg.names[items[0].dataIndex] || items[0].label,
               label: (item: any) => `Value: ${formatNumber(item.raw)}`,
             },
           },
@@ -352,9 +345,23 @@ export default function Slide06SingleColumn({
 
     return () => {
       newChart.destroy();
-      chartInstanceRef.current = null;
+      if (chartInstanceRef.current === newChart) {
+        chartInstanceRef.current = null;
+      }
     };
-  }, [cfg, barColors]);
+  }, [replayKey]);
+
+  // 2. Data & Theme Background Update: Update in-place silently WITHOUT rebuilding or re-animating
+  useEffect(() => {
+    const chart = chartInstanceRef.current;
+    if (!chart) return;
+    chart.data.labels = cfg.tags;
+    if (chart.data.datasets[0]) {
+      chart.data.datasets[0].data = cfg.vals;
+      chart.data.datasets[0].backgroundColor = barColors.slice(0, cfg.tags.length);
+    }
+    chart.update('none');
+  }, [cfg.tags.join(','), cfg.vals.join(','), barColors.join(',')]);
 
   const leaderTag = cfg.tags[0] || 'TOP';
   const leaderName = cfg.names[0] || 'RAAD VAI YT';
@@ -388,19 +395,19 @@ export default function Slide06SingleColumn({
           onClick={(e) => {
             const chart = chartInstanceRef.current;
             if (!chart) return;
-            const points = chart.getElementsAtEventForMode(
+            const elements = chart.getElementsAtEventForMode(
               e.nativeEvent,
               'nearest',
               { intersect: true },
-              true
+              false
             );
-            if (points.length > 0) {
-              const idx = points[0].index;
+            if (elements.length > 0) {
+              const idx = elements[0].index;
               onElementClick?.(
                 e,
                 's5',
                 `c${idx}`,
-                `${cfg.tags[idx]} Bar Color`
+                `${cfg.tags[idx]} Team Color`
               );
             }
           }}

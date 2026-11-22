@@ -130,8 +130,22 @@ export default function Slide09RolePolar({
   const ps = polarSets[source] || polarSets.role_avg;
   const roleCols = [themeS8.rusher, themeS8.support, themeS8.sniper, themeS8.bomber];
 
-  // Destroy on replayKey change
+  const latestRef = useRef({ ps, roleCols });
   useEffect(() => {
+    latestRef.current = { ps, roleCols };
+  });
+
+  // 1. Initial Mount & ReplayKey: Create Both Polar Charts ONCE
+  useEffect(() => {
+    const c1 = canvas1Ref.current;
+    const c2 = canvas2Ref.current;
+    if (!c1 || !c2) return;
+
+    // Clean up any stale charts
+    const ex1 = Chart.getChart(c1);
+    if (ex1) ex1.destroy();
+    const ex2 = Chart.getChart(c2);
+    if (ex2) ex2.destroy();
     if (chart1Ref.current) {
       chart1Ref.current.destroy();
       chart1Ref.current = null;
@@ -140,30 +154,8 @@ export default function Slide09RolePolar({
       chart2Ref.current.destroy();
       chart2Ref.current = null;
     }
-  }, [replayKey]);
 
-  useEffect(() => {
-    const c1 = canvas1Ref.current;
-    const c2 = canvas2Ref.current;
-    if (!c1 || !c2) return;
-
-    // Smooth in-place update if both charts exist
-    if (chart1Ref.current && chart2Ref.current) {
-      chart1Ref.current.data.labels = ps.lbls;
-      if (chart1Ref.current.data.datasets[0]) {
-        chart1Ref.current.data.datasets[0].data = ps.dA;
-        chart1Ref.current.data.datasets[0].backgroundColor = roleCols.map((c) => `${c}D9`);
-      }
-      chart1Ref.current.update('none');
-
-      chart2Ref.current.data.labels = ps.lbls;
-      if (chart2Ref.current.data.datasets[0]) {
-        chart2Ref.current.data.datasets[0].data = ps.dB;
-        chart2Ref.current.data.datasets[0].backgroundColor = roleCols.map((c) => `${c}D9`);
-      }
-      chart2Ref.current.update('none');
-      return;
-    }
+    const { ps: currentPs, roleCols: currentCols } = latestRef.current;
 
     // Value Plugin for Polar Area Charts
     const polarValuePlugin = {
@@ -197,11 +189,11 @@ export default function Slide09RolePolar({
       new Chart(canvas, {
         type: 'polarArea',
         data: {
-          labels: ps.lbls,
+          labels: currentPs.lbls,
           datasets: [
             {
               data,
-              backgroundColor: roleCols.map((c) => `${c}D9`),
+              backgroundColor: currentCols.map((c) => `${c}D9`),
               borderColor: 'rgba(255,255,255,0.25)',
               borderWidth: 2,
             },
@@ -221,7 +213,7 @@ export default function Slide09RolePolar({
                 evt.nativeEvent,
                 's8',
                 key,
-                `${ps.lbls[idx]} Role Color`
+                `${latestRef.current.ps.lbls[idx]} Role Color`
               );
             }
           },
@@ -233,13 +225,7 @@ export default function Slide09RolePolar({
             },
           },
           plugins: {
-            legend: {
-              position: 'bottom',
-              labels: {
-                color: '#ffffff',
-                font: { size: 18, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
-              },
-            },
+            legend: { display: false },
             tooltip: {
               callbacks: {
                 label: (item: any) => `${item.label}: ${formatNumber(item.raw)}`,
@@ -249,8 +235,8 @@ export default function Slide09RolePolar({
         },
       });
 
-    chart1Ref.current = mk(c1, ps.dA);
-    chart2Ref.current = mk(c2, ps.dB);
+    chart1Ref.current = mk(c1, currentPs.dA);
+    chart2Ref.current = mk(c2, currentPs.dB);
 
     return () => {
       chart1Ref.current?.destroy();
@@ -258,17 +244,37 @@ export default function Slide09RolePolar({
       chart1Ref.current = null;
       chart2Ref.current = null;
     };
-  }, [ps, roleCols]);
+  }, [replayKey]);
+
+  // 2. Data & Theme Background Update: Update in-place silently WITHOUT rebuilding or re-animating
+  useEffect(() => {
+    if (chart1Ref.current) {
+      chart1Ref.current.data.labels = ps.lbls;
+      if (chart1Ref.current.data.datasets[0]) {
+        chart1Ref.current.data.datasets[0].data = ps.dA;
+        chart1Ref.current.data.datasets[0].backgroundColor = roleCols.map((c) => `${c}D9`);
+      }
+      chart1Ref.current.update('none');
+    }
+    if (chart2Ref.current) {
+      chart2Ref.current.data.labels = ps.lbls;
+      if (chart2Ref.current.data.datasets[0]) {
+        chart2Ref.current.data.datasets[0].data = ps.dB;
+        chart2Ref.current.data.datasets[0].backgroundColor = roleCols.map((c) => `${c}D9`);
+      }
+      chart2Ref.current.update('none');
+    }
+  }, [ps.lbls.join(','), ps.dA.join(','), ps.dB.join(','), roleCols.join(',')]);
 
   return (
     <div className="w-full max-w-[1340px] pt-14 grid grid-cols-1 md:grid-cols-2 gap-6 relative font-hud select-none">
       {/* Polar Card A */}
-      <div className="dark-box rounded-2xl p-5 relative border border-white/10 shadow-2xl">
-        <div className="flex justify-between items-center mb-3">
+      <div className="dark-box rounded-2xl p-5 relative border border-white/10 shadow-2xl flex flex-col items-center">
+        <div className="flex justify-between items-center w-full mb-3">
           <div className="relative px-3.5 py-1.5 rounded-xl bg-slate-950/90 border border-purple-400 font-hud text-base sm:text-xl font-bold text-white flex items-center gap-2 top1-hero-glow">
             <SpiritFireCanvas />
-            <span className="text-amber-400">{ps.titleA}</span>
-            <span>{ps.leadA}</span>
+            <span className="text-amber-400 font-extrabold">{ps.titleA}</span>
+            <span className="font-extrabold">{ps.leadA}</span>
           </div>
           <div
             className="px-3 py-1 rounded-lg font-hud text-lg sm:text-xl font-extrabold text-black"
@@ -277,18 +283,18 @@ export default function Slide09RolePolar({
             #1 LEADER
           </div>
         </div>
-        <div className="relative h-[400px] sm:h-[460px] w-full">
+        <div className="relative h-[380px] sm:h-[440px] w-full">
           <canvas ref={canvas1Ref} />
         </div>
       </div>
 
       {/* Polar Card B */}
-      <div className="dark-box rounded-2xl p-5 relative border border-white/10 shadow-2xl">
-        <div className="flex justify-between items-center mb-3">
+      <div className="dark-box rounded-2xl p-5 relative border border-white/10 shadow-2xl flex flex-col items-center">
+        <div className="flex justify-between items-center w-full mb-3">
           <div className="relative px-3.5 py-1.5 rounded-xl bg-slate-950/90 border border-purple-400 font-hud text-base sm:text-xl font-bold text-white flex items-center gap-2 top1-hero-glow">
             <SpiritFireCanvas />
-            <span className="text-amber-400">{ps.titleB}</span>
-            <span>{ps.leadB}</span>
+            <span className="text-amber-400 font-extrabold">{ps.titleB}</span>
+            <span className="font-extrabold">{ps.leadB}</span>
           </div>
           <div
             className="px-3 py-1 rounded-lg font-hud text-lg sm:text-xl font-extrabold text-black"
@@ -297,7 +303,7 @@ export default function Slide09RolePolar({
             #1 LEADER
           </div>
         </div>
-        <div className="relative h-[400px] sm:h-[460px] w-full">
+        <div className="relative h-[380px] sm:h-[440px] w-full">
           <canvas ref={canvas2Ref} />
         </div>
       </div>
