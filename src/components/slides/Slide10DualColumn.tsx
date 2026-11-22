@@ -216,7 +216,7 @@ export default function Slide10DualColumn({
         const ds1 = chart.data.datasets[1];
         const total = Math.max(meta0.data.length, meta1.data.length);
 
-        ctx.font = '800 21px "GFF Latin", "Teko", sans-serif';
+        ctx.font = '800 22px "GFF Latin", "Teko", sans-serif';
         ctx.textBaseline = 'bottom';
         ctx.lineWidth = 4.5;
         ctx.strokeStyle = 'rgba(0,0,0,0.96)';
@@ -239,29 +239,23 @@ export default function Slide10DualColumn({
           const w0 = has0 ? ctx.measureText(txt0).width : 0;
           const w1 = has1 ? ctx.measureText(txt1).width : 0;
 
+          // By default, center cleanly directly over each candle
           let x0 = p0 ? p0.x : 0;
-          let x1 = p1 ? p1.x : 0;
+          let x1 = p1 ? p1.x - 1 : 0;
           let y0 = p0 ? p0.y - 12 : 0;
           let y1 = p1 ? p1.y - 12 : 0;
 
           if (has0 && has1 && p0 && p1) {
-            // Horizontal gap between right edge of yellow text and left edge of blue text
+            // Horizontal bounds of both labels
             const right0 = x0 + w0 / 2;
             const left1 = x1 - w1 / 2;
-            const hGap = left1 - right0;
+            const horizontalOverlap = right0 - left1;
+            const vDist = Math.abs(y0 - y1);
 
-            // If text is close horizontally (< 8px), nudge slightly to keep well centered over each candle
-            if (hGap < 8) {
-              x0 = p0.x - 3;
-              x1 = p1.x + 3;
-            }
-
-            const newGap = (x1 - w1 / 2) - (x0 + w0 / 2);
-            const vDist = Math.abs(p0.y - p1.y);
-
-            // If bars have near identical vertical height and text would overlap horizontally, elevate blue label
-            if (newGap < 4 && vDist < 24) {
-              y1 = Math.min(y0, y1) - 22;
+            // If text labels overlap horizontally or are within 10px of each other, AND vertically close (< 28px):
+            if (horizontalOverlap > -10 && vDist < 28) {
+              // Elevate the Damage (blue) label cleanly above Kills so they never collide or block each other
+              y1 = Math.min(y0, y1) - 24;
             }
           }
 
@@ -402,25 +396,25 @@ export default function Slide10DualColumn({
             label: currentCfg.lbl1,
             data: currentCfg.d1,
             backgroundColor: currentTheme.kills,
-            borderColor: 'rgba(255,255,255,0.22)',
+            borderColor: 'rgba(255,255,255,0.25)',
             borderWidth: 1.5,
             borderRadius: 6,
             yAxisID: 'y',
-            maxBarThickness: 28,
-            categoryPercentage: 0.9,
-            barPercentage: 0.92,
+            maxBarThickness: 32,
+            categoryPercentage: 0.92,
+            barPercentage: 0.94,
           },
           {
             label: currentCfg.lbl2,
             data: currentCfg.d2,
             backgroundColor: currentTheme.damage,
-            borderColor: 'rgba(255,255,255,0.22)',
+            borderColor: 'rgba(255,255,255,0.25)',
             borderWidth: 1.5,
             borderRadius: 6,
             yAxisID: 'y1',
-            maxBarThickness: 20,
-            categoryPercentage: 0.9,
-            barPercentage: 0.92,
+            maxBarThickness: 18,
+            categoryPercentage: 0.92,
+            barPercentage: 0.94,
           },
         ],
       },
@@ -514,25 +508,25 @@ export default function Slide10DualColumn({
     const chart = chartInstanceRef.current;
     if (!chart) return;
     chart.data.labels = cfg.tags;
-    (chart.options as any).categoryPercentage = 0.9;
-    (chart.options as any).barPercentage = 0.92;
+    (chart.options as any).categoryPercentage = 0.92;
+    (chart.options as any).barPercentage = 0.94;
     if (chart.data.datasets[0]) {
       chart.data.datasets[0].data = cfg.d1;
       chart.data.datasets[0].label = cfg.lbl1;
       chart.data.datasets[0].backgroundColor = themeS9.kills;
       delete (chart.data.datasets[0] as any).barThickness;
-      (chart.data.datasets[0] as any).maxBarThickness = 28;
-      (chart.data.datasets[0] as any).categoryPercentage = 0.9;
-      (chart.data.datasets[0] as any).barPercentage = 0.92;
+      (chart.data.datasets[0] as any).maxBarThickness = 32;
+      (chart.data.datasets[0] as any).categoryPercentage = 0.92;
+      (chart.data.datasets[0] as any).barPercentage = 0.94;
     }
     if (chart.data.datasets[1]) {
       chart.data.datasets[1].data = cfg.d2;
       chart.data.datasets[1].label = cfg.lbl2;
       chart.data.datasets[1].backgroundColor = themeS9.damage;
       delete (chart.data.datasets[1] as any).barThickness;
-      (chart.data.datasets[1] as any).maxBarThickness = 20;
-      (chart.data.datasets[1] as any).categoryPercentage = 0.9;
-      (chart.data.datasets[1] as any).barPercentage = 0.92;
+      (chart.data.datasets[1] as any).maxBarThickness = 18;
+      (chart.data.datasets[1] as any).categoryPercentage = 0.92;
+      (chart.data.datasets[1] as any).barPercentage = 0.94;
     }
     const scales = chart.options.scales as any;
     if (scales?.y?.title) {
