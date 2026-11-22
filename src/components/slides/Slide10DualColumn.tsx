@@ -148,6 +148,22 @@ export default function Slide10DualColumn({
     latestRef.current = { cfg, themeS9, teamLogoMap };
   });
 
+  // Preload team logos into cache immediately for instant rendering without delays
+  useEffect(() => {
+    Object.values(teamLogoMap).forEach((url) => {
+      if (url && typeof url === 'string' && !imgCacheRef.current.has(url)) {
+        const newImg = new Image();
+        newImg.src = url;
+        newImg.onload = () => {
+          if (chartInstanceRef.current) {
+            chartInstanceRef.current.draw();
+          }
+        };
+        imgCacheRef.current.set(url, newImg);
+      }
+    });
+  }, [teamLogoMap]);
+
   // 1. Initial Mount & ReplayKey: Create Chart ONCE
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -173,8 +189,7 @@ export default function Slide10DualColumn({
           const meta = chart.getDatasetMeta(dsIdx);
           if (meta.hidden) return;
           const isKills = dsIdx === 0;
-          ctx.font = '800 16px "GFF Latin", "Teko", sans-serif';
-          ctx.textAlign = 'center';
+          ctx.font = '800 15px "GFF Latin", "Teko", sans-serif';
           ctx.textBaseline = 'bottom';
 
           meta.data.forEach((el: any, i: number) => {
@@ -186,24 +201,30 @@ export default function Slide10DualColumn({
             ctx.fillStyle = textCol;
             ctx.strokeStyle = 'rgba(0,0,0,0.96)';
             ctx.lineWidth = 4;
-            // Nudge yellow left and blue right so text never overlaps
-            const xOffset = isKills ? -6 : 6;
-            ctx.strokeText(fullTxt, pos.x + xOffset, pos.y - 8);
-            ctx.fillText(fullTxt, pos.x + xOffset, pos.y - 8);
+            // Left bar aligns right, right bar aligns left so numbers never cross or collide
+            if (isKills) {
+              ctx.textAlign = 'right';
+              ctx.strokeText(fullTxt, pos.x - 2, pos.y - 8);
+              ctx.fillText(fullTxt, pos.x - 2, pos.y - 8);
+            } else {
+              ctx.textAlign = 'left';
+              ctx.strokeText(fullTxt, pos.x + 2, pos.y - 8);
+              ctx.fillText(fullTxt, pos.x + 2, pos.y - 8);
+            }
           });
         });
         ctx.restore();
       },
     };
 
-    // Custom Plugin: Extra-Large 72px Bottom Team Logos + 22px Tag Names
+    // Custom Plugin: Compact 48px Bottom Team Logos + 18px Tag Names perfectly matching candle width
     const logoAxisPlugin = {
       id: 'dualLogoAxisPlugin',
       afterDraw(chart: any) {
         const { ctx, scales } = chart;
         const xScale = scales.x;
         if (!xScale) return;
-        const yBase = chart.chartArea.bottom + 14;
+        const yBase = chart.chartArea.bottom + 12;
         ctx.save();
 
         const cur = latestRef.current;
@@ -211,7 +232,7 @@ export default function Slide10DualColumn({
           const cx = xScale.getPixelForValue(i);
           const col = cur.cfg.cols[i % cur.cfg.cols.length] || '#8b5cf6';
           const isLight = col === '#F5B700' || col === '#2DD4BF' || col === '#00DF82';
-          const r = 36; // 72px diameter
+          const r = 24; // 48px diameter - fits candle width
           const cy = yBase + r;
 
           const logoUrl =
@@ -237,21 +258,21 @@ export default function Slide10DualColumn({
             // Draw round hex/circle shield with glow & real Drive Logo
             ctx.save();
             ctx.shadowColor = col;
-            ctx.shadowBlur = 14;
+            ctx.shadowBlur = 10;
             ctx.beginPath();
             ctx.arc(cx, cy, r, 0, Math.PI * 2);
             ctx.fillStyle = '#0a0c16';
             ctx.fill();
             ctx.shadowBlur = 0;
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 2.5;
             ctx.strokeStyle = col;
             ctx.stroke();
 
             // Clip & draw image
             ctx.beginPath();
-            ctx.arc(cx, cy, r - 3, 0, Math.PI * 2);
+            ctx.arc(cx, cy, r - 2, 0, Math.PI * 2);
             ctx.clip();
-            ctx.drawImage(img, cx - (r - 3), cy - (r - 3), (r - 3) * 2, (r - 3) * 2);
+            ctx.drawImage(img, cx - (r - 2), cy - (r - 2), (r - 2) * 2, (r - 2) * 2);
             ctx.restore();
           } else {
             // Fallback: High-contrast hexagon shield with team tag initials
@@ -267,15 +288,15 @@ export default function Slide10DualColumn({
             ctx.closePath();
             ctx.fillStyle = col;
             ctx.shadowColor = col;
-            ctx.shadowBlur = 14;
+            ctx.shadowBlur = 10;
             ctx.fill();
             ctx.shadowBlur = 0;
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 2.5;
             ctx.strokeStyle = '#090b10';
             ctx.stroke();
 
             // Team Tag letters inside hex
-            ctx.font = '800 22px "GFF Latin", "Teko", sans-serif';
+            ctx.font = '800 16px "GFF Latin", "Teko", sans-serif';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillStyle = isLight ? '#090b10' : '#ffffff';
@@ -284,14 +305,14 @@ export default function Slide10DualColumn({
           }
 
           // Tag Name below logo
-          ctx.font = '800 22px "GFF Latin", "Teko", sans-serif';
+          ctx.font = '800 18px "GFF Latin", "Teko", sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'top';
           ctx.strokeStyle = 'rgba(9,11,18,0.96)';
-          ctx.lineWidth = 4.5;
-          ctx.strokeText(tag, cx, cy + r + 8);
+          ctx.lineWidth = 4;
+          ctx.strokeText(tag, cx, cy + r + 6);
           ctx.fillStyle = '#ffffff';
-          ctx.fillText(tag, cx, cy + r + 8);
+          ctx.fillText(tag, cx, cy + r + 6);
         });
         ctx.restore();
       },
@@ -306,10 +327,10 @@ export default function Slide10DualColumn({
             label: currentCfg.lbl1,
             data: currentCfg.d1,
             backgroundColor: currentTheme.kills,
-            borderRadius: 6,
+            borderRadius: 5,
             yAxisID: 'y',
-            barThickness: 14,
-            maxBarThickness: 16,
+            barThickness: 12,
+            maxBarThickness: 14,
           },
           {
             label: currentCfg.lbl2,
@@ -317,8 +338,8 @@ export default function Slide10DualColumn({
             backgroundColor: currentTheme.damage,
             borderRadius: 6,
             yAxisID: 'y1',
-            barThickness: 32,
-            maxBarThickness: 34,
+            barThickness: 34,
+            maxBarThickness: 38,
           },
         ],
       },
@@ -335,7 +356,7 @@ export default function Slide10DualColumn({
             onElementClick(evt.nativeEvent, 's9', 'damage', `${latestRef.current.cfg.lbl2} Candle`);
           }
         },
-        layout: { padding: { top: 38, bottom: 132, left: 10, right: 10 } },
+        layout: { padding: { top: 38, bottom: 94, left: 10, right: 10 } },
         animation: {
           duration: 1350,
           delay: (c: any) => c.dataIndex * 80 + c.datasetIndex * 55,
@@ -415,11 +436,15 @@ export default function Slide10DualColumn({
       chart.data.datasets[0].data = cfg.d1;
       chart.data.datasets[0].label = cfg.lbl1;
       chart.data.datasets[0].backgroundColor = themeS9.kills;
+      (chart.data.datasets[0] as any).barThickness = 12;
+      (chart.data.datasets[0] as any).maxBarThickness = 14;
     }
     if (chart.data.datasets[1]) {
       chart.data.datasets[1].data = cfg.d2;
       chart.data.datasets[1].label = cfg.lbl2;
       chart.data.datasets[1].backgroundColor = themeS9.damage;
+      (chart.data.datasets[1] as any).barThickness = 34;
+      (chart.data.datasets[1] as any).maxBarThickness = 38;
     }
     const scales = chart.options.scales as any;
     if (scales?.y?.title) {

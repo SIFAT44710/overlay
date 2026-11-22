@@ -12,7 +12,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full antialiased" style={{ backgroundColor: 'transparent' }}>
+    <html lang="en" className="h-full antialiased">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -21,7 +21,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-full flex flex-col" style={{ backgroundColor: 'transparent', margin: 0, padding: 0 }}>
+      <body className="min-h-full flex flex-col obs-grid" style={{ margin: 0, padding: 0 }}>
         {children}
       </body>
     </html>

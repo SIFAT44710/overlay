@@ -139,6 +139,22 @@ export default function Slide06SingleColumn({
     latestDataRef.current = { cfg, barColors, teamLogoMap };
   });
 
+  // Preload team logos into cache immediately for instant rendering without delays
+  useEffect(() => {
+    Object.values(teamLogoMap).forEach((url) => {
+      if (url && typeof url === 'string' && !imgCacheRef.current.has(url)) {
+        const newImg = new Image();
+        newImg.src = url;
+        newImg.onload = () => {
+          if (chartInstanceRef.current) {
+            chartInstanceRef.current.draw();
+          }
+        };
+        imgCacheRef.current.set(url, newImg);
+      }
+    });
+  }, [teamLogoMap]);
+
   // 1. Initial Mount & Replay: create Chart instance ONCE
   useEffect(() => {
     const canvas = canvasRef.current;

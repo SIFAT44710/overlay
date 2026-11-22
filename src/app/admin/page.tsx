@@ -36,6 +36,7 @@ const SLIDES = [
 ];
 
 export default function AdminPage() {
+  const [currentMode, setCurrentMode] = useState<'admin' | 'live'>('admin');
   const [currentSlide, setCurrentSlide] = useState(0); // 0-based index
   const [replayKey, setReplayKey] = useState(0);
   const [isAuto, setIsAuto] = useState(false);
@@ -108,6 +109,7 @@ export default function AdminPage() {
   const handleOpenColorPopover = useCallback(
     (e: React.MouseEvent, group: string, key: string, label: string) => {
       e.stopPropagation();
+      if (currentMode !== 'admin') return;
       isEditingRef.current = true;
       const currentVal = (draftTheme as any)?.[group]?.[key] || '#ffffff';
       setPopover({
@@ -260,7 +262,7 @@ export default function AdminPage() {
   return (
     <AuthGate onLogout={handleLogout}>
       <div
-        className={`${bgClasses[bgMode]} min-h-screen flex flex-col justify-between p-3 sm:p-5 font-hud select-none`}
+        className={`${bgClasses[bgMode]} ${currentMode === 'admin' ? 'mode-admin' : ''} min-h-screen flex flex-col justify-between p-3 sm:p-5 font-hud select-none`}
         onClick={() => setPopover((prev) => ({ ...prev, isOpen: false }))}
       >
         {/* Top Broadcast Control Bar */}
@@ -268,21 +270,41 @@ export default function AdminPage() {
           <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-950/95 border border-purple-500/40 px-2.5 py-1.5 rounded-2xl shadow-2xl backdrop-blur-md">
             {/* Mode Indicator & Live Link */}
             <div className="flex items-center gap-1 bg-slate-900/95 p-1 rounded-xl border border-white/10">
-              <span className="mode-btn-active px-3.5 py-1 rounded-lg font-hud text-sm font-bold tracking-wider">
+              <button
+                type="button"
+                onClick={() => setCurrentMode('admin')}
+                className={`px-3.5 py-1 rounded-lg font-hud text-sm font-bold tracking-wider cursor-pointer transition-all ${
+                  currentMode === 'admin'
+                    ? 'mode-btn-active'
+                    : 'text-slate-300 hover:text-white'
+                }`}
+              >
                 ⚙ ADMIN PANEL
-              </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCurrentMode('live');
+                  setPopover((prev) => ({ ...prev, isOpen: false }));
+                }}
+                className={`px-3.5 py-1 rounded-lg font-hud text-sm font-bold tracking-wider cursor-pointer transition-all flex items-center gap-1.5 ${
+                  currentMode === 'live'
+                    ? 'mode-btn-active'
+                    : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                LIVE vMIX
+              </button>
               <Link
                 href={`/${currentSlide + 1}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-3.5 py-1 rounded-lg font-hud text-sm font-bold tracking-wider text-slate-300 hover:text-white cursor-pointer transition-all flex items-center gap-1.5"
-                title="Click to open pure transparent vMix window in new tab"
+                className="px-2 py-1 rounded-lg font-hud text-xs font-bold text-amber-300 hover:text-amber-200 bg-white/5 hover:bg-white/10 border border-white/10 cursor-pointer transition-all flex items-center gap-1"
+                title="Click to open isolated broadcast route in new tab"
               >
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                LIVE vMIX PANEL{' '}
-                <span className="px-1.5 py-0.2 rounded bg-white/10 text-amber-300 text-xs">
-                  /{currentSlide + 1}
-                </span>
+                <span>↗</span>
+                <span>/{currentSlide + 1}</span>
               </Link>
             </div>
 
@@ -364,62 +386,64 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* Sub-Dock: Badge, Preset Buttons, Reset & Logout */}
-          <div
-            id="adminDock"
-            className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-1.5 rounded-xl bg-slate-950/85 border border-purple-500/35 shadow-lg backdrop-blur-md"
-          >
-            <div className="flex items-center gap-2 font-hud text-sm text-purple-200">
-              <span className="px-2 py-0.5 rounded bg-purple-700 text-white text-xs font-bold">
-                SLIDE {String(currentSlide + 1).padStart(2, '0')}
-              </span>
-              <span className="font-bold text-white">
-                {SLIDES[currentSlide].label.replace(/^\d+\.\s*/, '')}
-              </span>
-              <span className="px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-bold">
-                {syncStatus}
-              </span>
-            </div>
+          {/* Sub-Dock: Badge, Preset Buttons, Reset & Logout (Visible in Admin Mode) */}
+          {currentMode === 'admin' && (
+            <div
+              id="adminDock"
+              className="flex flex-wrap items-center justify-between gap-2 px-3.5 py-1.5 rounded-xl bg-slate-950/85 border border-purple-500/35 shadow-lg backdrop-blur-md"
+            >
+              <div className="flex items-center gap-2 font-hud text-sm text-purple-200">
+                <span className="px-2 py-0.5 rounded bg-purple-700 text-white text-xs font-bold">
+                  SLIDE {String(currentSlide + 1).padStart(2, '0')}
+                </span>
+                <span className="font-bold text-white">
+                  {SLIDES[currentSlide].label.replace(/^\d+\.\s*/, '')}
+                </span>
+                <span className="px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-bold">
+                  {syncStatus}
+                </span>
+              </div>
 
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => handleApplyPreset('rtb')}
-                className="preset-btn px-2 py-0.5 rounded bg-purple-900/80 hover:bg-purple-700 border border-purple-400/50 text-white font-hud text-xs font-bold cursor-pointer"
-              >
-                RTB Purple
-              </button>
-              <button
-                type="button"
-                onClick={() => handleApplyPreset('ffws')}
-                className="preset-btn px-2 py-0.5 rounded bg-amber-900/70 hover:bg-amber-700 border border-amber-400/50 text-amber-200 font-hud text-xs font-bold cursor-pointer"
-              >
-                FFWS Gold
-              </button>
-              <button
-                type="button"
-                onClick={() => handleApplyPreset('cyber')}
-                className="preset-btn px-2 py-0.5 rounded bg-cyan-950/80 hover:bg-cyan-800 border border-cyan-400/50 text-cyan-200 font-hud text-xs font-bold cursor-pointer"
-              >
-                Neon Cyber
-              </button>
-              <button
-                type="button"
-                onClick={handleResetThemes}
-                className="px-2 py-0.5 rounded bg-rose-950/80 hover:bg-rose-800 border border-rose-500/50 text-rose-200 font-hud text-xs font-bold cursor-pointer"
-              >
-                ↺ Reset
-              </button>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="px-2 py-0.5 rounded bg-slate-900 hover:bg-red-900 border border-red-500/40 text-red-300 font-hud text-xs font-bold cursor-pointer flex items-center gap-1"
-                title="Logout and lock admin panel"
-              >
-                🔒 Lock
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleApplyPreset('rtb')}
+                  className="preset-btn px-2 py-0.5 rounded bg-purple-900/80 hover:bg-purple-700 border border-purple-400/50 text-white font-hud text-xs font-bold cursor-pointer"
+                >
+                  RTB Purple
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleApplyPreset('ffws')}
+                  className="preset-btn px-2 py-0.5 rounded bg-amber-900/70 hover:bg-amber-700 border border-amber-400/50 text-amber-200 font-hud text-xs font-bold cursor-pointer"
+                >
+                  FFWS Gold
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleApplyPreset('cyber')}
+                  className="preset-btn px-2 py-0.5 rounded bg-cyan-950/80 hover:bg-cyan-800 border border-cyan-400/50 text-cyan-200 font-hud text-xs font-bold cursor-pointer"
+                >
+                  Neon Cyber
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResetThemes}
+                  className="px-2 py-0.5 rounded bg-rose-950/80 hover:bg-rose-800 border border-rose-500/50 text-rose-200 font-hud text-xs font-bold cursor-pointer"
+                >
+                  ↺ Reset
+                </button>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="px-2 py-0.5 rounded bg-slate-900 hover:bg-red-900 border border-red-500/40 text-red-300 font-hud text-xs font-bold cursor-pointer flex items-center gap-1"
+                  title="Logout and lock admin panel"
+                >
+                  🔒 Lock
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </header>
 
         {/* Floating Click-to-Edit Color Popover */}
@@ -460,16 +484,18 @@ export default function AdminPage() {
           onSave={handleSaveSheetConfig}
         />
 
-        {/* Collapsible Right-Side Sheet Data Source Switcher Drawer */}
-        <SheetDataDrawer
-          currentSlide={currentSlide}
-          slideTitle={SLIDES[currentSlide].label}
-          activeSourceId={draftTheme?.sources?.[currentSlide] || ''}
-          customSettings={draftTheme?.custom || {}}
-          sheetData={sheetData}
-          onSelectSource={handleSelectSource}
-          onUpdateCustom={handleUpdateCustom}
-        />
+        {/* Collapsible Right-Side Sheet Data Source Switcher Drawer (Admin Mode Only) */}
+        {currentMode === 'admin' && (
+          <SheetDataDrawer
+            currentSlide={currentSlide}
+            slideTitle={SLIDES[currentSlide].label}
+            activeSourceId={draftTheme?.sources?.[currentSlide] || ''}
+            customSettings={draftTheme?.custom || {}}
+            sheetData={sheetData}
+            onSelectSource={handleSelectSource}
+            onUpdateCustom={handleUpdateCustom}
+          />
+        )}
 
         {/* Main Stage with Click-to-Edit Interactive Slide Component */}
         <main

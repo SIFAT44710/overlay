@@ -16,7 +16,7 @@
 }
 
 html, body {
-  background: transparent !important;
+  background: transparent;
   color: #f8fafc;
   font-family: 'GFF Latin', 'Teko', sans-serif;
   margin: 0;
@@ -24,19 +24,26 @@ html, body {
   overflow: hidden;
 }
 
-body.obs-grid {
+body.obs-grid, .obs-grid {
   background-color: #0d1017 !important;
   background-image:
     linear-gradient(45deg, #161b26 25%, transparent 25%),
     linear-gradient(-45deg, #161b26 25%, transparent 25%),
     linear-gradient(45deg, transparent 75%, #161b26 75%),
-    linear-gradient(-45deg, transparent 75%, #161b26 75%);
-  background-size: 24px 24px;
-  background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+    linear-gradient(-45deg, transparent 75%, #161b26 75%) !important;
+  background-size: 24px 24px !important;
+  background-position: 0 0, 0 12px, 12px -12px, -12px 0 !important;
 }
 
-body.obs-pure { background: transparent !important; }
-body.obs-white { background: #f8fafc !important; }
+body.obs-pure, .obs-pure {
+  background: transparent !important;
+  background-image: none !important;
+}
+
+body.obs-white, .obs-white {
+  background: #f8fafc !important;
+  background-image: none !important;
+}
 
 .font-hud {
   font-family: 'GFF Latin', 'Teko', sans-serif;
