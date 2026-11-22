@@ -271,13 +271,13 @@ export default function Slide09RolePolar({
       {/* Polar Card A */}
       <div className="dark-box rounded-2xl p-5 relative border border-white/10 shadow-2xl flex flex-col items-center">
         <div className="flex justify-between items-center w-full mb-3">
-          <div className="relative px-3.5 py-1.5 rounded-xl bg-slate-950/90 border border-purple-400 font-hud text-base sm:text-xl font-bold text-white flex items-center gap-2 top1-hero-glow">
+          <div className="relative px-2.5 py-1 rounded-lg bg-slate-950/90 border border-purple-400 font-hud text-xs sm:text-sm font-bold text-white flex items-center gap-2 top1-hero-glow">
             <SpiritFireCanvas />
             <span className="text-amber-400 font-extrabold">{ps.titleA}</span>
             <span className="font-extrabold">{ps.leadA}</span>
           </div>
           <div
-            className="px-3 py-1 rounded-lg font-hud text-lg sm:text-xl font-extrabold text-black"
+            className="px-2 py-0.5 rounded-md font-hud text-xs sm:text-sm font-extrabold text-black"
             style={{ backgroundColor: ps.badgeColA }}
           >
             #1 LEADER
@@ -291,13 +291,13 @@ export default function Slide09RolePolar({
       {/* Polar Card B */}
       <div className="dark-box rounded-2xl p-5 relative border border-white/10 shadow-2xl flex flex-col items-center">
         <div className="flex justify-between items-center w-full mb-3">
-          <div className="relative px-3.5 py-1.5 rounded-xl bg-slate-950/90 border border-purple-400 font-hud text-base sm:text-xl font-bold text-white flex items-center gap-2 top1-hero-glow">
+          <div className="relative px-2.5 py-1 rounded-lg bg-slate-950/90 border border-purple-400 font-hud text-xs sm:text-sm font-bold text-white flex items-center gap-2 top1-hero-glow">
             <SpiritFireCanvas />
             <span className="text-amber-400 font-extrabold">{ps.titleB}</span>
             <span className="font-extrabold">{ps.leadB}</span>
           </div>
           <div
-            className="px-3 py-1 rounded-lg font-hud text-lg sm:text-xl font-extrabold text-black"
+            className="px-2 py-0.5 rounded-md font-hud text-xs sm:text-sm font-extrabold text-black"
             style={{ backgroundColor: ps.badgeColB }}
           >
             #1 LEADER

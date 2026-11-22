@@ -124,33 +124,33 @@ export default function Slide04TeamH2H({
 
   return (
     <div className="w-full max-w-[1340px] pt-20 relative font-hud select-none">
-      {/* Top Header Plates with 64px Team Logos */}
+      {/* Top Header Plates */}
       <div className="absolute top-1 inset-x-3 sm:inset-x-6 flex flex-row justify-between items-start gap-4 z-30">
         {/* Team A Card */}
         <div
           id="m12-card-a"
-          className="skew-box dark-box border-l-4 px-4 py-2 rounded-xl transition-all duration-500 w-fit max-w-[440px] relative"
+          className="skew-box dark-box border-l-4 px-3 py-1 rounded-lg transition-all duration-500 w-fit max-w-[340px] relative cursor-pointer"
           style={{ borderLeftColor: colA }}
           onClick={(e) => onElementClick?.(e, 's3', 'teamA', `${a.name} Color`)}
         >
           {winnerSide === 'a' && <SpiritFireCanvas />}
-          <div className="unskew flex items-center gap-3.5">
+          <div className="unskew flex items-center gap-2.5">
             <TeamLogoBadge
               tag={a.tag}
               name={a.name}
               logoUrl={teamLogoMap[a.tag.toUpperCase()] || teamLogoMap[a.name.toUpperCase()]}
               color={colA}
-              sizeCls="w-16 h-16"
+              sizeCls="w-8 h-8 sm:w-9 sm:h-9"
             />
             <div>
-              <div className="text-sm font-bold leading-none" style={{ color: colA }}>
+              <div className="text-xs font-bold leading-none" style={{ color: colA }}>
                 RANK #{a.rank}
               </div>
-              <div className="font-hud text-2xl sm:text-3xl font-bold text-white leading-tight">
+              <div className="font-hud text-base sm:text-lg font-bold text-white leading-tight truncate max-w-[140px]">
                 {a.name}
               </div>
             </div>
-            <div className="font-hud text-3xl sm:text-4xl font-bold" style={{ color: colA }}>
+            <div className="font-hud text-lg sm:text-xl font-bold ml-1" style={{ color: colA }}>
               {a.total} PTS
             </div>
           </div>
@@ -159,20 +159,20 @@ export default function Slide04TeamH2H({
         {/* Team B Card */}
         <div
           id="m12-card-b"
-          className="skew-box dark-box border-r-4 px-4 py-2 rounded-xl transition-all duration-500 w-fit max-w-[440px] ml-auto relative"
+          className="skew-box dark-box border-r-4 px-3 py-1 rounded-lg transition-all duration-500 w-fit max-w-[340px] ml-auto relative cursor-pointer"
           style={{ borderRightColor: colB }}
           onClick={(e) => onElementClick?.(e, 's3', 'teamB', `${b.name} Color`)}
         >
           {winnerSide === 'b' && <SpiritFireCanvas />}
-          <div className="unskew flex items-center gap-3.5">
-            <div className="font-hud text-3xl sm:text-4xl font-bold" style={{ color: colB }}>
+          <div className="unskew flex items-center gap-2.5">
+            <div className="font-hud text-lg sm:text-xl font-bold mr-1" style={{ color: colB }}>
               {b.total} PTS
             </div>
             <div className="text-right">
-              <div className="text-sm font-bold leading-none" style={{ color: colB }}>
+              <div className="text-xs font-bold leading-none" style={{ color: colB }}>
                 RANK #{b.rank}
               </div>
-              <div className="font-hud text-2xl sm:text-3xl font-bold text-white leading-tight">
+              <div className="font-hud text-base sm:text-lg font-bold text-white leading-tight truncate max-w-[140px]">
                 {b.name}
               </div>
             </div>
@@ -181,7 +181,7 @@ export default function Slide04TeamH2H({
               name={b.name}
               logoUrl={teamLogoMap[b.tag.toUpperCase()] || teamLogoMap[b.name.toUpperCase()]}
               color={colB}
-              sizeCls="w-16 h-16"
+              sizeCls="w-8 h-8 sm:w-9 sm:h-9"
             />
           </div>
         </div>

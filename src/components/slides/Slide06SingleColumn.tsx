@@ -369,20 +369,20 @@ export default function Slide06SingleColumn({
 
   return (
     <div className="w-full max-w-[1340px] pt-14 relative font-hud select-none">
-      {/* Top-Right Leader Pill */}
+      {/* Top-Right Compact Leader Pill */}
       <div className="absolute top-1 right-3 sm:right-6 z-30">
-        <div className="relative px-4 py-1.5 rounded-xl bg-slate-950/90 border border-purple-400/70 font-hud text-2xl sm:text-3xl font-bold text-white flex items-center gap-3.5 shadow-2xl top1-hero-glow">
+        <div className="relative px-3 py-1 rounded-lg bg-slate-950/90 border border-purple-400/80 font-hud text-sm sm:text-base font-bold text-white flex items-center gap-2.5 shadow-xl top1-hero-glow">
           <SpiritFireCanvas />
           <TeamLogoBadge
             tag={leaderTag}
             name={leaderName}
             logoUrl={leaderLogo}
             color={barColors[0]}
-            sizeCls="w-16 h-16"
+            sizeCls="w-8 h-8 sm:w-9 sm:h-9"
           />
-          <span className="text-amber-400 font-extrabold">{cfg.badge}</span>
-          <span className="font-extrabold">{cfg.leader}</span>
-          <span className="px-3.5 py-0.5 rounded bg-amber-400 text-black font-extrabold text-2xl sm:text-3xl">
+          <span className="text-amber-400 font-extrabold text-xs sm:text-sm">{cfg.badge}</span>
+          <span className="font-extrabold truncate max-w-[200px]">{cfg.leader}</span>
+          <span className="px-2 py-0.5 rounded bg-amber-400 text-black font-extrabold text-xs sm:text-sm">
             {cfg.valTxt}
           </span>
         </div>

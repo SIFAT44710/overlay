@@ -110,30 +110,30 @@ export default function Slide02PlayerClash({
         {/* Contender 1 Card */}
         <div
           id="s3-card-p1"
-          className="dark-box rounded-xl px-4 py-2.5 border-l-4 text-left relative transition-all duration-700 w-fit max-w-[340px]"
+          className="dark-box rounded-lg px-3 py-1.5 border-l-4 text-left relative transition-all duration-700 w-fit max-w-[280px]"
           style={{ borderLeftColor: themeS1.p1 }}
           onClick={(e) => onElementClick?.(e, 's1', 'p1', 'Contender 1 Color')}
         >
           {winnerSide === 'p1' && <SpiritFireCanvas />}
-          <div className="relative z-10 flex items-center gap-3.5">
+          <div className="relative z-10 flex items-center gap-2.5">
             <TeamLogoBadge
               tag={p1.tag}
               name={p1.team}
               logoUrl={teamLogoMap[p1.tag.toUpperCase()] || teamLogoMap[p1.team.toUpperCase()]}
               color={themeS1.p1}
-              sizeCls="w-16 h-16"
+              sizeCls="w-8 h-8 sm:w-9 sm:h-9"
             />
             <div>
               <div
-                className="text-xs font-bold uppercase tracking-widest"
+                className="text-[10px] font-bold uppercase tracking-wider"
                 style={{ color: themeS1.p1 }}
               >
                 CONTENDER 01
               </div>
-              <div className="font-hud text-2xl sm:text-3xl font-extrabold text-white leading-tight">
+              <div className="font-hud text-base sm:text-lg font-extrabold text-white leading-tight truncate max-w-[150px]">
                 {p1.name}
               </div>
-              <div className="text-xs font-bold text-slate-300">{p1.team}</div>
+              <div className="text-[11px] font-bold text-slate-300">{p1.team}</div>
             </div>
           </div>
         </div>
@@ -141,30 +141,30 @@ export default function Slide02PlayerClash({
         {/* Contender 2 Card */}
         <div
           id="s3-card-p2"
-          className="dark-box rounded-xl px-4 py-2.5 border-r-4 text-right relative transition-all duration-700 w-fit max-w-[340px] ml-auto"
+          className="dark-box rounded-lg px-3 py-1.5 border-r-4 text-right relative transition-all duration-700 w-fit max-w-[280px] ml-auto"
           style={{ borderRightColor: themeS1.p2 }}
           onClick={(e) => onElementClick?.(e, 's1', 'p2', 'Contender 2 Color')}
         >
           {winnerSide === 'p2' && <SpiritFireCanvas />}
-          <div className="relative z-10 flex items-center gap-3.5">
+          <div className="relative z-10 flex items-center gap-2.5">
             <div>
               <div
-                className="text-xs font-bold uppercase tracking-widest"
+                className="text-[10px] font-bold uppercase tracking-wider"
                 style={{ color: themeS1.p2 }}
               >
                 CONTENDER 02
               </div>
-              <div className="font-hud text-2xl sm:text-3xl font-extrabold text-white leading-tight">
+              <div className="font-hud text-base sm:text-lg font-extrabold text-white leading-tight truncate max-w-[150px]">
                 {p2.name}
               </div>
-              <div className="text-xs font-bold text-slate-300">{p2.team}</div>
+              <div className="text-[11px] font-bold text-slate-300">{p2.team}</div>
             </div>
             <TeamLogoBadge
               tag={p2.tag}
               name={p2.team}
               logoUrl={teamLogoMap[p2.tag.toUpperCase()] || teamLogoMap[p2.team.toUpperCase()]}
               color={themeS1.p2}
-              sizeCls="w-16 h-16"
+              sizeCls="w-8 h-8 sm:w-9 sm:h-9"
             />
           </div>
         </div>

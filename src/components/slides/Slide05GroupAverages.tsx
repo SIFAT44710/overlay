@@ -94,11 +94,11 @@ export default function Slide05GroupAverages({
 
   return (
     <div className="w-full max-w-[1340px] pt-18 relative font-hud select-none">
-      {/* Top Team Header Badges with 64px Logos */}
-      <div className="absolute top-1 inset-x-3 sm:inset-x-6 flex justify-between items-center text-2xl sm:text-3xl font-bold font-hud z-30">
+      {/* Top Team Header Badges */}
+      <div className="absolute top-1 inset-x-3 sm:inset-x-6 flex justify-between items-center text-sm sm:text-base font-bold font-hud z-30">
         <div
           id="m14-team-a"
-          className="px-4 py-1.5 rounded-xl bg-violet-600/90 text-white inline-flex items-center gap-3.5 shadow-xl relative cursor-pointer"
+          className="px-3 py-1 rounded-lg bg-violet-600/90 text-white inline-flex items-center gap-2.5 shadow-xl relative cursor-pointer"
           style={{ backgroundColor: colA }}
           onClick={(e) => onElementClick?.(e, 's4', 'teamA', `${a.name} Color`)}
         >
@@ -108,25 +108,25 @@ export default function Slide05GroupAverages({
             name={a.name}
             logoUrl={teamLogoMap[a.tag.toUpperCase()] || teamLogoMap[a.name.toUpperCase()]}
             color={colA}
-            sizeCls="w-16 h-16"
+            sizeCls="w-8 h-8 sm:w-9 sm:h-9"
           />
-          <span>{a.name}</span>
+          <span className="truncate max-w-[160px]">{a.name}</span>
         </div>
 
         <div
           id="m14-team-b"
-          className="px-4 py-1.5 rounded-xl bg-teal-400/90 text-slate-950 inline-flex items-center gap-3.5 shadow-xl ml-auto relative cursor-pointer"
+          className="px-3 py-1 rounded-lg bg-teal-400/90 text-slate-950 inline-flex items-center gap-2.5 shadow-xl ml-auto relative cursor-pointer"
           style={{ backgroundColor: colB }}
           onClick={(e) => onElementClick?.(e, 's4', 'teamB', `${b.name} Color`)}
         >
           {winnerTeam === 'b' && <SpiritFireCanvas />}
-          <span>{b.name}</span>
+          <span className="truncate max-w-[160px]">{b.name}</span>
           <TeamLogoBadge
             tag={b.tag}
             name={b.name}
             logoUrl={teamLogoMap[b.tag.toUpperCase()] || teamLogoMap[b.name.toUpperCase()]}
             color={colB}
-            sizeCls="w-16 h-16"
+            sizeCls="w-8 h-8 sm:w-9 sm:h-9"
           />
         </div>
       </div>

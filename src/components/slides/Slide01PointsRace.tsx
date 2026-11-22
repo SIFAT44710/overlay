@@ -127,12 +127,12 @@ export default function Slide01PointsRace({
 
   return (
     <div className="w-full max-w-[1340px] pt-14 relative font-hud select-none">
-      {/* Top-Right #1 Leader Pill */}
+      {/* Top-Right Compact #1 Leader Pill */}
       {leader && (
         <div className="absolute top-1 right-3 sm:right-6 z-30">
           <div
             id="m2-top1-pill"
-            className={`transition-all duration-700 px-4 py-1.5 rounded-xl bg-slate-950/90 border border-purple-400/70 font-hud text-2xl sm:text-3xl font-bold text-white flex items-center gap-3.5 shadow-2xl top1-hero-glow ${
+            className={`transition-all duration-700 px-3 py-1 rounded-lg bg-slate-950/90 border border-purple-400/80 font-hud text-sm sm:text-base font-bold text-white flex items-center gap-2.5 shadow-xl top1-hero-glow ${
               animated ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
             }`}
           >
@@ -142,13 +142,13 @@ export default function Slide01PointsRace({
               name={leader.name}
               logoUrl={teamLogoMap[leader.tag.toUpperCase()] || teamLogoMap[leader.name.toUpperCase()]}
               color={themeS0.l0 || leader.color}
-              sizeCls="w-16 h-16"
+              sizeCls="w-8 h-8 sm:w-9 sm:h-9"
             />
-            <span className="text-amber-400 font-extrabold">#1 LEADER</span>
-            <span className="font-extrabold">
+            <span className="text-amber-400 font-extrabold text-xs sm:text-sm">#1 LEADER</span>
+            <span className="font-extrabold truncate max-w-[200px]">
               {leader.name} ({leader.tag})
             </span>
-            <span className="px-3.5 py-0.5 rounded bg-amber-400 text-black font-extrabold text-2xl sm:text-3xl">
+            <span className="px-2 py-0.5 rounded bg-amber-400 text-black font-extrabold text-xs sm:text-sm">
               {leader.pts[leader.pts.length - 1]} PTS
             </span>
           </div>

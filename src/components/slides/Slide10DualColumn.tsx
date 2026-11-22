@@ -163,28 +163,33 @@ export default function Slide10DualColumn({
 
     const { cfg: currentCfg, themeS9: currentTheme } = latestRef.current;
 
-    // Custom Plugin: Exact Comma Full Numbers (Zero 'K')
+    // Custom Plugin: Exact Full Numbers positioned cleanly above each candle (Zero overlap)
     const valuePlugin = {
       id: 'dualValuePlugin',
       afterDatasetsDraw(chart: any) {
         const { ctx } = chart;
         ctx.save();
-        ctx.font = '800 24px "GFF Latin", "Teko", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
         chart.data.datasets.forEach((ds: any, dsIdx: number) => {
           const meta = chart.getDatasetMeta(dsIdx);
           if (meta.hidden) return;
+          const isKills = dsIdx === 0;
+          ctx.font = '800 16px "GFF Latin", "Teko", sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+
           meta.data.forEach((el: any, i: number) => {
             const raw = ds.data[i];
             if (raw === 0 || raw == null) return;
             const pos = el.tooltipPosition();
             const fullTxt = formatNumber(raw);
-            ctx.fillStyle = '#ffffff';
-            ctx.strokeStyle = 'rgba(0,0,0,0.95)';
-            ctx.lineWidth = 4.5;
-            ctx.strokeText(fullTxt, pos.x, pos.y - 16);
-            ctx.fillText(fullTxt, pos.x, pos.y - 16);
+            const textCol = isKills ? currentTheme.kills : currentTheme.damage;
+            ctx.fillStyle = textCol;
+            ctx.strokeStyle = 'rgba(0,0,0,0.96)';
+            ctx.lineWidth = 4;
+            // Nudge yellow left and blue right so text never overlaps
+            const xOffset = isKills ? -6 : 6;
+            ctx.strokeText(fullTxt, pos.x + xOffset, pos.y - 8);
+            ctx.fillText(fullTxt, pos.x + xOffset, pos.y - 8);
           });
         });
         ctx.restore();
@@ -217,7 +222,6 @@ export default function Slide10DualColumn({
           if (logoUrl) {
             if (!imgCacheRef.current.has(logoUrl)) {
               const newImg = new Image();
-              // Do NOT set crossOrigin='anonymous' to avoid CORS block
               newImg.src = logoUrl;
               newImg.onload = () => {
                 if (chartInstanceRef.current) {
@@ -302,19 +306,19 @@ export default function Slide10DualColumn({
             label: currentCfg.lbl1,
             data: currentCfg.d1,
             backgroundColor: currentTheme.kills,
-            borderRadius: 8,
+            borderRadius: 6,
             yAxisID: 'y',
-            barPercentage: 0.86,
-            categoryPercentage: 0.72,
+            barThickness: 14,
+            maxBarThickness: 16,
           },
           {
             label: currentCfg.lbl2,
             data: currentCfg.d2,
             backgroundColor: currentTheme.damage,
-            borderRadius: 8,
+            borderRadius: 6,
             yAxisID: 'y1',
-            barPercentage: 0.86,
-            categoryPercentage: 0.72,
+            barThickness: 32,
+            maxBarThickness: 34,
           },
         ],
       },
@@ -331,7 +335,7 @@ export default function Slide10DualColumn({
             onElementClick(evt.nativeEvent, 's9', 'damage', `${latestRef.current.cfg.lbl2} Candle`);
           }
         },
-        layout: { padding: { top: 48, bottom: 132, left: 10, right: 10 } },
+        layout: { padding: { top: 38, bottom: 132, left: 10, right: 10 } },
         animation: {
           duration: 1350,
           delay: (c: any) => c.dataIndex * 80 + c.datasetIndex * 55,
@@ -357,32 +361,34 @@ export default function Slide10DualColumn({
           y: {
             position: 'left',
             beginAtZero: true,
-            grid: { color: 'rgba(100,116,139,0.32)' },
+            grace: '14%',
+            grid: { color: 'rgba(100,116,139,0.25)' },
             title: {
               display: true,
               text: currentCfg.lbl1,
               color: currentTheme.kills,
-              font: { size: 18, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
+              font: { size: 16, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
             },
             ticks: {
-              color: '#fde047',
-              font: { size: 18, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
+              color: currentTheme.kills,
+              font: { size: 16, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
               callback: (v: any) => formatNumber(v),
             },
           },
           y1: {
             position: 'right',
             beginAtZero: true,
+            grace: '14%',
             grid: { display: false },
             title: {
               display: true,
               text: currentCfg.lbl2,
               color: currentTheme.damage,
-              font: { size: 18, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
+              font: { size: 16, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
             },
             ticks: {
-              color: '#7dd3fc',
-              font: { size: 18, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
+              color: currentTheme.damage,
+              font: { size: 16, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
               callback: (v: any) => formatNumber(v),
             },
           },
@@ -415,36 +421,51 @@ export default function Slide10DualColumn({
       chart.data.datasets[1].label = cfg.lbl2;
       chart.data.datasets[1].backgroundColor = themeS9.damage;
     }
+    const scales = chart.options.scales as any;
+    if (scales?.y?.title) {
+      scales.y.title.color = themeS9.kills;
+      scales.y.title.text = cfg.lbl1;
+    }
+    if (scales?.y?.ticks) {
+      scales.y.ticks.color = themeS9.kills;
+    }
+    if (scales?.y1?.title) {
+      scales.y1.title.color = themeS9.damage;
+      scales.y1.title.text = cfg.lbl2;
+    }
+    if (scales?.y1?.ticks) {
+      scales.y1.ticks.color = themeS9.damage;
+    }
     chart.update('none');
   }, [cfg.tags.join(','), cfg.d1.join(','), cfg.d2.join(','), themeS9.kills, themeS9.damage]);
 
   return (
-    <div className="w-full max-w-[1340px] pt-18 relative font-hud select-none">
-      {/* Top Header Row with Leader Badge & Legend */}
-      <div className="absolute top-1 inset-x-3 sm:inset-x-6 flex flex-wrap items-center justify-between gap-3 z-30">
-        <div className="relative px-4 py-1.5 rounded-xl bg-slate-950/90 border border-purple-400 font-hud text-2xl sm:text-3xl font-bold text-white flex items-center gap-3.5 shadow-2xl top1-hero-glow">
+    <div className="w-full max-w-[1340px] pt-14 relative font-hud select-none">
+      {/* Top Header Row with Compact Leader Badge on Left & Legend on Right */}
+      <div className="absolute top-1 inset-x-3 sm:inset-x-6 flex items-center justify-between gap-3 z-30">
+        <div className="relative px-3 py-1 rounded-lg bg-slate-950/90 border border-purple-400/80 font-hud text-sm sm:text-base font-bold text-white flex items-center gap-2.5 shadow-xl top1-hero-glow">
           <SpiritFireCanvas />
           <TeamLogoBadge
             tag={cfg.tags[0]}
             name={cfg.names[0]}
             logoUrl={teamLogoMap[cfg.tags[0]?.toUpperCase()] || teamLogoMap[cfg.names[0]?.toUpperCase()]}
             color={cfg.cols[0]}
-            sizeCls="w-16 h-16"
+            sizeCls="w-8 h-8 sm:w-9 sm:h-9"
           />
-          <span className="text-amber-400 font-extrabold">{cfg.badge}</span>
+          <span className="text-amber-400 font-extrabold text-xs sm:text-sm">{cfg.badge}</span>
           <span className="font-extrabold">{cfg.leader}</span>
-          <span className="px-3.5 py-0.5 rounded bg-amber-400 text-black font-extrabold text-2xl sm:text-3xl">
+          <span className="px-2 py-0.5 rounded bg-amber-400 text-black font-extrabold text-xs sm:text-sm">
             {cfg.valTxt}
           </span>
         </div>
 
-        <div className="flex items-center gap-4 font-hud text-xl sm:text-2xl font-bold">
-          <span className="flex items-center gap-2">
-            <span className="w-4 h-4 rounded-sm" style={{ backgroundColor: themeS9.kills }} />
+        <div className="flex items-center gap-3 font-hud text-sm sm:text-base font-bold">
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-950/80 border border-white/10">
+            <span className="w-3 h-3 rounded-xs" style={{ backgroundColor: themeS9.kills }} />
             <span style={{ color: themeS9.kills }}>{cfg.lbl1}</span>
           </span>
-          <span className="flex items-center gap-2">
-            <span className="w-4 h-4 rounded-sm" style={{ backgroundColor: themeS9.damage }} />
+          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-950/80 border border-white/10">
+            <span className="w-3 h-3 rounded-xs" style={{ backgroundColor: themeS9.damage }} />
             <span style={{ color: themeS9.damage }}>{cfg.lbl2}</span>
           </span>
         </div>

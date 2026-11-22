@@ -130,7 +130,7 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey = 0, onEl
         {/* Team A Pill */}
         <div
           id="t2-pill-a"
-          className="px-4 py-1.5 rounded-xl dark-box font-hud text-2xl sm:text-3xl font-bold text-white inline-flex items-center gap-3.5 border-l-4 relative shadow-xl cursor-pointer"
+          className="px-3 py-1 rounded-lg dark-box font-hud text-sm sm:text-base font-bold text-white inline-flex items-center gap-2.5 border-l-4 relative shadow-xl cursor-pointer"
           style={{
             borderLeftColor: themeS6.rank1,
             opacity: mounted ? 1 : 0,
@@ -145,27 +145,27 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey = 0, onEl
             name={teamA.name}
             logoUrl={teamLogoMap[teamA.tag.toUpperCase()] || teamLogoMap[teamA.name.toUpperCase()]}
             color={themeS6.rank1}
-            sizeCls="w-16 h-16"
+            sizeCls="w-8 h-8 sm:w-9 sm:h-9"
           />
-          <span>
+          <span className="truncate max-w-[160px]">
             #{teamA.rank} {teamA.name}
           </span>
           <span
-            className="px-3 py-0.5 rounded text-white text-2xl sm:text-3xl"
+            className="px-2 py-0.5 rounded text-white text-xs sm:text-sm font-extrabold"
             style={{ backgroundColor: themeS6.rank1 }}
           >
             {formatNumber(teamA.total)} PTS
           </span>
         </div>
 
-        <span className="px-4 py-1 rounded-full bg-amber-400 text-black font-hud text-2xl font-bold shadow-lg">
+        <span className="px-2.5 py-0.5 rounded-full bg-amber-400 text-black font-hud text-xs sm:text-sm font-extrabold shadow-md">
           VS
         </span>
 
         {/* Team B Pill */}
         <div
           id="t2-pill-b"
-          className="px-4 py-1.5 rounded-xl dark-box font-hud text-2xl sm:text-3xl font-bold text-white inline-flex items-center gap-3.5 border-r-4 shadow-xl cursor-pointer"
+          className="px-3 py-1 rounded-lg dark-box font-hud text-sm sm:text-base font-bold text-white inline-flex items-center gap-2.5 border-r-4 shadow-xl cursor-pointer"
           style={{
             borderRightColor: themeS6.rank2,
             opacity: mounted ? 1 : 0,
@@ -175,12 +175,12 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey = 0, onEl
           onClick={(e) => onElementClick?.(e, 's6', 'rank2', `#${teamB.rank} ${teamB.name}`)}
         >
           <span
-            className="px-3 py-0.5 rounded text-white text-2xl sm:text-3xl"
+            className="px-2 py-0.5 rounded text-white text-xs sm:text-sm font-extrabold"
             style={{ backgroundColor: themeS6.rank2 }}
           >
             {formatNumber(teamB.total)} PTS
           </span>
-          <span>
+          <span className="truncate max-w-[160px]">
             #{teamB.rank} {teamB.name}
           </span>
           <TeamLogoBadge
@@ -188,7 +188,7 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey = 0, onEl
             name={teamB.name}
             logoUrl={teamLogoMap[teamB.tag.toUpperCase()] || teamLogoMap[teamB.name.toUpperCase()]}
             color={themeS6.rank2}
-            sizeCls="w-16 h-16"
+            sizeCls="w-8 h-8 sm:w-9 sm:h-9"
           />
         </div>
       </div>
