@@ -114,7 +114,13 @@ export async function POST(req: NextRequest) {
     const payloadToSave: Record<string, any> = {};
 
     if (updates && typeof updates === 'object') {
-      Object.assign(payloadToSave, updates);
+      for (const [k, v] of Object.entries(updates)) {
+        if (typeof v === 'object' && v !== null && !Array.isArray(v) && typeof payloadToSave[k] === 'object') {
+          payloadToSave[k] = { ...payloadToSave[k], ...v };
+        } else {
+          payloadToSave[k] = v;
+        }
+      }
     }
     if (themes && typeof themes === 'object') {
       Object.assign(payloadToSave, themes);

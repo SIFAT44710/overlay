@@ -107,15 +107,18 @@ export default function AdminPage() {
   }, []);
 
   const handleOpenColorPopover = useCallback(
-    (e: React.MouseEvent, group: string, key: string, label: string) => {
-      e.stopPropagation();
+    (e: React.MouseEvent | MouseEvent | any, group: string, key: string, label: string) => {
+      if (e?.stopPropagation) e.stopPropagation();
+      if (e?.preventDefault) e.preventDefault();
       if (currentMode !== 'admin') return;
       isEditingRef.current = true;
       const currentVal = (draftTheme as any)?.[group]?.[key] || '#ffffff';
+      const clientX = e?.clientX ?? (typeof window !== 'undefined' ? window.innerWidth / 2 : 400);
+      const clientY = e?.clientY ?? (typeof window !== 'undefined' ? window.innerHeight / 2 : 300);
       setPopover({
         isOpen: true,
-        x: e.clientX,
-        y: e.clientY,
+        x: clientX,
+        y: clientY,
         group,
         key,
         label,

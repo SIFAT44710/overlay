@@ -160,6 +160,7 @@ export default function Slide10DualColumn({
   }
 
   const latestRef = useRef({ cfg, themeS9, teamLogoMap });
+  latestRef.current = { cfg, themeS9, teamLogoMap };
   useEffect(() => {
     latestRef.current = { cfg, themeS9, teamLogoMap };
   });
@@ -429,20 +430,22 @@ export default function Slide10DualColumn({
           if (!onElementClick) return;
           const chart = chartInstanceRef.current;
           if (!chart) return;
+          const nativeEvt = evt?.native || evt;
+          if (!nativeEvt) return;
 
           // 1. Direct bar hit test via Chart.js geometry: 100% accurate on candle clicks
           if (elems && elems.length > 0) {
             const dsIdx = elems[0].datasetIndex;
             if (dsIdx === 0) {
               onElementClick(
-                evt.nativeEvent,
+                nativeEvt,
                 's9',
                 'kills',
                 `${latestRef.current.cfg.lbl1} (Yellow / Left Candle) Color`
               );
             } else {
               onElementClick(
-                evt.nativeEvent,
+                nativeEvt,
                 's9',
                 'damage',
                 `${latestRef.current.cfg.lbl2} (Blue / Right Candle) Color`
@@ -457,7 +460,8 @@ export default function Slide10DualColumn({
           const canvasEl = canvasRef.current;
           if (!canvasEl) return;
           const rect = canvasEl.getBoundingClientRect();
-          const clickX = evt.nativeEvent.clientX - rect.left;
+          const clientX = nativeEvt.clientX ?? (rect.left + (evt.x || 0));
+          const clickX = clientX - rect.left;
 
           let clickedIdx = 0;
           let minDist = Infinity;
@@ -475,14 +479,14 @@ export default function Slide10DualColumn({
           // Left side = Kills (Yellow) Candle; Right side = Damage (Blue) Candle
           if (clickX <= cx) {
             onElementClick(
-              evt.nativeEvent,
+              nativeEvt,
               's9',
               'kills',
               `${latestRef.current.cfg.lbl1} (Yellow / Left Candle) Color`
             );
           } else {
             onElementClick(
-              evt.nativeEvent,
+              nativeEvt,
               's9',
               'damage',
               `${latestRef.current.cfg.lbl2} (Blue / Right Candle) Color`
@@ -677,7 +681,65 @@ export default function Slide10DualColumn({
       </div>
 
       <div className="relative h-[460px] sm:h-[540px] w-full">
-        <canvas ref={canvasRef} className="cursor-pointer" />
+        <canvas
+          ref={canvasRef}
+          className="cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            const chart = chartInstanceRef.current;
+            if (!chart || !onElementClick) return;
+
+            // 1. Direct hit test via Chart.js nearest element
+            let elements = chart.getElementsAtEventForMode(
+              e.nativeEvent,
+              'nearest',
+              { intersect: true },
+              false
+            );
+            if (!elements || elements.length === 0) {
+              elements = chart.getElementsAtEventForMode(
+                e.nativeEvent,
+                'index',
+                { intersect: false },
+                false
+              );
+            }
+
+            if (elements && elements.length > 0) {
+              const dsIdx = elements[0].datasetIndex;
+              if (dsIdx === 0) {
+                onElementClick(e, 's9', 'kills', `${latestRef.current.cfg.lbl1} (Yellow / Left Candle) Color`);
+              } else {
+                onElementClick(e, 's9', 'damage', `${latestRef.current.cfg.lbl2} (Blue / Right Candle) Color`);
+              }
+              return;
+            }
+
+            // 2. Coordinate fallback: determine whether clicked on left half (Kills) or right half (Damage)
+            const xScale = chart.scales.x;
+            if (xScale) {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const clickX = e.clientX - rect.left;
+              let clickedIdx = 0;
+              let minDist = Infinity;
+              const tags = latestRef.current.cfg.tags;
+              for (let i = 0; i < tags.length; i++) {
+                const cx = xScale.getPixelForValue(i);
+                const dist = Math.abs(clickX - cx);
+                if (dist < minDist) {
+                  minDist = dist;
+                  clickedIdx = i;
+                }
+              }
+              const cx = xScale.getPixelForValue(clickedIdx);
+              if (clickX <= cx) {
+                onElementClick(e, 's9', 'kills', `${latestRef.current.cfg.lbl1} (Yellow / Left Candle) Color`);
+              } else {
+                onElementClick(e, 's9', 'damage', `${latestRef.current.cfg.lbl2} (Blue / Right Candle) Color`);
+              }
+            }
+          }}
+        />
       </div>
     </div>
   );

@@ -167,7 +167,13 @@ export async function saveThemeConfigToSheet(
   try {
     await ensureThemeConfigTabExists(defaultSheetId);
     const current = await getStoredThemeConfig(true);
-    Object.assign(current, updates);
+    Object.entries(updates).forEach(([k, v]) => {
+      if (typeof v === 'object' && v !== null && !Array.isArray(v) && typeof current[k] === 'object' && current[k] !== null) {
+        current[k] = { ...current[k], ...v };
+      } else {
+        current[k] = v;
+      }
+    });
 
     const rows = Object.entries(current).map(([k, v]) => [
       k,
