@@ -32,14 +32,16 @@ export default function ColorPopover({
   onSelectGlobalText,
   onSelectGlobalBox,
 }: ColorPopoverProps) {
+  const [prevInitialColor, setPrevInitialColor] = useState(initialColor);
   const [color, setColor] = useState(initialColor || '#ffffff');
   const [hexInput, setHexInput] = useState(initialColor || '#ffffff');
   const popoverRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
+  if (initialColor !== prevInitialColor) {
+    setPrevInitialColor(initialColor);
     setColor(initialColor || '#ffffff');
     setHexInput(initialColor || '#ffffff');
-  }, [initialColor]);
+  }
 
   // Handle Escape key and outside click to cleanly dismiss popover
   useEffect(() => {

@@ -13,12 +13,17 @@ interface SlideProps {
   onElementClick?: (e: React.MouseEvent, group: string, key: string, label: string) => void;
 }
 
-export default function Slide07FastRadar({ sheetData, theme, replayKey, onElementClick }: SlideProps) {
+export default function Slide07FastRadar({ sheetData, theme, replayKey = 0, onElementClick }: SlideProps) {
   const [mounted, setMounted] = useState(false);
+  const [prevKey, setPrevKey] = useState(replayKey);
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
 
-  useEffect(() => {
+  if (replayKey !== prevKey) {
+    setPrevKey(replayKey);
     setMounted(false);
+  }
+
+  useEffect(() => {
     const timer = setTimeout(() => setMounted(true), 80);
     return () => clearTimeout(timer);
   }, [replayKey]);
@@ -52,6 +57,17 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey, onElemen
   if (source === 'custom_radar_h2h' && allTeams.length >= 2) {
     teamA = allTeams[custom?.rAIdx ?? 0] || allTeams[0];
     teamB = allTeams[custom?.rBIdx ?? 1] || allTeams[1];
+  }
+
+  // Resolve Drive Logo for both teams
+  const teamLogoMap: Record<string, string> = {};
+  if (sheetData?.standing12) {
+    sheetData.standing12.forEach((st) => {
+      if (st.logoUrl) {
+        teamLogoMap[st.tag.toUpperCase()] = st.logoUrl;
+        teamLogoMap[st.name.toUpperCase()] = st.logoUrl;
+      }
+    });
   }
 
   const axes = ['KILLS', 'DAMAGE', 'HEADSHOTS', 'GLOO WALL', 'TOTAL PTS'];
@@ -108,18 +124,29 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey, onElemen
     vals.map((v, i) => ptAt(i, v).map((n) => n.toFixed(1)).join(',')).join(' ');
 
   return (
-    <div className="w-full max-w-[1340px] flex flex-col items-center pt-18 relative font-hud">
+    <div className="w-full max-w-[1340px] flex flex-col items-center pt-18 relative font-hud select-none">
       {/* Top VS Badges */}
       <div className="absolute top-1 inset-x-3 sm:inset-x-6 flex items-center justify-between gap-3 z-30">
         {/* Team A Pill */}
         <div
           id="t2-pill-a"
-          className="px-4 py-1.5 rounded-xl dark-box font-hud text-2xl sm:text-3xl font-bold text-white inline-flex items-center gap-3.5 border-l-4 relative shadow-xl"
-          style={{ borderLeftColor: themeS6.rank1 }}
+          className="px-4 py-1.5 rounded-xl dark-box font-hud text-2xl sm:text-3xl font-bold text-white inline-flex items-center gap-3.5 border-l-4 relative shadow-xl cursor-pointer"
+          style={{
+            borderLeftColor: themeS6.rank1,
+            opacity: mounted ? 1 : 0,
+            transform: mounted ? 'translateY(0)' : 'translateY(-10px)',
+            transition: 'opacity 0.4s ease 1.25s, transform 0.4s ease 1.25s',
+          }}
           onClick={(e) => onElementClick?.(e, 's6', 'rank1', `#${teamA.rank} ${teamA.name}`)}
         >
           <SpiritFireCanvas />
-          <TeamLogoBadge tag={teamA.tag} name={teamA.name} color={themeS6.rank1} sizeCls="w-16 h-16" />
+          <TeamLogoBadge
+            tag={teamA.tag}
+            name={teamA.name}
+            logoUrl={teamLogoMap[teamA.tag.toUpperCase()] || teamLogoMap[teamA.name.toUpperCase()]}
+            color={themeS6.rank1}
+            sizeCls="w-16 h-16"
+          />
           <span>
             #{teamA.rank} {teamA.name}
           </span>
@@ -127,7 +154,7 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey, onElemen
             className="px-3 py-0.5 rounded text-white text-2xl sm:text-3xl"
             style={{ backgroundColor: themeS6.rank1 }}
           >
-            {teamA.total} PTS
+            {formatNumber(teamA.total)} PTS
           </span>
         </div>
 
@@ -138,25 +165,36 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey, onElemen
         {/* Team B Pill */}
         <div
           id="t2-pill-b"
-          className="px-4 py-1.5 rounded-xl dark-box font-hud text-2xl sm:text-3xl font-bold text-white inline-flex items-center gap-3.5 border-r-4 shadow-xl"
-          style={{ borderRightColor: themeS6.rank2 }}
+          className="px-4 py-1.5 rounded-xl dark-box font-hud text-2xl sm:text-3xl font-bold text-white inline-flex items-center gap-3.5 border-r-4 shadow-xl cursor-pointer"
+          style={{
+            borderRightColor: themeS6.rank2,
+            opacity: mounted ? 1 : 0,
+            transform: mounted ? 'translateY(0)' : 'translateY(-10px)',
+            transition: 'opacity 0.4s ease 0.56s, transform 0.4s ease 0.56s',
+          }}
           onClick={(e) => onElementClick?.(e, 's6', 'rank2', `#${teamB.rank} ${teamB.name}`)}
         >
           <span
             className="px-3 py-0.5 rounded text-white text-2xl sm:text-3xl"
             style={{ backgroundColor: themeS6.rank2 }}
           >
-            {teamB.total} PTS
+            {formatNumber(teamB.total)} PTS
           </span>
           <span>
             #{teamB.rank} {teamB.name}
           </span>
-          <TeamLogoBadge tag={teamB.tag} name={teamB.name} color={themeS6.rank2} sizeCls="w-16 h-16" />
+          <TeamLogoBadge
+            tag={teamB.tag}
+            name={teamB.name}
+            logoUrl={teamLogoMap[teamB.tag.toUpperCase()] || teamLogoMap[teamB.name.toUpperCase()]}
+            color={themeS6.rank2}
+            sizeCls="w-16 h-16"
+          />
         </div>
       </div>
 
-      {/* Radar SVG */}
-      <svg viewBox="0 0 560 525" className="w-full max-w-[600px] overflow-visible">
+      {/* Radar SVG with overflow-visible to ensure no text clipping */}
+      <svg viewBox="0 0 560 535" className="w-full max-w-[620px] overflow-visible">
         {/* Radar Expanding Rings */}
         {[25, 50, 75, 100].map((p, idx) => (
           <polygon
@@ -169,7 +207,7 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey, onElemen
               transformOrigin: `${CX}px ${CY}px`,
               transform: mounted ? 'scale(1)' : 'scale(0)',
               opacity: mounted ? 1 : 0,
-              transition: `transform 0.5s cubic-bezier(0.22,1,0.36,1) ${idx * 0.08}s, opacity 0.3s ease`,
+              transition: `transform 0.36s cubic-bezier(0.22,1,0.36,1) ${idx * 0.05}s, opacity 0.28s ease`,
             }}
           />
         ))}
@@ -193,12 +231,15 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey, onElemen
                 y={(ly + 6).toFixed(1)}
                 textAnchor="middle"
                 fill="#ffffff"
+                stroke="rgba(9,11,18,0.96)"
+                strokeWidth="3.5"
+                paintOrder="stroke fill"
                 fontSize="20"
                 fontWeight="800"
                 className="font-hud"
                 style={{
                   opacity: mounted ? 1 : 0,
-                  transition: `opacity 0.4s ease ${0.25 + i * 0.08}s`,
+                  transition: `opacity 0.4s ease ${0.22 + i * 0.06}s`,
                 }}
               >
                 {lbl}
@@ -207,7 +248,7 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey, onElemen
           );
         })}
 
-        {/* Top 2 Polygons */}
+        {/* Top 2 Polygons: Team B (i=0) animates at 0.56s, Team A (i=1) animates at 1.25s */}
         {top2.map((t, i) => {
           const dots = t.vals.map((v, ai) => {
             const [dx, dy] = ptAt(ai, v);
@@ -219,6 +260,8 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey, onElemen
             );
           });
 
+          const delaySec = i === 1 ? 1.25 : 0.56;
+
           return (
             <g
               key={t.name}
@@ -227,11 +270,11 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey, onElemen
                 transformOrigin: `${CX}px ${CY}px`,
                 transform: mounted ? 'scale(1)' : 'scale(0)',
                 opacity: mounted ? 1 : 0,
-                transition: `transform 0.65s cubic-bezier(0.16, 1.12, 0.3, 1) ${0.5 + i * 0.3}s, opacity 0.4s ease`,
+                transition: `transform 0.65s cubic-bezier(0.16, 1.12, 0.3, 1) ${delaySec}s, opacity 0.4s ease ${delaySec}s`,
               }}
               onMouseMove={(e) =>
                 setTooltip({
-                  text: `#${t.rank} ${t.name} — ${t.pts} PTS (${t.kills} Kills • ${formatNumber(t.dmg)} DMG)`,
+                  text: `#${t.rank} ${t.name} — ${formatNumber(t.pts)} PTS (${t.kills} Kills • ${formatNumber(t.dmg)} DMG)`,
                   x: e.clientX,
                   y: e.clientY,
                 })

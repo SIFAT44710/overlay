@@ -92,7 +92,7 @@ export default function Slide08KillsDmgLine({
             const raw = ds.data[i];
             if (raw === 0 || raw == null) return;
             const pos = el.tooltipPosition();
-            const fullTxt = formatNumber(raw);
+            const fullTxt = Number(raw).toLocaleString();
             ctx.fillStyle = ds.borderColor;
             ctx.strokeStyle = 'rgba(0,0,0,0.95)';
             ctx.lineWidth = 4.5;
@@ -117,6 +117,7 @@ export default function Slide08KillsDmgLine({
             yAxisID: 'y',
             tension: 0.36,
             fill: true,
+            borderWidth: 4,
             pointRadius: 7,
             pointBackgroundColor: themeS7.kills,
             pointBorderColor: '#090b10',
@@ -130,6 +131,7 @@ export default function Slide08KillsDmgLine({
             yAxisID: 'y1',
             tension: 0.36,
             fill: true,
+            borderWidth: 4,
             pointRadius: 7,
             pointBackgroundColor: themeS7.damage,
             pointBorderColor: '#090b10',
@@ -141,13 +143,13 @@ export default function Slide08KillsDmgLine({
         responsive: true,
         maintainAspectRatio: false,
         animation: {
-          duration: 1400,
-          easing: 'easeOutQuart',
+          duration: 1600,
+          easing: 'easeOutCubic',
         },
         layout: {
           padding: {
-            top: 36,
-            bottom: 20,
+            top: 48,
+            bottom: 24,
             left: 20,
             right: 20,
           },
@@ -157,41 +159,49 @@ export default function Slide08KillsDmgLine({
             grid: { color: 'rgba(148,163,184,0.18)' },
             ticks: {
               color: '#ffffff',
-              font: { size: 22, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
+              font: { size: 20, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
             },
           },
           y: {
             type: 'linear',
             position: 'left',
             grid: { color: 'rgba(148,163,184,0.18)' },
-            ticks: {
+            title: {
+              display: true,
+              text: 'KILLS',
               color: themeS7.kills,
               font: { size: 18, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
-              callback: (v) => `${v}K`,
+            },
+            ticks: {
+              color: '#fde047',
+              font: { size: 18, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
+              callback: (v: any) => Number(v).toLocaleString(),
             },
           },
           y1: {
             type: 'linear',
             position: 'right',
             grid: { drawOnChartArea: false },
-            ticks: {
+            title: {
+              display: true,
+              text: 'DAMAGE',
               color: themeS7.damage,
               font: { size: 18, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
-              callback: (v) => formatNumber(v),
+            },
+            ticks: {
+              color: '#7dd3fc',
+              font: { size: 18, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
+              callback: (v: any) => Number(v).toLocaleString(),
             },
           },
         },
         plugins: {
           legend: {
-            display: true,
-            labels: {
-              color: '#ffffff',
-              font: { size: 18, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
-            },
+            display: false,
           },
           tooltip: {
             callbacks: {
-              label: (item: any) => `${item.dataset.label}: ${formatNumber(item.raw)}`,
+              label: (item: any) => `${item.dataset.label}: ${Number(item.raw).toLocaleString()}`,
             },
           },
         },
@@ -218,16 +228,15 @@ export default function Slide08KillsDmgLine({
             color={themeS7.kills}
             sizeCls="w-16 h-16"
           />
-          <span className="text-amber-400 font-extrabold">PEAK MATCH #{peakIdx + 1}</span>
-          <span className="font-extrabold">BLOODSHED</span>
-          <span className="px-3.5 py-0.5 rounded bg-amber-400 text-black font-extrabold text-2xl sm:text-3xl">
-            {killsData[peakIdx]} KILLS ({formatNumber(dmgData[peakIdx])} DMG)
-          </span>
+          <span className="text-amber-400 font-extrabold">#1 PEAK MATCH • M{peakIdx + 1}</span>
+          <span className="text-amber-300 font-extrabold">{killsData[peakIdx]} KILLS</span>
+          <span className="text-slate-500">|</span>
+          <span className="text-sky-300 font-extrabold">{Number(dmgData[peakIdx]).toLocaleString()} DMG</span>
         </div>
       </div>
 
       {/* Chart Canvas Area */}
-      <div className="w-full h-[520px] relative">
+      <div className="relative h-[460px] sm:h-[540px] w-full">
         <canvas
           ref={canvasRef}
           onClick={(e) => {

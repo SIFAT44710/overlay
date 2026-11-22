@@ -24,6 +24,7 @@ export default function Slide06SingleColumn({
 }: SlideProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
+  const imgCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
 
   const themeS5 = theme?.s5 || {};
   const source = theme?.sources?.[5] || 'day_pts';
@@ -201,33 +202,76 @@ export default function Slide06SingleColumn({
           const r = 36; // 72px diameter
           const cy = yBase + r;
 
-          // Hexagon shield logo background
-          ctx.save();
-          ctx.beginPath();
-          for (let k = 0; k < 6; k++) {
-            const a = -Math.PI / 2 + (k * Math.PI) / 3;
-            const px = cx + r * Math.cos(a);
-            const py = cy + r * Math.sin(a);
-            if (k === 0) ctx.moveTo(px, py);
-            else ctx.lineTo(px, py);
+          // Check if Drive logo exists in cache or needs preloading
+          const logoUrl =
+            teamLogoMap[tag.toUpperCase()] ||
+            teamLogoMap[cfg.names[i]?.toUpperCase()] ||
+            '';
+          let img: HTMLImageElement | undefined;
+          if (logoUrl) {
+            if (!imgCacheRef.current.has(logoUrl)) {
+              const newImg = new Image();
+              newImg.crossOrigin = 'anonymous';
+              newImg.src = logoUrl;
+              newImg.onload = () => {
+                if (chartInstanceRef.current) {
+                  chartInstanceRef.current.draw();
+                }
+              };
+              imgCacheRef.current.set(logoUrl, newImg);
+            }
+            img = imgCacheRef.current.get(logoUrl);
           }
-          ctx.closePath();
-          ctx.fillStyle = col;
-          ctx.shadowColor = col;
-          ctx.shadowBlur = 14;
-          ctx.fill();
-          ctx.shadowBlur = 0;
-          ctx.lineWidth = 3;
-          ctx.strokeStyle = '#090b10';
-          ctx.stroke();
 
-          // Team Tag letters inside hex
-          ctx.font = '800 22px "GFF Latin", "Teko", sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillStyle = isLight ? '#090b10' : '#ffffff';
-          ctx.fillText(String(tag).slice(0, 3), cx, cy + 0.5);
-          ctx.restore();
+          if (img && img.complete && img.naturalWidth > 0) {
+            // Draw round hex/circle shield with glow & real Drive Logo
+            ctx.save();
+            ctx.shadowColor = col;
+            ctx.shadowBlur = 14;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.fillStyle = '#0a0c16';
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = col;
+            ctx.stroke();
+
+            // Clip & draw image
+            ctx.beginPath();
+            ctx.arc(cx, cy, r - 3, 0, Math.PI * 2);
+            ctx.clip();
+            ctx.drawImage(img, cx - (r - 3), cy - (r - 3), (r - 3) * 2, (r - 3) * 2);
+            ctx.restore();
+          } else {
+            // Fallback: High-contrast hexagon shield with team tag initials
+            ctx.save();
+            ctx.beginPath();
+            for (let k = 0; k < 6; k++) {
+              const a = -Math.PI / 2 + (k * Math.PI) / 3;
+              const px = cx + r * Math.cos(a);
+              const py = cy + r * Math.sin(a);
+              if (k === 0) ctx.moveTo(px, py);
+              else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fillStyle = col;
+            ctx.shadowColor = col;
+            ctx.shadowBlur = 14;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#090b10';
+            ctx.stroke();
+
+            // Team Tag letters inside hex
+            ctx.font = '800 22px "GFF Latin", "Teko", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = isLight ? '#090b10' : '#ffffff';
+            ctx.fillText(String(tag).slice(0, 3), cx, cy + 0.5);
+            ctx.restore();
+          }
 
           // Tag Name below logo
           ctx.font = '800 22px "GFF Latin", "Teko", sans-serif';
@@ -266,7 +310,7 @@ export default function Slide06SingleColumn({
         },
         layout: {
           padding: {
-            top: 36,
+            top: 48,
             bottom: 132, // Accommodates 72px hex logos + 22px tag labels
             left: 10,
             right: 10,
@@ -312,33 +356,33 @@ export default function Slide06SingleColumn({
     };
   }, [cfg, barColors]);
 
-  const topTeam = st12[0];
+  const leaderTag = cfg.tags[0] || 'TOP';
+  const leaderName = cfg.names[0] || 'RAAD VAI YT';
+  const leaderLogo = teamLogoMap[leaderTag.toUpperCase()] || teamLogoMap[leaderName.toUpperCase()];
 
   return (
     <div className="w-full max-w-[1340px] pt-14 relative font-hud select-none">
       {/* Top-Right Leader Pill */}
-      {topTeam && (
-        <div className="absolute top-1 right-3 sm:right-6 z-30">
-          <div className="relative px-4 py-1.5 rounded-xl bg-slate-950/90 border border-purple-400/70 font-hud text-2xl sm:text-3xl font-bold text-white flex items-center gap-3.5 shadow-2xl top1-hero-glow">
-            <SpiritFireCanvas />
-            <TeamLogoBadge
-              tag={topTeam.tag}
-              name={topTeam.name}
-              logoUrl={teamLogoMap[topTeam.tag.toUpperCase()] || teamLogoMap[topTeam.name.toUpperCase()]}
-              color={barColors[0]}
-              sizeCls="w-16 h-16"
-            />
-            <span className="text-amber-400 font-extrabold">{cfg.badge}</span>
-            <span className="font-extrabold">{cfg.leader}</span>
-            <span className="px-3.5 py-0.5 rounded bg-amber-400 text-black font-extrabold text-2xl sm:text-3xl">
-              {cfg.valTxt}
-            </span>
-          </div>
+      <div className="absolute top-1 right-3 sm:right-6 z-30">
+        <div className="relative px-4 py-1.5 rounded-xl bg-slate-950/90 border border-purple-400/70 font-hud text-2xl sm:text-3xl font-bold text-white flex items-center gap-3.5 shadow-2xl top1-hero-glow">
+          <SpiritFireCanvas />
+          <TeamLogoBadge
+            tag={leaderTag}
+            name={leaderName}
+            logoUrl={leaderLogo}
+            color={barColors[0]}
+            sizeCls="w-16 h-16"
+          />
+          <span className="text-amber-400 font-extrabold">{cfg.badge}</span>
+          <span className="font-extrabold">{cfg.leader}</span>
+          <span className="px-3.5 py-0.5 rounded bg-amber-400 text-black font-extrabold text-2xl sm:text-3xl">
+            {cfg.valTxt}
+          </span>
         </div>
-      )}
+      </div>
 
       {/* Chart Canvas Area */}
-      <div className="w-full h-[520px] relative">
+      <div className="relative h-[460px] sm:h-[540px] w-full">
         <canvas
           ref={canvasRef}
           onClick={(e) => {

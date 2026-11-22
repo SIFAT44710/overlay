@@ -20,10 +20,15 @@ export default function Slide04TeamH2H({
   onElementClick,
 }: SlideProps) {
   const [animated, setAnimated] = useState(false);
+  const [prevKey, setPrevKey] = useState(replayKey);
   const hasAnimatedRef = useRef(false);
 
-  useEffect(() => {
+  if (replayKey !== prevKey) {
+    setPrevKey(replayKey);
     setAnimated(false);
+  }
+
+  useEffect(() => {
     const rafId = requestAnimationFrame(() => {
       const timer = setTimeout(() => {
         setAnimated(true);

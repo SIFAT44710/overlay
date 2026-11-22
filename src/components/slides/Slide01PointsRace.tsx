@@ -51,11 +51,16 @@ export default function Slide01PointsRace({
   onElementClick,
 }: SlideProps) {
   const [animated, setAnimated] = useState(false);
+  const [prevKey, setPrevKey] = useState(replayKey);
   const hasAnimatedRef = useRef(false);
+
+  if (replayKey !== prevKey) {
+    setPrevKey(replayKey);
+    setAnimated(false);
+  }
 
   // Run entrance animation once on initial mount or when replayKey changes
   useEffect(() => {
-    setAnimated(false);
     const rafId = requestAnimationFrame(() => {
       const timer = setTimeout(() => {
         setAnimated(true);

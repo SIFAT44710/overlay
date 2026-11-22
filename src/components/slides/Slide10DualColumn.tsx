@@ -19,6 +19,7 @@ interface SlideProps {
 export default function Slide10DualColumn({ sheetData, theme, replayKey, onElementClick }: SlideProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
+  const imgCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
 
   const themeS9 = theme?.s9 || { kills: '#F5B700', damage: '#38BDF8' };
   const source = theme?.sources?.[9] || 'day_kd_12';
@@ -42,6 +43,17 @@ export default function Slide10DualColumn({ sheetData, theme, replayKey, onEleme
   const m5 = sheetData?.mapStandingM5 || [];
   const pl = sheetData?.dayTop10Players || [];
   const hs12 = [89, 67, 51, 70, 44, 41, 48, 46, 32, 22, 19, 2];
+
+  // Resolve Drive Logo for each team
+  const teamLogoMap: Record<string, string> = {};
+  if (sheetData?.standing12) {
+    sheetData.standing12.forEach((st) => {
+      if (st.logoUrl) {
+        teamLogoMap[st.tag.toUpperCase()] = st.logoUrl;
+        teamLogoMap[st.name.toUpperCase()] = st.logoUrl;
+      }
+    });
+  }
 
   let cfg = {
     badge: '#1 KILLS & DMG LEADER',
@@ -196,33 +208,76 @@ export default function Slide10DualColumn({ sheetData, theme, replayKey, onEleme
           const r = 36; // 72px diameter
           const cy = yBase + r;
 
-          // Hexagon shield logo background
-          ctx.save();
-          ctx.beginPath();
-          for (let k = 0; k < 6; k++) {
-            const a = -Math.PI / 2 + (k * Math.PI) / 3;
-            const px = cx + r * Math.cos(a);
-            const py = cy + r * Math.sin(a);
-            if (k === 0) ctx.moveTo(px, py);
-            else ctx.lineTo(px, py);
+          // Check if Drive logo exists in cache or needs preloading
+          const logoUrl =
+            teamLogoMap[tag.toUpperCase()] ||
+            teamLogoMap[cfg.names[i]?.toUpperCase()] ||
+            '';
+          let img: HTMLImageElement | undefined;
+          if (logoUrl) {
+            if (!imgCacheRef.current.has(logoUrl)) {
+              const newImg = new Image();
+              newImg.crossOrigin = 'anonymous';
+              newImg.src = logoUrl;
+              newImg.onload = () => {
+                if (chartInstanceRef.current) {
+                  chartInstanceRef.current.draw();
+                }
+              };
+              imgCacheRef.current.set(logoUrl, newImg);
+            }
+            img = imgCacheRef.current.get(logoUrl);
           }
-          ctx.closePath();
-          ctx.fillStyle = col;
-          ctx.shadowColor = col;
-          ctx.shadowBlur = 14;
-          ctx.fill();
-          ctx.shadowBlur = 0;
-          ctx.lineWidth = 3;
-          ctx.strokeStyle = '#090b10';
-          ctx.stroke();
 
-          // Team Tag letters inside hex
-          ctx.font = '800 22px "GFF Latin", "Teko", sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillStyle = isLight ? '#090b10' : '#ffffff';
-          ctx.fillText(String(tag).slice(0, 3), cx, cy + 0.5);
-          ctx.restore();
+          if (img && img.complete && img.naturalWidth > 0) {
+            // Draw round hex/circle shield with glow & real Drive Logo
+            ctx.save();
+            ctx.shadowColor = col;
+            ctx.shadowBlur = 14;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.fillStyle = '#0a0c16';
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = col;
+            ctx.stroke();
+
+            // Clip & draw image
+            ctx.beginPath();
+            ctx.arc(cx, cy, r - 3, 0, Math.PI * 2);
+            ctx.clip();
+            ctx.drawImage(img, cx - (r - 3), cy - (r - 3), (r - 3) * 2, (r - 3) * 2);
+            ctx.restore();
+          } else {
+            // Fallback: High-contrast hexagon shield with team tag initials
+            ctx.save();
+            ctx.beginPath();
+            for (let k = 0; k < 6; k++) {
+              const a = -Math.PI / 2 + (k * Math.PI) / 3;
+              const px = cx + r * Math.cos(a);
+              const py = cy + r * Math.sin(a);
+              if (k === 0) ctx.moveTo(px, py);
+              else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fillStyle = col;
+            ctx.shadowColor = col;
+            ctx.shadowBlur = 14;
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#090b10';
+            ctx.stroke();
+
+            // Team Tag letters inside hex
+            ctx.font = '800 22px "GFF Latin", "Teko", sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = isLight ? '#090b10' : '#ffffff';
+            ctx.fillText(String(tag).slice(0, 3), cx, cy + 0.5);
+            ctx.restore();
+          }
 
           // Tag Name below logo
           ctx.font = '800 22px "GFF Latin", "Teko", sans-serif';
@@ -276,7 +331,7 @@ export default function Slide10DualColumn({ sheetData, theme, replayKey, onEleme
             onElementClick(evt.native, 's9', 'damage', `${cfg.lbl2} Candle`);
           }
         },
-        layout: { padding: { top: 44, bottom: 132 } },
+        layout: { padding: { top: 48, bottom: 132, left: 10, right: 10 } },
         animation: {
           duration: 1350,
           delay: (c: any) => c.dataIndex * 80 + c.datasetIndex * 55,
@@ -307,11 +362,11 @@ export default function Slide10DualColumn({ sheetData, theme, replayKey, onEleme
               display: true,
               text: cfg.lbl1,
               color: themeS9.kills,
-              font: { size: 18, weight: 'bold' },
+              font: { size: 18, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
             },
             ticks: {
               color: '#fde047',
-              font: { size: 18, weight: 'bold' },
+              font: { size: 18, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
               callback: (v: any) => formatNumber(v),
             },
           },
@@ -323,11 +378,11 @@ export default function Slide10DualColumn({ sheetData, theme, replayKey, onEleme
               display: true,
               text: cfg.lbl2,
               color: themeS9.damage,
-              font: { size: 18, weight: 'bold' },
+              font: { size: 18, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
             },
             ticks: {
               color: '#7dd3fc',
-              font: { size: 18, weight: 'bold' },
+              font: { size: 18, weight: 'bold', family: '"GFF Latin", "Teko", sans-serif' },
               callback: (v: any) => formatNumber(v),
             },
           },
@@ -343,12 +398,18 @@ export default function Slide10DualColumn({ sheetData, theme, replayKey, onEleme
   }, [cfg, themeS9.kills, themeS9.damage, onElementClick]);
 
   return (
-    <div className="w-full max-w-[1340px] pt-18 relative font-hud">
+    <div className="w-full max-w-[1340px] pt-18 relative font-hud select-none">
       {/* Top Header Row with Leader Badge & Legend */}
       <div className="absolute top-1 inset-x-3 sm:inset-x-6 flex flex-wrap items-center justify-between gap-3 z-30">
         <div className="relative px-4 py-1.5 rounded-xl bg-slate-950/90 border border-purple-400 font-hud text-2xl sm:text-3xl font-bold text-white flex items-center gap-3.5 shadow-2xl top1-hero-glow">
           <SpiritFireCanvas />
-          <TeamLogoBadge tag={cfg.tags[0]} name={cfg.names[0]} color={cfg.cols[0]} sizeCls="w-16 h-16" />
+          <TeamLogoBadge
+            tag={cfg.tags[0]}
+            name={cfg.names[0]}
+            logoUrl={teamLogoMap[cfg.tags[0]?.toUpperCase()] || teamLogoMap[cfg.names[0]?.toUpperCase()]}
+            color={cfg.cols[0]}
+            sizeCls="w-16 h-16"
+          />
           <span className="text-amber-400">{cfg.badge}</span>
           <span>{cfg.leader}</span>
           <span className="px-3.5 py-0.5 rounded bg-amber-400 text-black font-bold text-2xl sm:text-3xl">
@@ -368,7 +429,7 @@ export default function Slide10DualColumn({ sheetData, theme, replayKey, onEleme
         </div>
       </div>
 
-      <div className="relative h-[430px] sm:h-[520px] w-full">
+      <div className="relative h-[460px] sm:h-[540px] w-full">
         <canvas ref={canvasRef} />
       </div>
     </div>

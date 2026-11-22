@@ -61,8 +61,8 @@ export default function Slide09RolePolar({
     },
     role_total: {
       lbls: ['Rusher', 'Support', 'Sniper', 'Bomber'],
-      dA: [269, 134, 83, 19],
-      dB: [156973, 80695, 73400, 12240],
+      dA: [269, 134, 83, 70],
+      dB: [156973, 80695, 73400, 39268],
       titleA: '#1 TOTAL KILLS',
       leadA: 'RUSHER • 269',
       titleB: '#1 TOTAL DAMAGE',
@@ -94,21 +94,37 @@ export default function Slide09RolePolar({
     },
     top4_teams: {
       lbls: ['TOP', 'EXE', 'S9x', 'CME'],
-      dA: [134, 98, 96, 93],
-      dB: [57261, 42349, 39120, 48750],
-      titleA: '#1 TEAM PTS',
-      leadA: 'TOP • 134',
-      titleB: '#1 TEAM DMG',
-      leadB: 'TOP • 57,261',
+      dA: [94, 76, 62, 58],
+      dB: [40, 22, 34, 35],
+      titleA: '#1 TOP 4 KILLS',
+      leadA: 'TOP • 94',
+      titleB: '#1 PLACE PTS',
+      leadB: 'TOP • 40',
       badgeColA: '#F5B700',
       badgeColB: '#F5B700',
     },
   };
 
-  // If live data has rolesPolar, use it
+  // Bind live Google Sheet data if available
   if (source === 'role_avg' && sheetData?.rolesPolar && sheetData.rolesPolar.length === 4) {
     polarSets.role_avg.dA = sheetData.rolesPolar.map((r) => r.kills);
     polarSets.role_avg.dB = sheetData.rolesPolar.map((r) => r.damage);
+  } else if (source === 'role_total' && Array.isArray(sheetData?.roles) && sheetData.roles.length >= 4) {
+    const rusher = sheetData.roles.find((r) => r.role?.toUpperCase() === 'RUSHER');
+    const support = sheetData.roles.find((r) => r.role?.toUpperCase() === 'SUPPORT');
+    const sniper = sheetData.roles.find((r) => r.role?.toUpperCase() === 'SNIPER');
+    const bomber = sheetData.roles.find((r) => r.role?.toUpperCase() === 'BOMBER');
+    if (rusher && support && sniper && bomber) {
+      polarSets.role_total.dA = [rusher.kills, support.kills, sniper.kills, bomber.kills];
+      polarSets.role_total.dB = [rusher.damage, support.damage, sniper.damage, bomber.damage];
+    }
+  } else if (source === 'top4_teams' && sheetData?.standing12 && sheetData.standing12.length >= 4) {
+    const t4 = sheetData.standing12.slice(0, 4);
+    polarSets.top4_teams.lbls = t4.map((t) => t.tag);
+    polarSets.top4_teams.dA = t4.map((t) => t.elims);
+    polarSets.top4_teams.dB = t4.map((t) => t.place);
+    polarSets.top4_teams.leadA = `${t4[0].tag} • ${t4[0].elims}`;
+    polarSets.top4_teams.leadB = `${t4[0].tag} • ${t4[0].place}`;
   }
 
   const ps = polarSets[source] || polarSets.role_avg;
@@ -247,37 +263,41 @@ export default function Slide09RolePolar({
   return (
     <div className="w-full max-w-[1340px] pt-14 grid grid-cols-1 md:grid-cols-2 gap-6 relative font-hud select-none">
       {/* Polar Card A */}
-      <div className="dark-box rounded-2xl p-6 relative">
+      <div className="dark-box rounded-2xl p-5 relative border border-white/10 shadow-2xl">
         <div className="flex justify-between items-center mb-3">
-          <div className="px-3 py-1 rounded-lg bg-slate-900 border border-white/10 font-hud text-lg font-bold text-slate-300">
-            {ps.titleA}
+          <div className="relative px-3.5 py-1.5 rounded-xl bg-slate-950/90 border border-purple-400 font-hud text-base sm:text-xl font-bold text-white flex items-center gap-2 top1-hero-glow">
+            <SpiritFireCanvas />
+            <span className="text-amber-400">{ps.titleA}</span>
+            <span>{ps.leadA}</span>
           </div>
           <div
-            className="px-3 py-1 rounded-lg font-hud text-xl font-extrabold text-black"
+            className="px-3 py-1 rounded-lg font-hud text-lg sm:text-xl font-extrabold text-black"
             style={{ backgroundColor: ps.badgeColA }}
           >
-            {ps.leadA}
+            #1 LEADER
           </div>
         </div>
-        <div className="w-full h-[420px] relative">
+        <div className="relative h-[400px] sm:h-[460px] w-full">
           <canvas ref={canvas1Ref} />
         </div>
       </div>
 
       {/* Polar Card B */}
-      <div className="dark-box rounded-2xl p-6 relative">
+      <div className="dark-box rounded-2xl p-5 relative border border-white/10 shadow-2xl">
         <div className="flex justify-between items-center mb-3">
-          <div className="px-3 py-1 rounded-lg bg-slate-900 border border-white/10 font-hud text-lg font-bold text-slate-300">
-            {ps.titleB}
+          <div className="relative px-3.5 py-1.5 rounded-xl bg-slate-950/90 border border-purple-400 font-hud text-base sm:text-xl font-bold text-white flex items-center gap-2 top1-hero-glow">
+            <SpiritFireCanvas />
+            <span className="text-amber-400">{ps.titleB}</span>
+            <span>{ps.leadB}</span>
           </div>
           <div
-            className="px-3 py-1 rounded-lg font-hud text-xl font-extrabold text-black"
+            className="px-3 py-1 rounded-lg font-hud text-lg sm:text-xl font-extrabold text-black"
             style={{ backgroundColor: ps.badgeColB }}
           >
-            {ps.leadB}
+            #1 LEADER
           </div>
         </div>
-        <div className="w-full h-[420px] relative">
+        <div className="relative h-[400px] sm:h-[460px] w-full">
           <canvas ref={canvas2Ref} />
         </div>
       </div>
