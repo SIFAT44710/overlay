@@ -246,24 +246,55 @@ export async function GET(req: NextRequest) {
     };
 
     // -------------------------------------------------------------
-    // 4. Parse Weapons (Vmix!A91:G98 or Weapons!A1:H60)
+    // 4. Parse Weapons (Vmix!A1:P150 "DAY MOST USED GUNS" or Weapons!A1:H60)
     // -------------------------------------------------------------
     const weaponColors = ['#8b5cf6', '#2dd4bf', '#fbbf24', '#f43f5e', '#38bdf8'];
     const weaponsDay: WeaponStats[] = [];
 
-    // Check Vmix rows 91-98 first
     const vmixRows = batch['Vmix!A1:P150'] || [];
-    for (let i = 0; i < vmixRows.length; i++) {
-      const r = vmixRows[i];
-      if (r && r[0] && ['EVO3', 'M7', 'AWM', 'UZI', 'WOODPECKER', 'MP40', 'M1887', 'SCAR', 'GROZA', 'KAR98K'].includes(safeString(r[0]).toUpperCase())) {
-        weaponsDay.push({
-          name: safeString(r[0]).toUpperCase(),
-          kills: safeInt(r[1]),
-          damage: safeInt(r[2]),
-          hs: safeInt(r[4]), // Col E is Headshots
-          color: weaponColors[weaponsDay.length % weaponColors.length],
-        });
-        if (weaponsDay.length >= 5) break;
+    const dayGunHeaderIdx = vmixRows.findIndex((r: any[]) =>
+      safeString(r?.[0]).toUpperCase().includes('DAY MOST USED GUNS')
+    );
+
+    if (dayGunHeaderIdx !== -1) {
+      // Find rows under "DAY MOST USED GUNS"
+      for (let i = dayGunHeaderIdx + 1; i < vmixRows.length; i++) {
+        const r = vmixRows[i];
+        if (!r || !r[0]) continue;
+        const name = safeString(r[0]).toUpperCase();
+        if (name === 'WEAPON' || name.includes('GUNS') || name.includes('GROUP')) continue;
+        if (['EVO3', 'M7', 'AWM', 'UZI', 'WOODPECKER', 'MP40', 'M1887', 'SCAR', 'GROZA', 'KAR98K'].includes(name)) {
+          if (!weaponsDay.some((w) => w.name === name)) {
+            weaponsDay.push({
+              name,
+              kills: safeInt(r[1]),
+              damage: safeInt(r[2]),
+              hs: safeInt(r[4]), // Col E is Headshots
+              color: weaponColors[weaponsDay.length % weaponColors.length],
+            });
+            if (weaponsDay.length >= 5) break;
+          }
+        }
+      }
+    }
+
+    // Fallback: Check general Vmix rows if "DAY MOST USED GUNS" header wasn't found
+    if (weaponsDay.length < 5) {
+      for (let i = 0; i < vmixRows.length; i++) {
+        const r = vmixRows[i];
+        if (r && r[0] && ['EVO3', 'M7', 'AWM', 'UZI', 'WOODPECKER', 'MP40', 'M1887', 'SCAR', 'GROZA', 'KAR98K'].includes(safeString(r[0]).toUpperCase())) {
+          const name = safeString(r[0]).toUpperCase();
+          if (!weaponsDay.some((w) => w.name === name)) {
+            weaponsDay.push({
+              name,
+              kills: safeInt(r[1]),
+              damage: safeInt(r[2]),
+              hs: safeInt(r[4]),
+              color: weaponColors[weaponsDay.length % weaponColors.length],
+            });
+            if (weaponsDay.length >= 5) break;
+          }
+        }
       }
     }
 
@@ -360,7 +391,10 @@ export async function GET(req: NextRequest) {
       const kills = safeInt(r[6]);   // Kills
       const booyah = safeInt(r[7]);  // Booyah
       const damage = safeInt(r[8]);  // Damage
-      const hs = safeInt(r[9]);      // Headshots
+      let hs = safeInt(r[9]);        // Headshots
+      if (typeof r[9] === 'string' && r[9].endsWith('%') && hs >= 100) {
+        hs = Math.round(hs / 100);
+      }
       const gloo = safeInt(r[11]);   // Gloo Used
 
       const avgElims = safeFloat((kills / 5).toFixed(1));

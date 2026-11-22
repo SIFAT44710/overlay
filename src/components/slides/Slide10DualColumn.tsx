@@ -42,7 +42,9 @@ export default function Slide10DualColumn({ sheetData, theme, replayKey, onEleme
   const st12 = sheetData?.standing12 || [];
   const m5 = sheetData?.mapStandingM5 || [];
   const pl = sheetData?.dayTop10Players || [];
-  const hs12 = [89, 67, 51, 70, 44, 41, 48, 46, 32, 22, 19, 2];
+  const hs12 = sheetData?.allTeamsFull && sheetData.allTeamsFull.length > 0
+    ? sheetData.allTeamsFull.map((t) => t.hs)
+    : [89, 67, 51, 70, 61, 41, 51, 65, 44, 47, 24, 3];
 
   // Resolve Drive Logo for each team
   const teamLogoMap: Record<string, string> = {};
