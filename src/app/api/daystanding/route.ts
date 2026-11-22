@@ -1,5 +1,12 @@
-import { google } from 'googleapis';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import {
+  getBatchSheetRanges,
+  getDriveLogos,
+  resolveTeamLogo,
+  safeInt,
+  safeString,
+  normalizeStr,
+} from '@/lib/googleSheets';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -43,103 +50,65 @@ function formatOrdinalRank(rankNum: number): string {
   return `${rankNum}TH`;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_CLIENT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      },
-      scopes: [
-        'https://www.googleapis.com/auth/spreadsheets.readonly',
-        'https://www.googleapis.com/auth/drive.readonly',
-      ],
-    });
+    const fresh = req.nextUrl?.searchParams?.get('fresh') === '1';
 
-    const sheets = google.sheets({ version: 'v4', auth });
-    const drive = google.drive({ version: 'v3', auth });
+    // 1. Single batchGet call for DayStanding, Vmix DayStanding, and LastMatchStanding
+    const ranges = [
+      'DayStanding!A2:J15',
+      'Vmix!A56:J68',
+      'LastMatchStanding!A2:J15',
+    ];
 
-    // 1. Fetch DayStanding, Vmix DayStanding, and LastMatchStanding in parallel
-    const [dayResponse, vmixDayResponse, lastMatchResponse, driveResponse] = await Promise.all([
-      sheets.spreadsheets.values.get({
-        spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: 'DayStanding!A2:J15',
-      }).catch(() => ({ data: { values: [] } })),
-      sheets.spreadsheets.values.get({
-        spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: 'Vmix!A56:J68',
-      }).catch(() => ({ data: { values: [] } })),
-      sheets.spreadsheets.values.get({
-        spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: 'LastMatchStanding!A2:J15',
-      }).catch(() => ({ data: { values: [] } })),
-      process.env.GOOGLE_DRIVE_FOLDER_ID
-        ? drive.files
-            .list({
-              q: `'${process.env.GOOGLE_DRIVE_FOLDER_ID}' in parents and trashed = false`,
-              fields: 'files(id, name)',
-            })
-            .catch(() => ({ data: { files: [] } }))
-        : Promise.resolve({ data: { files: [] } }),
+    const [batch, driveFiles] = await Promise.all([
+      getBatchSheetRanges(ranges, fresh),
+      getDriveLogos(fresh),
     ]);
 
-    const driveFiles = driveResponse.data.files || [];
-    const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const dayRows = batch['DayStanding!A2:J15'] || [];
+    const vmixRows = batch['Vmix!A56:J68'] || [];
+    const lastRows = batch['LastMatchStanding!A2:J15'] || [];
 
     // Map last match ranks for delta computation
     const lastMatchRanks: Record<string, number> = {};
-    const lastRows = (lastMatchResponse as any)?.data?.values || [];
     if (lastRows.length > 1) {
       for (let i = 1; i < lastRows.length; i++) {
         const row = lastRows[i];
-        const rank = parseInt(row[0], 10);
-        const name = normalize(row[1] || row[2] || '');
-        if (name && !isNaN(rank)) {
+        const rank = safeInt(row[0]);
+        const name = normalizeStr(safeString(row[1]) || safeString(row[2]));
+        if (name && rank > 0) {
           lastMatchRanks[name] = rank;
         }
       }
     }
 
-    const dayRows = dayResponse.data?.values || [];
-    const vmixRows = (vmixDayResponse as any)?.data?.values || [];
-
-    // If DayStanding tab has data, use it; otherwise parse Vmix!A56:J68
     let data: any[] = [];
+    let sourceTab = 'DayStanding!A2:J15';
 
     if (dayRows.length >= 2) {
       data = dayRows.slice(1).map((row, idx) => {
-        const rawRank = parseInt(row[0], 10) || idx + 1;
-        const teamName = (row[1] || '').trim();
-        const tagName = (row[2] || teamName.slice(0, 3)).trim();
-        const survPts = parseInt(row[3], 10) || 0;
-        const killPts = parseInt(row[4], 10) || 0;
-        const totalPts = parseInt(row[5], 10) || survPts + killPts;
-        const elims = parseInt(row[6], 10) || killPts;
-        const booyah = parseInt(row[7], 10) || 0;
-        const damage = parseInt(row[8], 10) || 0;
+        const rawRank = safeInt(row[0], idx + 1);
+        const teamName = safeString(row[1]);
+        const tagName = safeString(row[2]) || teamName.slice(0, 3).toUpperCase();
+        const survPts = safeInt(row[3]);
+        const killPts = safeInt(row[4]);
+        const totalPts = safeInt(row[5], survPts + killPts);
+        const elims = safeInt(row[6], killPts);
+        const booyah = safeInt(row[7]);
+        const damage = safeInt(row[8]);
 
-        const normName = normalize(teamName);
-        const normTag = normalize(tagName);
+        const normName = normalizeStr(teamName);
+        const upperTag = tagName.toUpperCase();
 
         let delta = 0;
-        const upperTag = tagName.toUpperCase();
         if (lastMatchRanks[normName] !== undefined) {
           delta = lastMatchRanks[normName] - rawRank;
         } else if (DEFAULT_DELTAS[upperTag] !== undefined) {
           delta = DEFAULT_DELTAS[upperTag];
         }
 
-        let logoUrl: string | null = null;
-        for (const file of driveFiles) {
-          if (file.name) {
-            const fn = normalize(file.name.replace(/\.[^/.]+$/, ''));
-            if (fn.includes(normName) || normName.includes(fn) || fn.includes(normTag)) {
-              logoUrl = `https://drive.google.com/thumbnail?id=${file.id}&sz=w150`;
-              break;
-            }
-          }
-        }
-
+        const logoUrl = resolveTeamLogo(teamName, tagName, driveFiles);
         const teamColor =
           DEFAULT_TEAM_COLORS[upperTag] ||
           (idx === 0 ? '#F5B700' : idx % 2 === 0 ? '#111827' : '#6225A6');
@@ -148,7 +117,7 @@ export async function GET() {
           rank: formatOrdinalRank(rawRank),
           rankNum: rawRank,
           delta,
-          tag: tagName.toUpperCase(),
+          tag: upperTag,
           name: teamName,
           booyah,
           elims,
@@ -160,54 +129,40 @@ export async function GET() {
         };
       });
     } else if (vmixRows.length > 0) {
-      data = vmixRows.filter((r: any) => r[4] && r[4].trim() !== '').map((row: any, idx: number) => {
-        const rawRank = parseInt(row[2], 10) || idx + 1;
-        const teamName = (row[4] || '').trim();
-        const tagName = (row[3] || teamName.slice(0, 3)).trim();
-        const survPts = parseInt(row[5], 10) || 0;
-        const killPts = parseInt(row[6], 10) || 0;
-        const totalPts = parseInt(row[7], 10) || survPts + killPts;
-        const booyah = parseInt(row[8], 10) || 0;
-        const damage = parseInt(row[9], 10) || 0;
+      sourceTab = 'Vmix!A56:J68';
+      data = vmixRows
+        .filter((r: any) => safeString(r[4]) !== '')
+        .map((row: any, idx: number) => {
+          const rawRank = safeInt(row[2], idx + 1);
+          const teamName = safeString(row[4]);
+          const tagName = safeString(row[3]) || teamName.slice(0, 3).toUpperCase();
+          const survPts = safeInt(row[5]);
+          const killPts = safeInt(row[6]);
+          const totalPts = safeInt(row[7], survPts + killPts);
+          const booyah = safeInt(row[8]);
+          const damage = safeInt(row[9]);
 
-        const normName = normalize(teamName);
-        const normTag = normalize(tagName);
+          const upperTag = tagName.toUpperCase();
+          const logoUrl = resolveTeamLogo(teamName, tagName, driveFiles);
+          const teamColor =
+            DEFAULT_TEAM_COLORS[upperTag] ||
+            (idx === 0 ? '#F5B700' : idx % 2 === 0 ? '#111827' : '#6225A6');
 
-        let logoUrl: string | null = null;
-        for (const file of driveFiles) {
-          if (file.name) {
-            const fn = normalize(file.name.replace(/\.[^/.]+$/, ''));
-            if (fn.includes(normName) || normName.includes(fn) || fn.includes(normTag)) {
-              logoUrl = `https://drive.google.com/thumbnail?id=${file.id}&sz=w150`;
-              break;
-            }
-          }
-        }
-
-        const upperTag = tagName.toUpperCase();
-        const teamColor =
-          DEFAULT_TEAM_COLORS[upperTag] ||
-          (idx === 0 ? '#F5B700' : idx % 2 === 0 ? '#111827' : '#6225A6');
-
-        return {
-          rank: formatOrdinalRank(rawRank),
-          rankNum: rawRank,
-          delta: 0,
-          tag: upperTag,
-          name: teamName,
-          booyah,
-          elims: killPts,
-          place: survPts,
-          total: totalPts,
-          damage,
-          logoUrl,
-          col: teamColor,
-        };
-      });
-    }
-
-    if (!data.length) {
-      return NextResponse.json({ success: false, data: [], standing: [] }, { status: 200 });
+          return {
+            rank: formatOrdinalRank(rawRank),
+            rankNum: rawRank,
+            delta: 0,
+            tag: upperTag,
+            name: teamName,
+            booyah,
+            elims: killPts,
+            place: survPts,
+            total: totalPts,
+            damage,
+            logoUrl,
+            col: teamColor,
+          };
+        });
     }
 
     return NextResponse.json(
@@ -216,6 +171,13 @@ export async function GET() {
         timestamp: Date.now(),
         data,
         standing: data,
+        meta: {
+          isLive: data.length > 0,
+          sourceTab,
+          count: data.length,
+          cached: !fresh,
+          updatedAt: new Date().toISOString(),
+        },
       },
       {
         headers: {
@@ -228,7 +190,7 @@ export async function GET() {
   } catch (error) {
     console.error('Error in /api/daystanding:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch daystanding' },
+      { success: false, error: 'Failed to fetch daystanding', data: [], standing: [] },
       { status: 500 }
     );
   }

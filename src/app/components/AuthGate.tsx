@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 
-const STORAGE_KEY = 'dg_auth_token';
-
 interface AuthGateProps {
   children: React.ReactNode;
   pageTitle?: string;
@@ -18,22 +16,26 @@ export default function AuthGate({
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Check HttpOnly session cookie on mount via GET /api/auth
   useEffect(() => {
-    try {
-      const sessionAuth = sessionStorage.getItem(STORAGE_KEY);
-      const localAuth = localStorage.getItem(STORAGE_KEY);
-      if (sessionAuth === 'authorized' || localAuth === 'authorized') {
-        setIsAuthenticated(true);
-      } else {
-        setIsAuthenticated(false);
-      }
-    } catch {
-      setIsAuthenticated(false);
-    }
+    let isMounted = true;
+    fetch('/api/auth')
+      .then((res) => res.json())
+      .then((data) => {
+        if (isMounted) {
+          setIsAuthenticated(data.authenticated === true);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setIsAuthenticated(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleUnlock = async (e?: React.FormEvent) => {
@@ -46,58 +48,37 @@ export default function AuthGate({
     setIsLoading(true);
     setErrorMsg(null);
 
-    // Fast local verification for known defaults
-    const trimmed = password.trim();
-    const localValid = ['admin123', 'demograph123', 'sifat123', '123456'];
-
     try {
-      let isOk = localValid.includes(trimmed);
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: password.trim() }),
+      });
+      const data = await res.json();
 
-      // Verify with backend API
-      if (!isOk) {
-        const res = await fetch('/api/auth', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password: trimmed }),
-        });
-        const data = await res.json();
-        isOk = data.authorized === true;
-      }
-
-      if (isOk) {
-        if (rememberMe) {
-          localStorage.setItem(STORAGE_KEY, 'authorized');
-        } else {
-          sessionStorage.setItem(STORAGE_KEY, 'authorized');
-        }
+      if (res.ok && data.authorized) {
         setIsAuthenticated(true);
+        setPassword('');
       } else {
-        setErrorMsg('ভুল পাসওয়ার্ড! সঠিক পাসওয়ার্ড দিন।');
+        setErrorMsg(data.error || 'ভুল পাসওয়ার্ড! সঠিক পাসওয়ার্ড দিন।');
       }
     } catch {
-      // Fallback check
-      if (localValid.includes(trimmed)) {
-        localStorage.setItem(STORAGE_KEY, 'authorized');
-        setIsAuthenticated(true);
-      } else {
-        setErrorMsg('যাচাই করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
-      }
+      setErrorMsg('সার্ভার যাচাইকরণ ব্যর্থ হয়েছে। ইন্টারনেট বা কনফিগ চেক করুন।');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleLock = () => {
+  const handleLock = async () => {
     try {
-      sessionStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(STORAGE_KEY);
+      await fetch('/api/auth', { method: 'DELETE' });
     } catch {}
     setIsAuthenticated(false);
     setPassword('');
     setErrorMsg(null);
   };
 
-  // While determining auth status on mount
+  // While determining session status on mount
   if (isAuthenticated === null) {
     return (
       <div className="min-h-screen bg-[#18191a] flex items-center justify-center">
@@ -192,19 +173,6 @@ export default function AuthGate({
               <span>{errorMsg}</span>
             </div>
           )}
-
-          {/* Remember me toggle */}
-          <div className="flex items-center justify-between text-xs text-[#b0b3b8] pt-1">
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-4 h-4 rounded bg-[#18191a] border-[#3a3b3c] accent-[#1877f2] cursor-pointer"
-              />
-              <span>Remember login on this browser</span>
-            </label>
-          </div>
 
           {/* Unlock Button */}
           <button

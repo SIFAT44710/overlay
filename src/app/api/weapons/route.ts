@@ -1,79 +1,84 @@
-import { google } from 'googleapis';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import {
+  getBatchSheetRanges,
+  safeInt,
+  safeString,
+} from '@/lib/googleSheets';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_CLIENT_EMAIL,
-        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      },
-      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-    });
+    const fresh = req.nextUrl?.searchParams?.get('fresh') === '1';
 
-    const sheets = google.sheets({ version: 'v4', auth });
+    // 1. Single batchGet call for Vmix weapons and Weapons tab
+    const ranges = ['Vmix!A93:F97', 'Weapons!A3:F100'];
+    const batch = await getBatchSheetRanges(ranges, fresh);
 
-    // Fetch Top 5 weapons from Vmix!A93:F97 and Weapons tab in parallel
-    const [vmixRes, weaponsTabRes] = await Promise.all([
-      sheets.spreadsheets.values.get({
-        spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: 'Vmix!A93:F97',
-      }).catch(() => ({ data: { values: [] } })),
-      sheets.spreadsheets.values.get({
-        spreadsheetId: process.env.GOOGLE_SHEET_ID,
-        range: 'Weapons!A3:F100',
-      }).catch(() => ({ data: { values: [] } })),
-    ]);
-
-    const vmixRows = vmixRes.data.values || [];
+    const vmixRows = batch['Vmix!A93:F97'] || [];
     const defaultColors = ['#6225A6', '#EC008C', '#F5B700', '#00DF82', '#111827'];
 
     let weapons: any[] = [];
+    let sourceTab = 'Vmix!A93:F97';
 
-    if (vmixRows.length > 0 && vmixRows[0][0]) {
+    if (vmixRows.length > 0 && safeString(vmixRows[0][0]) !== '') {
       weapons = vmixRows.map((r: any[], idx: number) => ({
-        name: (r[0] || `WEAPON ${idx + 1}`).toUpperCase(),
-        kills: parseInt(r[1], 10) || 0,
-        damage: parseInt(r[2], 10) || 0,
-        hs: parseInt(r[4], 10) || 0,
+        name: safeString(r[0], `WEAPON ${idx + 1}`).toUpperCase(),
+        kills: safeInt(r[1]),
+        damage: safeInt(r[2]),
+        hs: safeInt(r[4]),
         color: defaultColors[idx] || '#6225A6',
       }));
     } else {
-      const tabRows = weaponsTabRes.data?.values || [];
+      sourceTab = 'Weapons!A3:F100';
+      const tabRows = batch['Weapons!A3:F100'] || [];
       const agg: Record<string, { kills: number; damage: number }> = {};
+
       tabRows.forEach((row: any[]) => {
-        const weapon = (row[3] || '').trim().toUpperCase();
+        const weapon = safeString(row[3]).toUpperCase();
         if (weapon) {
           if (!agg[weapon]) agg[weapon] = { kills: 0, damage: 0 };
-          agg[weapon].kills += parseInt(row[4], 10) || 0;
-          agg[weapon].damage += parseInt(row[5], 10) || 0;
+          agg[weapon].kills += safeInt(row[4]);
+          agg[weapon].damage += safeInt(row[5]);
         }
       });
+
       weapons = Object.entries(agg)
         .map(([name, stats], idx) => ({
           name,
           kills: stats.kills,
           damage: stats.damage,
           hs: Math.round(stats.kills * 0.45),
-          color: defaultColors[idx % defaultColors.length],
+          color: defaultColors[idx] || '#6225A6',
         }))
         .sort((a, b) => b.kills - a.kills)
         .slice(0, 5);
     }
 
     return NextResponse.json(
-      { success: true, weapons },
+      {
+        success: true,
+        weapons,
+        meta: {
+          isLive: weapons.length > 0,
+          sourceTab,
+          count: weapons.length,
+          cached: !fresh,
+          updatedAt: new Date().toISOString(),
+        },
+      },
       {
         headers: {
-          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
         },
       }
     );
   } catch (error) {
-    console.error('Error fetching weapons from sheet:', error);
-    return NextResponse.json({ success: false, error: 'Failed to fetch weapons' }, { status: 500 });
+    console.error('Error in /api/weapons:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to fetch weapons', weapons: [] },
+      { status: 500 }
+    );
   }
 }

@@ -1,9 +1,16 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import {
+  getStoredThemes,
+  saveThemeToSheet,
+  saveMultipleThemesToSheet,
+} from '@/lib/googleSheets';
+import { isRequestAuthenticated } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
-// In-memory global store for live broadcast themes across all 14 slides
-let broadcastThemes: Record<string, any> = {
+// Default base themes across all 14 slides
+const DEFAULT_BROADCAST_THEMES: Record<string, any> = {
   dashboard1: {
     headerGold: '#F5B700',
     headerPurple: '#6225A6',
@@ -84,44 +91,89 @@ let broadcastThemes: Record<string, any> = {
   },
 };
 
-export async function GET() {
-  return NextResponse.json(
-    {
-      success: true,
-      themes: broadcastThemes,
-      updatedAt: Date.now(),
-    },
-    {
-      headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate',
-      },
-    }
-  );
-}
-
-export async function POST(req: Request) {
+// GET /api/theme -> Public endpoint for OBS / vMix overlays (reads from Google Sheet ThemeConfig)
+export async function GET(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { slideKey, colors } = body;
+    const fresh = req.nextUrl?.searchParams?.get('fresh') === '1';
+    const storedThemes = await getStoredThemes(fresh);
 
-    if (slideKey && colors) {
-      broadcastThemes[slideKey] = {
-        ...broadcastThemes[slideKey],
-        ...colors,
+    // Merge persistent stored themes over defaults
+    const mergedThemes: Record<string, any> = { ...DEFAULT_BROADCAST_THEMES };
+    Object.entries(storedThemes).forEach(([key, val]) => {
+      mergedThemes[key] = {
+        ...(mergedThemes[key] || {}),
+        ...(typeof val === 'object' ? val : {}),
       };
-    } else if (body.themes) {
-      broadcastThemes = {
-        ...broadcastThemes,
-        ...body.themes,
-      };
-    }
+    });
 
+    return NextResponse.json(
+      {
+        success: true,
+        themes: mergedThemes,
+        meta: {
+          isLive: true,
+          sourceTab: 'ThemeConfig!A1:B30',
+          cached: !fresh,
+          updatedAt: new Date().toISOString(),
+        },
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        },
+      }
+    );
+  } catch (error) {
+    console.error('[Theme API] GET error:', error);
     return NextResponse.json({
       success: true,
-      themes: broadcastThemes,
-      updatedAt: Date.now(),
+      themes: DEFAULT_BROADCAST_THEMES,
+      meta: { isLive: false, fallback: true },
     });
-  } catch {
-    return NextResponse.json({ success: false, error: 'Invalid payload' }, { status: 400 });
+  }
+}
+
+// POST /api/theme -> Protected endpoint (Admin session required)
+export async function POST(req: NextRequest) {
+  try {
+    const isAuth = await isRequestAuthenticated(req);
+    if (!isAuth) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized. Admin session required.' },
+        { status: 401 }
+      );
+    }
+
+    const body = await req.json().catch(() => ({}));
+    const { slideKey, colors, themes } = body;
+
+    let saved = false;
+    if (themes && typeof themes === 'object') {
+      saved = await saveMultipleThemesToSheet(themes);
+    } else if (slideKey && colors && typeof colors === 'object') {
+      saved = await saveThemeToSheet(slideKey, colors);
+    } else {
+      return NextResponse.json(
+        { success: false, error: 'Invalid payload. Provide slideKey + colors or themes object.' },
+        { status: 400 }
+      );
+    }
+
+    const updatedThemes = await getStoredThemes(true);
+
+    return NextResponse.json({
+      success: saved,
+      themes: { ...DEFAULT_BROADCAST_THEMES, ...updatedThemes },
+      message: saved
+        ? 'Theme persistently saved to Google Sheet (ThemeConfig tab).'
+        : 'Saved to memory cache (Google Sheet write warning).',
+      updatedAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('[Theme API] POST error:', error);
+    return NextResponse.json(
+      { success: false, error: 'Failed to save theme' },
+      { status: 500 }
+    );
   }
 }
