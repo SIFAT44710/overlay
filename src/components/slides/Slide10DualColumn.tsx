@@ -201,7 +201,7 @@ export default function Slide10DualColumn({
         const ds1 = chart.data.datasets[1];
         const total = Math.max(meta0.data.length, meta1.data.length);
 
-        ctx.font = '800 19px "GFF Latin", "Teko", sans-serif';
+        ctx.font = '800 21px "GFF Latin", "Teko", sans-serif';
         ctx.textBaseline = 'bottom';
         ctx.lineWidth = 4.5;
         ctx.strokeStyle = 'rgba(0,0,0,0.96)';
@@ -218,41 +218,57 @@ export default function Slide10DualColumn({
           const has0 = raw0 != null && raw0 > 0 && p0;
           const has1 = raw1 != null && raw1 > 0 && p1;
 
-          // Calculate vertical distance between candle tops
-          const dy = (p0 && p1) ? Math.abs(p0.y - p1.y) : 999;
-          const isNear = dy < 28;
+          const txt0 = has0 ? formatNumber(raw0) : '';
+          const txt1 = has1 ? formatNumber(raw1) : '';
 
-          // Determine Y coordinates
-          let y0 = p0 ? p0.y - 10 : 0;
-          let y1 = p1 ? p1.y - 10 : 0;
+          const w0 = has0 ? ctx.measureText(txt0).width : 0;
+          const w1 = has1 ? ctx.measureText(txt1).width : 0;
 
-          // When candles are near identical height (e.g. UE, NK, 7OB, JG),
-          // elevate Blue Damage to float comfortably above so text NEVER collides!
-          if (has0 && has1 && isNear) {
-            y1 = Math.min(p0.y, p1.y) - 28;
+          let x0 = p0 ? p0.x : 0;
+          let x1 = p1 ? p1.x : 0;
+          let y0 = p0 ? p0.y - 12 : 0;
+          let y1 = p1 ? p1.y - 12 : 0;
+
+          if (has0 && has1 && p0 && p1) {
+            // Horizontal gap between right edge of yellow text and left edge of blue text
+            const right0 = x0 + w0 / 2;
+            const left1 = x1 - w1 / 2;
+            const hGap = left1 - right0;
+
+            // If text is close horizontally (< 8px), nudge slightly to keep well centered over each candle
+            if (hGap < 8) {
+              x0 = p0.x - 3;
+              x1 = p1.x + 3;
+            }
+
+            const newGap = (x1 - w1 / 2) - (x0 + w0 / 2);
+            const vDist = Math.abs(p0.y - p1.y);
+
+            // If bars have near identical vertical height and text would overlap horizontally, elevate blue label
+            if (newGap < 4 && vDist < 24) {
+              y1 = Math.min(y0, y1) - 22;
+            }
           }
 
           // Draw Yellow (Kills) label cleanly centered directly above yellow candle with glow
           if (has0) {
-            const txt0 = formatNumber(raw0);
             ctx.textAlign = 'center';
             ctx.fillStyle = currentTheme.kills;
             ctx.shadowColor = currentTheme.kills;
             ctx.shadowBlur = 8;
-            ctx.strokeText(txt0, p0.x, y0);
-            ctx.fillText(txt0, p0.x, y0);
+            ctx.strokeText(txt0, x0, y0);
+            ctx.fillText(txt0, x0, y0);
             ctx.shadowBlur = 0;
           }
 
           // Draw Blue (Damage) label cleanly centered directly above blue candle with glow
           if (has1) {
-            const txt1 = formatNumber(raw1);
             ctx.textAlign = 'center';
             ctx.fillStyle = currentTheme.damage;
             ctx.shadowColor = currentTheme.damage;
             ctx.shadowBlur = 8;
-            ctx.strokeText(txt1, p1.x, y1);
-            ctx.fillText(txt1, p1.x, y1);
+            ctx.strokeText(txt1, x1, y1);
+            ctx.fillText(txt1, x1, y1);
             ctx.shadowBlur = 0;
           }
         }
@@ -375,9 +391,9 @@ export default function Slide10DualColumn({
             borderWidth: 1.5,
             borderRadius: 6,
             yAxisID: 'y',
-            maxBarThickness: 22,
-            categoryPercentage: 0.85,
-            barPercentage: 0.9,
+            maxBarThickness: 28,
+            categoryPercentage: 0.9,
+            barPercentage: 0.92,
           },
           {
             label: currentCfg.lbl2,
@@ -387,9 +403,9 @@ export default function Slide10DualColumn({
             borderWidth: 1.5,
             borderRadius: 6,
             yAxisID: 'y1',
-            maxBarThickness: 22,
-            categoryPercentage: 0.85,
-            barPercentage: 0.9,
+            maxBarThickness: 20,
+            categoryPercentage: 0.9,
+            barPercentage: 0.92,
           },
         ],
       },
@@ -483,25 +499,25 @@ export default function Slide10DualColumn({
     const chart = chartInstanceRef.current;
     if (!chart) return;
     chart.data.labels = cfg.tags;
-    (chart.options as any).categoryPercentage = 0.85;
-    (chart.options as any).barPercentage = 0.9;
+    (chart.options as any).categoryPercentage = 0.9;
+    (chart.options as any).barPercentage = 0.92;
     if (chart.data.datasets[0]) {
       chart.data.datasets[0].data = cfg.d1;
       chart.data.datasets[0].label = cfg.lbl1;
       chart.data.datasets[0].backgroundColor = themeS9.kills;
       delete (chart.data.datasets[0] as any).barThickness;
-      (chart.data.datasets[0] as any).maxBarThickness = 22;
-      (chart.data.datasets[0] as any).categoryPercentage = 0.85;
-      (chart.data.datasets[0] as any).barPercentage = 0.9;
+      (chart.data.datasets[0] as any).maxBarThickness = 28;
+      (chart.data.datasets[0] as any).categoryPercentage = 0.9;
+      (chart.data.datasets[0] as any).barPercentage = 0.92;
     }
     if (chart.data.datasets[1]) {
       chart.data.datasets[1].data = cfg.d2;
       chart.data.datasets[1].label = cfg.lbl2;
       chart.data.datasets[1].backgroundColor = themeS9.damage;
       delete (chart.data.datasets[1] as any).barThickness;
-      (chart.data.datasets[1] as any).maxBarThickness = 22;
-      (chart.data.datasets[1] as any).categoryPercentage = 0.85;
-      (chart.data.datasets[1] as any).barPercentage = 0.9;
+      (chart.data.datasets[1] as any).maxBarThickness = 20;
+      (chart.data.datasets[1] as any).categoryPercentage = 0.9;
+      (chart.data.datasets[1] as any).barPercentage = 0.92;
     }
     const scales = chart.options.scales as any;
     if (scales?.y?.title) {

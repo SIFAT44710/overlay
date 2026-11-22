@@ -298,26 +298,15 @@ export default function Slide04TeamH2H({
                 filter="url(#glowA)"
               />
               {ptsA.map((pt, i) => (
-                <g key={i}>
-                  <circle
-                    cx={pt[0].toFixed(1)}
-                    cy={pt[1].toFixed(1)}
-                    r="10"
-                    fill="none"
-                    stroke={colA}
-                    strokeWidth="1.5"
-                    opacity="0.8"
-                    className="animate-ping"
-                  />
-                  <circle
-                    cx={pt[0].toFixed(1)}
-                    cy={pt[1].toFixed(1)}
-                    r="6.5"
-                    fill={colA}
-                    stroke="#090b10"
-                    strokeWidth="2.5"
-                  />
-                </g>
+                <circle
+                  key={i}
+                  cx={pt[0].toFixed(1)}
+                  cy={pt[1].toFixed(1)}
+                  r="6"
+                  fill={colA}
+                  stroke="#090b10"
+                  strokeWidth="2"
+                />
               ))}
             </g>
 
@@ -341,26 +330,15 @@ export default function Slide04TeamH2H({
                 filter="url(#glowB)"
               />
               {ptsB.map((pt, i) => (
-                <g key={i}>
-                  <circle
-                    cx={pt[0].toFixed(1)}
-                    cy={pt[1].toFixed(1)}
-                    r="10"
-                    fill="none"
-                    stroke={colB}
-                    strokeWidth="1.5"
-                    opacity="0.8"
-                    className="animate-ping"
-                  />
-                  <circle
-                    cx={pt[0].toFixed(1)}
-                    cy={pt[1].toFixed(1)}
-                    r="6.5"
-                    fill={colB}
-                    stroke="#090b10"
-                    strokeWidth="2.5"
-                  />
-                </g>
+                <circle
+                  key={i}
+                  cx={pt[0].toFixed(1)}
+                  cy={pt[1].toFixed(1)}
+                  r="6"
+                  fill={colB}
+                  stroke="#090b10"
+                  strokeWidth="2"
+                />
               ))}
             </g>
 
