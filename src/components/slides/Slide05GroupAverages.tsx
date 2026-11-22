@@ -20,7 +20,6 @@ export default function Slide05GroupAverages({
   onElementClick,
 }: SlideProps) {
   const [animated, setAnimated] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [displayVals, setDisplayVals] = useState([
     { a: 0, b: 0 },
     { a: 0, b: 0 },
@@ -79,7 +78,6 @@ export default function Slide05GroupAverages({
   // 60fps Smooth Count-Up & Ring Bloom Animation
   useEffect(() => {
     setAnimated(false);
-    setProgress(0);
     setDisplayVals([
       { a: 0, b: 0 },
       { a: 0, b: 0 },
@@ -88,7 +86,7 @@ export default function Slide05GroupAverages({
 
     let rafId: number;
     let start: number | null = null;
-    const duration = 1600;
+    const duration = 1400;
 
     const timer = setTimeout(() => {
       setAnimated(true);
@@ -99,7 +97,6 @@ export default function Slide05GroupAverages({
         const curProgress = Math.min(elapsed / duration, 1);
         const ease = 1 - Math.pow(1 - curProgress, 3);
 
-        setProgress(ease);
         setDisplayVals([
           { a: cards[0].va * ease, b: cards[0].vb * ease },
           { a: cards[1].va * ease, b: cards[1].vb * ease },
@@ -112,7 +109,7 @@ export default function Slide05GroupAverages({
       };
 
       rafId = requestAnimationFrame(step);
-    }, 200);
+    }, 150);
 
     return () => {
       clearTimeout(timer);
@@ -221,8 +218,8 @@ export default function Slide05GroupAverages({
                   style={{
                     color: colA,
                     strokeDasharray: `${CIRC} ${CIRC}`,
-                    strokeDashoffset: CIRC * (1 - (fracA * (progress || (animated ? 1 : 0)))),
-                    transition: 'stroke-dashoffset 0.1s linear',
+                    strokeDashoffset: animated ? CIRC * (1 - fracA) : CIRC,
+                    transition: `stroke-dashoffset 1.35s cubic-bezier(0.22, 1, 0.36, 1) ${0.1 + i * 0.12}s`,
                     animationDelay: `${i * 0.25}s`,
                   }}
                 />
@@ -250,8 +247,8 @@ export default function Slide05GroupAverages({
                   style={{
                     color: colB,
                     strokeDasharray: `${CIRC_IN} ${CIRC_IN}`,
-                    strokeDashoffset: CIRC_IN * (1 - (fracB * (progress || (animated ? 1 : 0)))),
-                    transition: 'stroke-dashoffset 0.1s linear',
+                    strokeDashoffset: animated ? CIRC_IN * (1 - fracB) : CIRC_IN,
+                    transition: `stroke-dashoffset 1.35s cubic-bezier(0.22, 1, 0.36, 1) ${0.18 + i * 0.12}s`,
                     animationDelay: `${0.15 + i * 0.25}s`,
                   }}
                 />

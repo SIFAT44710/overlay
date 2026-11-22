@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Chart, registerables } from 'chart.js';
 import { SheetDataPayload, BroadcastThemeConfig } from '@/types/broadcast';
 import SpiritFireCanvas from '@/components/SpiritFireCanvas';
@@ -21,6 +21,7 @@ export default function Slide09RolePolar({
   replayKey = 0,
   onElementClick,
 }: SlideProps) {
+  const [animated, setAnimated] = useState(false);
   const canvas1Ref = useRef<HTMLCanvasElement | null>(null);
   const canvas2Ref = useRef<HTMLCanvasElement | null>(null);
   const chart1Ref = useRef<Chart | null>(null);
@@ -137,6 +138,9 @@ export default function Slide09RolePolar({
 
   // 1. Initial Mount & ReplayKey: Create Both Polar Charts ONCE
   useEffect(() => {
+    setAnimated(false);
+    const animTimer = setTimeout(() => setAnimated(true), 150);
+
     const c1 = canvas1Ref.current;
     const c2 = canvas2Ref.current;
     if (!c1 || !c2) return;
@@ -157,7 +161,7 @@ export default function Slide09RolePolar({
 
     const { ps: currentPs, roleCols: currentCols } = latestRef.current;
 
-    // Value Plugin for Polar Area Charts
+    // Value Plugin for Polar Area Charts with Sector Color Neon Glow
     const polarValuePlugin = {
       id: 'polarValuePlugin',
       afterDatasetsDraw(chart: any) {
@@ -174,11 +178,15 @@ export default function Slide09RolePolar({
             if (raw === 0 || raw == null) return;
             const pos = el.tooltipPosition();
             const fullTxt = formatNumber(raw);
-            ctx.fillStyle = '#ffffff';
-            ctx.strokeStyle = 'rgba(15,23,42,0.94)';
+            const col = currentCols[i % currentCols.length] || '#ffffff';
+            ctx.fillStyle = col;
+            ctx.strokeStyle = 'rgba(15,23,42,0.96)';
             ctx.lineWidth = 4.5;
+            ctx.shadowColor = col;
+            ctx.shadowBlur = 8;
             ctx.strokeText(fullTxt, pos.x, pos.y);
             ctx.fillText(fullTxt, pos.x, pos.y);
+            ctx.shadowBlur = 0;
           });
         });
         ctx.restore();
@@ -239,6 +247,7 @@ export default function Slide09RolePolar({
     chart2Ref.current = mk(c2, currentPs.dB);
 
     return () => {
+      clearTimeout(animTimer);
       chart1Ref.current?.destroy();
       chart2Ref.current?.destroy();
       chart1Ref.current = null;
@@ -269,7 +278,11 @@ export default function Slide09RolePolar({
   return (
     <div className="w-full max-w-[1340px] pt-14 grid grid-cols-1 md:grid-cols-2 gap-6 relative font-hud select-none">
       {/* Polar Card A */}
-      <div className="dark-box rounded-2xl p-5 relative border border-white/10 shadow-2xl flex flex-col items-center">
+      <div
+        className={`dark-box rounded-2xl p-5 relative border border-white/10 shadow-2xl flex flex-col items-center transition-all duration-700 ${
+          animated ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
+        }`}
+      >
         <div className="flex justify-between items-center w-full mb-3">
           <div className="relative px-2.5 py-1 rounded-lg bg-slate-950/90 border border-purple-400 font-hud text-xs sm:text-sm font-bold text-white flex items-center gap-2 top1-hero-glow">
             <SpiritFireCanvas />
@@ -289,7 +302,12 @@ export default function Slide09RolePolar({
       </div>
 
       {/* Polar Card B */}
-      <div className="dark-box rounded-2xl p-5 relative border border-white/10 shadow-2xl flex flex-col items-center">
+      <div
+        className={`dark-box rounded-2xl p-5 relative border border-white/10 shadow-2xl flex flex-col items-center transition-all duration-700 ${
+          animated ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
+        }`}
+        style={{ transitionDelay: '0.12s' }}
+      >
         <div className="flex justify-between items-center w-full mb-3">
           <div className="relative px-2.5 py-1 rounded-lg bg-slate-950/90 border border-purple-400 font-hud text-xs sm:text-sm font-bold text-white flex items-center gap-2 top1-hero-glow">
             <SpiritFireCanvas />

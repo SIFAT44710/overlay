@@ -92,12 +92,15 @@ export default function Slide04TeamH2H({
         if (!start) start = timestamp;
         const elapsed = timestamp - start;
         const progress = Math.min(elapsed / duration, 1);
-        // Smooth easeOutCubic curve
-        const ease = 1 - Math.pow(1 - progress, 3);
+        // Dynamic easeOutBack spring curve for energetic esports bloom
+        const c1 = 1.6;
+        const c3 = c1 + 1;
+        const ease = progress === 1 ? 1 : 1 + c3 * Math.pow(progress - 1, 3) + c1 * Math.pow(progress - 1, 2);
+        const countEase = 1 - Math.pow(1 - progress, 3);
 
-        setDisplayPctA(Math.round(pctA * ease));
-        setDisplayPctB(Math.round(pctB * ease));
-        setRadarScale(ease);
+        setDisplayPctA(Math.round(pctA * countEase));
+        setDisplayPctB(Math.round(pctB * countEase));
+        setRadarScale(Math.max(0, ease));
 
         if (progress < 1) {
           rafId = requestAnimationFrame(step);
@@ -105,7 +108,7 @@ export default function Slide04TeamH2H({
       };
 
       rafId = requestAnimationFrame(step);
-    }, 200);
+    }, 180);
 
     return () => {
       clearTimeout(timer);
@@ -230,12 +233,28 @@ export default function Slide04TeamH2H({
         {/* Dynamic 4-Corner Diamond Radar */}
         <div className="dark-box rounded-2xl p-6 flex justify-center">
           <svg viewBox="0 0 420 330" className="w-full max-w-[500px] overflow-visible">
-            {/* Outer Diamond Frame */}
+            <defs>
+              <filter id="glowA" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="5" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+              <filter id="glowB" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="5" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+              <filter id="outerGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="6" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+            </defs>
+
+            {/* Outer Diamond Frame with Luminous Neon Glow */}
             <polygon
               points={`${CX},${CY - MAX_R} ${CX + MAX_R},${CY} ${CX},${CY + MAX_R} ${CX - MAX_R},${CY}`}
-              fill="rgba(9,11,18,0.88)"
-              stroke="rgba(192,132,252,0.5)"
-              strokeWidth="2"
+              fill="rgba(9,11,18,0.92)"
+              stroke="rgba(192,132,252,0.85)"
+              strokeWidth="2.5"
+              filter="url(#outerGlow)"
               style={{
                 transformOrigin: `${CX}px ${CY}px`,
                 transform: animated ? 'scale(1)' : 'scale(0.85)',
@@ -247,7 +266,8 @@ export default function Slide04TeamH2H({
             <polygon
               points={`${CX},${CY - MAX_R * 0.64} ${CX + MAX_R * 0.64},${CY} ${CX},${CY + MAX_R * 0.64} ${CX - MAX_R * 0.64},${CY}`}
               fill="none"
-              stroke="rgba(148,163,184,0.3)"
+              stroke="rgba(203,213,225,0.45)"
+              strokeWidth="1.5"
               style={{
                 transformOrigin: `${CX}px ${CY}px`,
                 transform: animated ? 'scale(1)' : 'scale(0.85)',
@@ -255,10 +275,10 @@ export default function Slide04TeamH2H({
                 transition: 'transform 0.6s cubic-bezier(0.22,1,0.36,1), opacity 0.4s ease',
               }}
             />
-            <line x1={CX} y1={CY - MAX_R} x2={CX} y2={CY + MAX_R} stroke="rgba(148,163,184,0.24)" />
-            <line x1={CX - MAX_R} y1={CY} x2={CX + MAX_R} y2={CY} stroke="rgba(148,163,184,0.24)" />
+            <line x1={CX} y1={CY - MAX_R} x2={CX} y2={CY + MAX_R} stroke="rgba(203,213,225,0.3)" />
+            <line x1={CX - MAX_R} y1={CY} x2={CX + MAX_R} y2={CY} stroke="rgba(203,213,225,0.3)" />
 
-            {/* Team A Polygon with Smooth Scale Bloom */}
+            {/* Team A Polygon with Dynamic Neon Glow Bloom */}
             <g
               data-edit-group="s3"
               data-edit-key="teamA"
@@ -266,30 +286,42 @@ export default function Slide04TeamH2H({
                 transformOrigin: `${CX}px ${CY}px`,
                 transform: `scale(${radarScale})`,
                 opacity: animated ? 1 : 0,
-                transition: 'opacity 0.4s ease',
+                transition: 'opacity 0.3s ease',
               }}
               onClick={(e) => onElementClick?.(e, 's3', 'teamA', `${a.name} Color`)}
             >
               <polygon
                 points={polyA}
-                fill={`${colA}4A`}
+                fill={`${colA}66`}
                 stroke={colA}
-                strokeWidth="3.6"
+                strokeWidth="4"
+                filter="url(#glowA)"
               />
               {ptsA.map((pt, i) => (
-                <circle
-                  key={i}
-                  cx={pt[0].toFixed(1)}
-                  cy={pt[1].toFixed(1)}
-                  r="6"
-                  fill={colA}
-                  stroke="#090b10"
-                  strokeWidth="2"
-                />
+                <g key={i}>
+                  <circle
+                    cx={pt[0].toFixed(1)}
+                    cy={pt[1].toFixed(1)}
+                    r="10"
+                    fill="none"
+                    stroke={colA}
+                    strokeWidth="1.5"
+                    opacity="0.8"
+                    className="animate-ping"
+                  />
+                  <circle
+                    cx={pt[0].toFixed(1)}
+                    cy={pt[1].toFixed(1)}
+                    r="6.5"
+                    fill={colA}
+                    stroke="#090b10"
+                    strokeWidth="2.5"
+                  />
+                </g>
               ))}
             </g>
 
-            {/* Team B Polygon with Smooth Scale Bloom */}
+            {/* Team B Polygon with Dynamic Neon Glow Bloom */}
             <g
               data-edit-group="s3"
               data-edit-key="teamB"
@@ -297,26 +329,38 @@ export default function Slide04TeamH2H({
                 transformOrigin: `${CX}px ${CY}px`,
                 transform: `scale(${radarScale})`,
                 opacity: animated ? 1 : 0,
-                transition: 'opacity 0.4s ease',
+                transition: 'opacity 0.3s ease',
               }}
               onClick={(e) => onElementClick?.(e, 's3', 'teamB', `${b.name} Color`)}
             >
               <polygon
                 points={polyB}
-                fill={`${colB}3E`}
+                fill={`${colB}55`}
                 stroke={colB}
-                strokeWidth="3.6"
+                strokeWidth="4"
+                filter="url(#glowB)"
               />
               {ptsB.map((pt, i) => (
-                <circle
-                  key={i}
-                  cx={pt[0].toFixed(1)}
-                  cy={pt[1].toFixed(1)}
-                  r="6"
-                  fill={colB}
-                  stroke="#090b10"
-                  strokeWidth="2"
-                />
+                <g key={i}>
+                  <circle
+                    cx={pt[0].toFixed(1)}
+                    cy={pt[1].toFixed(1)}
+                    r="10"
+                    fill="none"
+                    stroke={colB}
+                    strokeWidth="1.5"
+                    opacity="0.8"
+                    className="animate-ping"
+                  />
+                  <circle
+                    cx={pt[0].toFixed(1)}
+                    cy={pt[1].toFixed(1)}
+                    r="6.5"
+                    fill={colB}
+                    stroke="#090b10"
+                    strokeWidth="2.5"
+                  />
+                </g>
               ))}
             </g>
 
@@ -377,8 +421,9 @@ export default function Slide04TeamH2H({
                 strokeLinecap="round"
                 style={{
                   strokeDasharray: `${ARC} ${ARC}`,
-                  strokeDashoffset: ARC * (1 - (pctA * (radarScale || (animated ? 1 : 0))) / 100),
-                  transition: 'stroke-dashoffset 0.1s linear',
+                  strokeDashoffset: animated ? ARC * (1 - pctA / 100) : ARC,
+                  transition: 'stroke-dashoffset 1.4s cubic-bezier(0.22, 1, 0.36, 1)',
+                  filter: `drop-shadow(0 0 8px ${colA})`,
                 }}
               />
               <path
@@ -391,8 +436,9 @@ export default function Slide04TeamH2H({
                 strokeLinecap="round"
                 style={{
                   strokeDasharray: `${ARC} ${ARC}`,
-                  strokeDashoffset: ARC * (1 - (pctB * (radarScale || (animated ? 1 : 0))) / 100),
-                  transition: 'stroke-dashoffset 0.1s linear',
+                  strokeDashoffset: animated ? ARC * (1 - pctB / 100) : ARC,
+                  transition: 'stroke-dashoffset 1.4s cubic-bezier(0.22, 1, 0.36, 1)',
+                  filter: `drop-shadow(0 0 8px ${colB})`,
                 }}
               />
             </svg>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Chart, registerables } from 'chart.js';
 import { SheetDataPayload, BroadcastThemeConfig } from '@/types/broadcast';
 import TeamLogoBadge from '@/components/TeamLogoBadge';
@@ -22,6 +22,7 @@ export default function Slide06SingleColumn({
   replayKey = 0,
   onElementClick,
 }: SlideProps) {
+  const [animated, setAnimated] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
   const imgCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
@@ -157,6 +158,9 @@ export default function Slide06SingleColumn({
 
   // 1. Initial Mount & Replay: create Chart instance ONCE
   useEffect(() => {
+    setAnimated(false);
+    const animTimer = setTimeout(() => setAnimated(true), 150);
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -318,8 +322,9 @@ export default function Slide06SingleColumn({
         responsive: true,
         maintainAspectRatio: false,
         animation: {
-          duration: 1400,
-          easing: 'easeOutQuart',
+          duration: 1350,
+          delay: (c: any) => c.dataIndex * 80,
+          easing: 'easeOutBounce',
         },
         layout: {
           padding: {
@@ -360,6 +365,7 @@ export default function Slide06SingleColumn({
     chartInstanceRef.current = newChart;
 
     return () => {
+      clearTimeout(animTimer);
       newChart.destroy();
       if (chartInstanceRef.current === newChart) {
         chartInstanceRef.current = null;
@@ -385,9 +391,13 @@ export default function Slide06SingleColumn({
 
   return (
     <div className="w-full max-w-[1340px] pt-14 relative font-hud select-none">
-      {/* Top-Right Compact Leader Pill */}
+      {/* Top-Right Compact Leader Pill with Smooth Entrance Animation */}
       <div className="absolute top-1 right-3 sm:right-6 z-30">
-        <div className="relative px-3 py-1 rounded-lg bg-slate-950/90 border border-purple-400/80 font-hud text-sm sm:text-base font-bold text-white flex items-center gap-2.5 shadow-xl top1-hero-glow">
+        <div
+          className={`relative px-3 py-1 rounded-lg bg-slate-950/90 border border-purple-400/80 font-hud text-sm sm:text-base font-bold text-white flex items-center gap-2.5 shadow-xl transition-all duration-700 ${
+            animated ? 'top1-hero-glow top1-scale opacity-100 translate-y-0' : 'opacity-0 -translate-y-3 scale-95'
+          }`}
+        >
           <SpiritFireCanvas />
           <TeamLogoBadge
             tag={leaderTag}

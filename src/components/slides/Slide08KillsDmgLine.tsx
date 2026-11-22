@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Chart, registerables } from 'chart.js';
 import { SheetDataPayload, BroadcastThemeConfig } from '@/types/broadcast';
 import TeamLogoBadge from '@/components/TeamLogoBadge';
@@ -21,6 +21,7 @@ export default function Slide08KillsDmgLine({
   replayKey = 0,
   onElementClick,
 }: SlideProps) {
+  const [animated, setAnimated] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
 
@@ -53,6 +54,9 @@ export default function Slide08KillsDmgLine({
 
   // 1. Initial Mount & ReplayKey: Create Chart ONCE
   useEffect(() => {
+    setAnimated(false);
+    const animTimer = setTimeout(() => setAnimated(true), 150);
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -66,7 +70,7 @@ export default function Slide08KillsDmgLine({
 
     const { killsData: initialKills, dmgData: initialDmg, themeS7: initialTheme } = latestRef.current;
 
-    // Custom Plugin: Exact Comma Full Numbers (Zero 'K')
+    // Custom Plugin: Exact Comma Full Numbers with Neon Drop-Shadow Glow
     const valuePlugin = {
       id: 'valuePluginLine',
       afterDatasetsDraw(chart: any) {
@@ -85,9 +89,12 @@ export default function Slide08KillsDmgLine({
             const fullTxt = Number(raw).toLocaleString();
             ctx.fillStyle = ds.borderColor;
             ctx.strokeStyle = 'rgba(0,0,0,0.95)';
-            ctx.lineWidth = 4.5;
+            ctx.lineWidth = 5;
+            ctx.shadowColor = ds.borderColor;
+            ctx.shadowBlur = 10;
             ctx.strokeText(fullTxt, pos.x, pos.y - 18);
             ctx.fillText(fullTxt, pos.x, pos.y - 18);
+            ctx.shadowBlur = 0;
           });
         });
         ctx.restore();
@@ -108,7 +115,8 @@ export default function Slide08KillsDmgLine({
             tension: 0.36,
             fill: true,
             borderWidth: 4,
-            pointRadius: 7,
+            pointRadius: (c: any) => (c.dataIndex === peakIdx ? 9 : 6.5),
+            pointHoverRadius: 11,
             pointBackgroundColor: initialTheme.kills,
             pointBorderColor: '#090b10',
             pointBorderWidth: 2.5,
@@ -122,7 +130,8 @@ export default function Slide08KillsDmgLine({
             tension: 0.36,
             fill: true,
             borderWidth: 4,
-            pointRadius: 7,
+            pointRadius: (c: any) => (c.dataIndex === peakIdx ? 9 : 6.5),
+            pointHoverRadius: 11,
             pointBackgroundColor: initialTheme.damage,
             pointBorderColor: '#090b10',
             pointBorderWidth: 2.5,
@@ -200,6 +209,7 @@ export default function Slide08KillsDmgLine({
     chartInstanceRef.current = newChart;
 
     return () => {
+      clearTimeout(animTimer);
       newChart.destroy();
       if (chartInstanceRef.current === newChart) {
         chartInstanceRef.current = null;
@@ -228,9 +238,14 @@ export default function Slide08KillsDmgLine({
 
   return (
     <div className="w-full max-w-[1340px] pt-14 relative font-hud select-none">
-      {/* Top Peak Badge */}
+      {/* Top Peak Badge with Smooth Animated Entrance */}
       <div className="absolute top-1 right-3 sm:right-6 z-30">
-        <div className="relative px-3 py-1 rounded-lg bg-slate-950/90 border border-purple-400/80 font-hud text-sm sm:text-base font-bold text-white flex items-center gap-2.5 shadow-xl top1-hero-glow">
+        <div
+          className={`relative px-3 py-1 rounded-lg bg-slate-950/90 border border-purple-400/80 font-hud text-sm sm:text-base font-bold text-white flex items-center gap-2.5 shadow-xl transition-all duration-700 ${
+            animated ? 'top1-hero-glow top1-scale opacity-100 translate-y-0' : 'opacity-0 -translate-y-3 scale-95'
+          }`}
+          style={{ borderColor: themeS7.kills }}
+        >
           <SpiritFireCanvas />
           <TeamLogoBadge
             tag={`M${peakIdx + 1}`}

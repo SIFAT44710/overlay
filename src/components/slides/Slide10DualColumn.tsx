@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Chart, registerables } from 'chart.js';
 import { SheetDataPayload, BroadcastThemeConfig } from '@/types/broadcast';
 import TeamLogoBadge from '@/components/TeamLogoBadge';
@@ -22,6 +22,7 @@ export default function Slide10DualColumn({
   replayKey = 0,
   onElementClick,
 }: SlideProps) {
+  const [animated, setAnimated] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
   const imgCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
@@ -166,6 +167,9 @@ export default function Slide10DualColumn({
 
   // 1. Initial Mount & ReplayKey: Create Chart ONCE
   useEffect(() => {
+    setAnimated(false);
+    const animTimer = setTimeout(() => setAnimated(true), 150);
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -179,7 +183,7 @@ export default function Slide10DualColumn({
 
     const { cfg: currentCfg, themeS9: currentTheme } = latestRef.current;
 
-    // Custom Plugin: Exact Full Numbers positioned cleanly above each candle (Zero overlap)
+    // Custom Plugin: Exact Full Numbers positioned cleanly above each candle (Zero overlap) with Neon Glow
     const valuePlugin = {
       id: 'dualValuePlugin',
       afterDatasetsDraw(chart: any) {
@@ -228,22 +232,28 @@ export default function Slide10DualColumn({
             y1 = Math.min(p0.y, p1.y) - 28;
           }
 
-          // Draw Yellow (Kills) label cleanly centered directly above yellow candle
+          // Draw Yellow (Kills) label cleanly centered directly above yellow candle with glow
           if (has0) {
             const txt0 = formatNumber(raw0);
             ctx.textAlign = 'center';
             ctx.fillStyle = currentTheme.kills;
+            ctx.shadowColor = currentTheme.kills;
+            ctx.shadowBlur = 8;
             ctx.strokeText(txt0, p0.x, y0);
             ctx.fillText(txt0, p0.x, y0);
+            ctx.shadowBlur = 0;
           }
 
-          // Draw Blue (Damage) label cleanly centered directly above blue candle
+          // Draw Blue (Damage) label cleanly centered directly above blue candle with glow
           if (has1) {
             const txt1 = formatNumber(raw1);
             ctx.textAlign = 'center';
             ctx.fillStyle = currentTheme.damage;
+            ctx.shadowColor = currentTheme.damage;
+            ctx.shadowBlur = 8;
             ctx.strokeText(txt1, p1.x, y1);
             ctx.fillText(txt1, p1.x, y1);
+            ctx.shadowBlur = 0;
           }
         }
 
@@ -361,7 +371,9 @@ export default function Slide10DualColumn({
             label: currentCfg.lbl1,
             data: currentCfg.d1,
             backgroundColor: currentTheme.kills,
-            borderRadius: 5,
+            borderColor: 'rgba(255,255,255,0.22)',
+            borderWidth: 1.5,
+            borderRadius: 6,
             yAxisID: 'y',
             maxBarThickness: 22,
             categoryPercentage: 0.85,
@@ -371,6 +383,8 @@ export default function Slide10DualColumn({
             label: currentCfg.lbl2,
             data: currentCfg.d2,
             backgroundColor: currentTheme.damage,
+            borderColor: 'rgba(255,255,255,0.22)',
+            borderWidth: 1.5,
             borderRadius: 6,
             yAxisID: 'y1',
             maxBarThickness: 22,
@@ -394,8 +408,8 @@ export default function Slide10DualColumn({
         },
         layout: { padding: { top: 62, bottom: 94, left: 10, right: 10 } },
         animation: {
-          duration: 1350,
-          delay: (c: any) => c.dataIndex * 80 + c.datasetIndex * 55,
+          duration: 1400,
+          delay: (c: any) => c.dataIndex * 85 + c.datasetIndex * 55,
           easing: 'easeOutBounce',
         },
         plugins: {
@@ -456,6 +470,7 @@ export default function Slide10DualColumn({
     chartInstanceRef.current = newChart;
 
     return () => {
+      clearTimeout(animTimer);
       newChart.destroy();
       if (chartInstanceRef.current === newChart) {
         chartInstanceRef.current = null;
@@ -509,8 +524,16 @@ export default function Slide10DualColumn({
   return (
     <div className="w-full max-w-[1340px] pt-14 relative font-hud select-none">
       {/* Top Header Row with Compact Leader Badge on Left & Legend on Right */}
-      <div className="absolute top-1 inset-x-3 sm:inset-x-6 flex items-center justify-between gap-3 z-30">
-        <div className="relative px-3 py-1 rounded-lg bg-slate-950/90 border border-purple-400/80 font-hud text-sm sm:text-base font-bold text-white flex items-center gap-2.5 shadow-xl top1-hero-glow">
+      <div
+        className={`absolute top-1 inset-x-3 sm:inset-x-6 flex items-center justify-between gap-3 z-30 transition-all duration-700 ${
+          animated ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-3'
+        }`}
+      >
+        <div
+          className={`relative px-3 py-1 rounded-lg bg-slate-950/90 border border-purple-400/80 font-hud text-sm sm:text-base font-bold text-white flex items-center gap-2.5 shadow-xl transition-all duration-700 ${
+            animated ? 'top1-hero-glow top1-scale opacity-100' : 'opacity-0 scale-95'
+          }`}
+        >
           <SpiritFireCanvas />
           <TeamLogoBadge
             tag={cfg.tags[0]}
