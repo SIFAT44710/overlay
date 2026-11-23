@@ -16,8 +16,11 @@ interface SheetDataDrawerProps {
 const SLIDE_DATA_OPTIONS: Array<Array<{ id: string; name: string; tab: string; pickerType?: string }>> = [
   [{ id: 'top5_m1_m5', name: 'GameStanding: Top 5 Teams (M1–M5)', tab: 'GameStanding' }],
   [
-    { id: 'day_top2_duel', name: 'Day Standing Top 2 (SHOVO vs SEJAN)', tab: 'Vmix R91' },
-    { id: 'custom_duel', name: 'Custom: Pick Any 2 Sheet Players', tab: 'PlayerData', pickerType: 'players' },
+    { id: 'latest_h2h', name: 'Team H2H: Latest Match (EXE vs 69)', tab: 'Vmix R43' },
+    { id: 'day_top2_h2h', name: 'Team H2H: Day Top 2 (TOP vs EXE)', tab: 'DayStanding' },
+    { id: 'custom_h2h', name: 'Team H2H: Pick Any 2 Teams', tab: 'TeamStats', pickerType: 'teams_s2' },
+    { id: 'day_top2_duel', name: 'Player 1v1: Day Top 2 (SHOVO vs SEJAN)', tab: 'Vmix R91' },
+    { id: 'custom_duel', name: 'Player 1v1: Pick Any 2 Players', tab: 'PlayerData', pickerType: 'players' },
   ],
   [{ id: 'day_guns', name: 'Day Most Used Guns (All Matches)', tab: 'Vmix R91' }],
   [
@@ -180,8 +183,8 @@ export default function SheetDataDrawer({
                 PICK ANY 2 TEAMS:
               </div>
               {(() => {
-                const kA = pickerType === 'teams_s4' ? 'tAIdx' : pickerType === 'teams_s5' ? 'gAIdx' : 'rAIdx';
-                const kB = pickerType === 'teams_s4' ? 'tBIdx' : pickerType === 'teams_s5' ? 'gBIdx' : 'rBIdx';
+                const kA = pickerType === 'teams_s2' || pickerType === 'teams_s4' ? 'tAIdx' : pickerType === 'teams_s5' ? 'gAIdx' : 'rAIdx';
+                const kB = pickerType === 'teams_s2' || pickerType === 'teams_s4' ? 'tBIdx' : pickerType === 'teams_s5' ? 'gBIdx' : 'rBIdx';
                 return (
                   <>
                     <select

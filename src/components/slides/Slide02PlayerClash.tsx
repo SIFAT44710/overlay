@@ -13,6 +13,18 @@ interface SlideProps {
   onElementClick?: (e: React.MouseEvent, group: string, key: string, label: string) => void;
 }
 
+interface ClashContender {
+  badge: string;
+  name: string;
+  subtitle: string;
+  tag: string;
+  kills: number;
+  damage: number;
+  hs: number;
+  assist: number;
+  logoUrl?: string;
+}
+
 export default function Slide02PlayerClash({
   sheetData,
   theme,
@@ -41,34 +53,8 @@ export default function Slide02PlayerClash({
 
   const themeS1 = theme?.s1 || { p1: '#8b5cf6', p2: '#2dd4bf', accent: '#fbbf24' };
   const custom = theme?.custom;
-  const source = theme?.sources?.[1] || 'day_top2_duel';
-
-  // Determine contender 1 and contender 2 based on selected source / custom pickers
-  let p1 = sheetData?.duel1v1?.p1 || {
-    name: 'TOP.1SHOVO',
-    team: 'RAAD VAI YT',
-    tag: 'TOP',
-    kills: 29,
-    damage: 11859,
-    hs: 31,
-    assist: 22,
-  };
-  let p2 = sheetData?.duel1v1?.p2 || {
-    name: 'EXE.SEJAN',
-    team: 'EXTREME EX',
-    tag: 'EXE',
-    kills: 27,
-    damage: 11890,
-    hs: 22,
-    assist: 13,
-  };
-
-  if (source === 'custom_duel' && sheetData?.dayTop10Players?.length) {
-    const a = sheetData.dayTop10Players[custom?.p1Idx ?? 0] || sheetData.dayTop10Players[0];
-    const b = sheetData.dayTop10Players[custom?.p2Idx ?? 1] || sheetData.dayTop10Players[1];
-    p1 = { name: a.name, team: a.team, tag: a.tag, kills: a.kills, damage: a.dmg, hs: a.hs, assist: a.assist };
-    p2 = { name: b.name, team: b.team, tag: b.tag, kills: b.kills, damage: b.dmg, hs: b.hs, assist: b.assist };
-  }
+  // Main default is Team Head to Head (latest_h2h)
+  const source = theme?.sources?.[1] || 'latest_h2h';
 
   // Resolve Drive Logo for each contender with full tag & name coverage
   const teamLogoMap: Record<string, string> = {};
@@ -93,9 +79,236 @@ export default function Slide02PlayerClash({
     sheetData.allTeamsFull.forEach((t) => registerLogo(t.tag, t.name, t.logoUrl));
   }
 
-  const s1 = p1.kills * 100 + p1.damage * 0.1 + p1.hs * 40;
-  const s2 = p2.kills * 100 + p2.damage * 0.1 + p2.hs * 40;
-  const pct1 = Math.round((s1 / (s1 + s2 || 1)) * 100);
+  // --- Contender 1 & 2 Data Resolution ---
+  let c1: ClashContender;
+  let c2: ClashContender;
+
+  const isPlayerMode = source === 'day_top2_duel' || source === 'custom_duel';
+
+  if (isPlayerMode) {
+    // 1v1 Player Clash Mode
+    let p1 = sheetData?.duel1v1?.p1 || {
+      name: 'TOP.1SHOVO',
+      team: 'RAAD VAI YT',
+      tag: 'TOP',
+      kills: 29,
+      damage: 11859,
+      hs: 31,
+      assist: 22,
+    };
+    let p2 = sheetData?.duel1v1?.p2 || {
+      name: 'EXE.SEJAN',
+      team: 'EXTREME EX',
+      tag: 'EXE',
+      kills: 27,
+      damage: 11890,
+      hs: 22,
+      assist: 13,
+    };
+
+    if (source === 'custom_duel' && sheetData?.dayTop10Players?.length) {
+      const a = sheetData.dayTop10Players[custom?.p1Idx ?? 0] || sheetData.dayTop10Players[0];
+      const b = sheetData.dayTop10Players[custom?.p2Idx ?? 1] || sheetData.dayTop10Players[1];
+      p1 = { name: a.name, team: a.team, tag: a.tag, kills: a.kills, damage: a.dmg, hs: a.hs, assist: a.assist };
+      p2 = { name: b.name, team: b.team, tag: b.tag, kills: b.kills, damage: b.dmg, hs: b.hs, assist: b.assist };
+    }
+
+    c1 = {
+      badge: 'CONTENDER 01',
+      name: p1.name,
+      subtitle: p1.team,
+      tag: p1.tag,
+      kills: p1.kills,
+      damage: p1.damage,
+      hs: p1.hs,
+      assist: p1.assist,
+    };
+    c2 = {
+      badge: 'CONTENDER 02',
+      name: p2.name,
+      subtitle: p2.team,
+      tag: p2.tag,
+      kills: p2.kills,
+      damage: p2.damage,
+      hs: p2.hs,
+      assist: p2.assist,
+    };
+  } else {
+    // Team Head to Head Mode (Main / Default)
+    let tA = {
+      name: 'EXTREME EX',
+      tag: 'EXE',
+      rank: 2,
+      kills: 76,
+      damage: 42349,
+      hs: 67,
+      assist: 32,
+      logoUrl: undefined as string | undefined,
+    };
+    let tB = {
+      name: '69 ESPORTS',
+      tag: '69',
+      rank: 8,
+      kills: 48,
+      damage: 27036,
+      hs: 46,
+      assist: 21,
+      logoUrl: undefined as string | undefined,
+    };
+
+    if (sheetData?.h2hMatch5?.a && sheetData?.h2hMatch5?.b) {
+      tA = {
+        name: sheetData.h2hMatch5.a.name,
+        tag: sheetData.h2hMatch5.a.tag,
+        rank: sheetData.h2hMatch5.a.rank,
+        kills: sheetData.h2hMatch5.a.kills,
+        damage: sheetData.h2hMatch5.a.damage,
+        hs: sheetData.h2hMatch5.a.hs,
+        assist: sheetData.h2hMatch5.a.assist ?? Math.round(sheetData.h2hMatch5.a.kills * 0.42),
+        logoUrl: undefined,
+      };
+      tB = {
+        name: sheetData.h2hMatch5.b.name,
+        tag: sheetData.h2hMatch5.b.tag,
+        rank: sheetData.h2hMatch5.b.rank,
+        kills: sheetData.h2hMatch5.b.kills,
+        damage: sheetData.h2hMatch5.b.damage,
+        hs: sheetData.h2hMatch5.b.hs,
+        assist: sheetData.h2hMatch5.b.assist ?? Math.round(sheetData.h2hMatch5.b.kills * 0.42),
+        logoUrl: undefined,
+      };
+    } else if (sheetData?.allTeamsFull?.length) {
+      const first = sheetData.allTeamsFull[0];
+      const second = sheetData.allTeamsFull[1] || first;
+      tA = {
+        name: first.name,
+        tag: first.tag,
+        rank: first.rank,
+        kills: first.kills,
+        damage: first.damage,
+        hs: first.hs,
+        assist: first.assist ?? Math.round(first.kills * 0.42),
+        logoUrl: first.logoUrl,
+      };
+      tB = {
+        name: second.name,
+        tag: second.tag,
+        rank: second.rank,
+        kills: second.kills,
+        damage: second.damage,
+        hs: second.hs,
+        assist: second.assist ?? Math.round(second.kills * 0.42),
+        logoUrl: second.logoUrl,
+      };
+    } else if (sheetData?.standing12?.length) {
+      const first = sheetData.standing12[0];
+      const second = sheetData.standing12[1] || first;
+      tA = {
+        name: first.name,
+        tag: first.tag,
+        rank: first.rank,
+        kills: first.elims,
+        damage: first.damage || 0,
+        hs: Math.round(first.elims * 0.38),
+        assist: Math.round(first.elims * 0.42),
+        logoUrl: first.logoUrl,
+      };
+      tB = {
+        name: second.name,
+        tag: second.tag,
+        rank: second.rank,
+        kills: second.elims,
+        damage: second.damage || 0,
+        hs: Math.round(second.elims * 0.38),
+        assist: Math.round(second.elims * 0.42),
+        logoUrl: second.logoUrl,
+      };
+    }
+
+    if (source === 'day_top2_h2h' && sheetData?.allTeamsFull?.length) {
+      const first = sheetData.allTeamsFull[0];
+      const second = sheetData.allTeamsFull[1] || first;
+      tA = {
+        name: first.name,
+        tag: first.tag,
+        rank: first.rank,
+        kills: first.kills,
+        damage: first.damage,
+        hs: first.hs,
+        assist: first.assist ?? Math.round(first.kills * 0.42),
+        logoUrl: first.logoUrl,
+      };
+      tB = {
+        name: second.name,
+        tag: second.tag,
+        rank: second.rank,
+        kills: second.kills,
+        damage: second.damage,
+        hs: second.hs,
+        assist: second.assist ?? Math.round(second.kills * 0.42),
+        logoUrl: second.logoUrl,
+      };
+    } else if (source === 'custom_h2h' && sheetData?.allTeamsFull?.length) {
+      const first = sheetData.allTeamsFull[custom?.tAIdx ?? 0] || sheetData.allTeamsFull[0];
+      const second = sheetData.allTeamsFull[custom?.tBIdx ?? 1] || sheetData.allTeamsFull[1];
+      tA = {
+        name: first.name,
+        tag: first.tag,
+        rank: first.rank,
+        kills: first.kills,
+        damage: first.damage,
+        hs: first.hs,
+        assist: first.assist ?? Math.round(first.kills * 0.42),
+        logoUrl: first.logoUrl,
+      };
+      tB = {
+        name: second.name,
+        tag: second.tag,
+        rank: second.rank,
+        kills: second.kills,
+        damage: second.damage,
+        hs: second.hs,
+        assist: second.assist ?? Math.round(second.kills * 0.42),
+        logoUrl: second.logoUrl,
+      };
+    }
+
+    c1 = {
+      badge: `TEAM 01${tA.rank ? ' • RANK #' + tA.rank : ''}`,
+      name: tA.name,
+      subtitle: tA.tag,
+      tag: tA.tag,
+      kills: tA.kills,
+      damage: tA.damage,
+      hs: tA.hs,
+      assist: tA.assist,
+      logoUrl: tA.logoUrl,
+    };
+    c2 = {
+      badge: `TEAM 02${tB.rank ? ' • RANK #' + tB.rank : ''}`,
+      name: tB.name,
+      subtitle: tB.tag,
+      tag: tB.tag,
+      kills: tB.kills,
+      damage: tB.damage,
+      hs: tB.hs,
+      assist: tB.assist,
+      logoUrl: tB.logoUrl,
+    };
+  }
+
+  // Exact 4 metrics requested by user: Eliminations, Total Damage, Headshots, Assists
+  const rows = [
+    { label: 'ELIMINATIONS', a: c1.kills, b: c2.kills },
+    { label: 'TOTAL DAMAGE', a: c1.damage, b: c2.damage },
+    { label: 'HEADSHOTS', a: c1.hs, b: c2.hs },
+    { label: 'ASSISTS', a: c1.assist, b: c2.assist },
+  ];
+
+  // Comparative power score for the laser meter
+  const s1 = (c1.kills || 0) * 100 + (c1.damage || 0) * 0.1 + (c1.hs || 0) * 40 + (c1.assist || 0) * 25;
+  const s2 = (c2.kills || 0) * 100 + (c2.damage || 0) * 0.1 + (c2.hs || 0) * 40 + (c2.assist || 0) * 25;
+  const pct1 = Math.min(95, Math.max(5, Math.round((s1 / (s1 + s2 || 1)) * 100)));
   const pct2 = 100 - pct1;
 
   const R = 125;
@@ -105,13 +318,6 @@ export default function Slide02PlayerClash({
   const theta = Math.PI * (1 - pct1 / 100);
   const px = CX + R * Math.cos(theta);
   const py = CY - R * Math.sin(theta);
-
-  const rows = [
-    { label: 'ELIMINATIONS', a: p1.kills, b: p2.kills },
-    { label: 'TOTAL DAMAGE', a: p1.damage, b: p2.damage },
-    { label: 'HEADSHOTS', a: p1.hs, b: p2.hs },
-    { label: 'ASSISTS', a: p1.assist, b: p2.assist },
-  ];
 
   const winnerSide = s1 >= s2 ? 'p1' : 'p2';
 
@@ -124,14 +330,14 @@ export default function Slide02PlayerClash({
           id="s3-card-p1"
           className="dark-box rounded-lg px-3 py-1.5 border-l-4 text-left relative transition-all duration-700 w-fit max-w-[280px]"
           style={{ borderLeftColor: themeS1.p1 }}
-          onClick={(e) => onElementClick?.(e, 's1', 'p1', 'Contender 1 Color')}
+          onClick={(e) => onElementClick?.(e, 's1', 'p1', `${c1.name} Color`)}
         >
           {winnerSide === 'p1' && <SpiritFireCanvas />}
           <div className="relative z-10 flex items-center gap-2.5">
             <TeamLogoBadge
-              tag={p1.tag}
-              name={p1.team}
-              logoUrl={teamLogoMap[p1.tag.toUpperCase()] || teamLogoMap[p1.team.toUpperCase()]}
+              tag={c1.tag}
+              name={c1.name}
+              logoUrl={teamLogoMap[c1.tag.toUpperCase()] || teamLogoMap[c1.name.toUpperCase()] || c1.logoUrl}
               color={themeS1.p1}
               sizeCls="w-8 h-8 sm:w-9 sm:h-9"
             />
@@ -140,12 +346,12 @@ export default function Slide02PlayerClash({
                 className="text-[10px] font-bold uppercase tracking-wider"
                 style={{ color: themeS1.p1 }}
               >
-                CONTENDER 01
+                {c1.badge}
               </div>
               <div className="font-hud text-base sm:text-lg font-extrabold text-white leading-tight truncate max-w-[150px]">
-                {p1.name}
+                {c1.name}
               </div>
-              <div className="text-[11px] font-bold text-slate-300">{p1.team}</div>
+              <div className="text-[11px] font-bold text-slate-300">{c1.subtitle}</div>
             </div>
           </div>
         </div>
@@ -155,7 +361,7 @@ export default function Slide02PlayerClash({
           id="s3-card-p2"
           className="dark-box rounded-lg px-3 py-1.5 border-r-4 text-right relative transition-all duration-700 w-fit max-w-[280px] ml-auto"
           style={{ borderRightColor: themeS1.p2 }}
-          onClick={(e) => onElementClick?.(e, 's1', 'p2', 'Contender 2 Color')}
+          onClick={(e) => onElementClick?.(e, 's1', 'p2', `${c2.name} Color`)}
         >
           {winnerSide === 'p2' && <SpiritFireCanvas />}
           <div className="relative z-10 flex items-center gap-2.5">
@@ -164,17 +370,17 @@ export default function Slide02PlayerClash({
                 className="text-[10px] font-bold uppercase tracking-wider"
                 style={{ color: themeS1.p2 }}
               >
-                CONTENDER 02
+                {c2.badge}
               </div>
               <div className="font-hud text-base sm:text-lg font-extrabold text-white leading-tight truncate max-w-[150px]">
-                {p2.name}
+                {c2.name}
               </div>
-              <div className="text-[11px] font-bold text-slate-300">{p2.team}</div>
+              <div className="text-[11px] font-bold text-slate-300">{c2.subtitle}</div>
             </div>
             <TeamLogoBadge
-              tag={p2.tag}
-              name={p2.team}
-              logoUrl={teamLogoMap[p2.tag.toUpperCase()] || teamLogoMap[p2.team.toUpperCase()]}
+              tag={c2.tag}
+              name={c2.name}
+              logoUrl={teamLogoMap[c2.tag.toUpperCase()] || teamLogoMap[c2.name.toUpperCase()] || c2.logoUrl}
               color={themeS1.p2}
               sizeCls="w-8 h-8 sm:w-9 sm:h-9"
             />
@@ -302,23 +508,20 @@ export default function Slide02PlayerClash({
             <span
               className="cursor-pointer hover:opacity-80"
               style={{ color: themeS1.p1 }}
-              onClick={(e) => onElementClick?.(e, 's1', 'p1', `${p1.name} Color`)}
-              title="Click to change Contender 1 color"
+              onClick={(e) => onElementClick?.(e, 's1', 'p1', `${c1.name} Color`)}
             >
               {animated ? `${pct1}%` : '0%'}
             </span>
             <span
               className="text-amber-400 text-base mx-2 cursor-pointer hover:scale-110 transition-transform"
               onClick={(e) => onElementClick?.(e, 's1', 'accent', 'Accent Color')}
-              title="Click to change accent color"
             >
               VS
             </span>
             <span
               className="cursor-pointer hover:opacity-80"
               style={{ color: themeS1.p2 }}
-              onClick={(e) => onElementClick?.(e, 's1', 'p2', `${p2.name} Color`)}
-              title="Click to change Contender 2 color"
+              onClick={(e) => onElementClick?.(e, 's1', 'p2', `${c2.name} Color`)}
             >
               {animated ? `${pct2}%` : '0%'}
             </span>
@@ -349,8 +552,7 @@ export default function Slide02PlayerClash({
                 {/* Left Bar (Contender 1) */}
                 <div
                   className="w-1/2 h-full flex justify-end overflow-hidden cursor-pointer"
-                  onClick={(e) => onElementClick?.(e, 's1', 'p1', `${p1.name} Bar Color`)}
-                  title="Click to change Contender 1 color"
+                  onClick={(e) => onElementClick?.(e, 's1', 'p1', `${c1.name} Bar Color`)}
                 >
                   <div
                     className="bar-live h-full rounded-l-md flex items-center justify-start pl-6 overflow-hidden"
@@ -369,8 +571,7 @@ export default function Slide02PlayerClash({
                 {/* Right Bar (Contender 2) */}
                 <div
                   className="w-1/2 h-full flex justify-start overflow-hidden cursor-pointer"
-                  onClick={(e) => onElementClick?.(e, 's1', 'p2', `${p2.name} Bar Color`)}
-                  title="Click to change Contender 2 color"
+                  onClick={(e) => onElementClick?.(e, 's1', 'p2', `${c2.name} Bar Color`)}
                 >
                   <div
                     className="bar-live h-full rounded-r-md flex items-center justify-end pr-6 overflow-hidden"

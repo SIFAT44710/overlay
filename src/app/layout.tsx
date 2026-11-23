@@ -21,7 +21,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-full flex flex-col obs-grid" style={{ margin: 0, padding: 0 }}>
+      <body className="min-h-full flex flex-col bg-transparent obs-pure" style={{ margin: 0, padding: 0, background: 'transparent' }}>
         {children}
       </body>
     </html>

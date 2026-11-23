@@ -15,7 +15,6 @@ const sheetRangeCache = new Map<string, SheetCacheEntry>();
 const staleRangeCache = new Map<string, any[][]>();
 
 let driveFilesCache: { files: DriveFileItem[]; timestamp: number } | null = null;
-let themeConfigCache: { data: Record<string, any>; timestamp: number } | null = null;
 
 // --- Sheet Ranges Cache ---
 export function getCachedRange(range: string, fresh = false): any[][] | null {
@@ -57,18 +56,19 @@ export function flushDriveCache(): void {
   driveFilesCache = null;
 }
 
-// --- Theme Config Cache ---
+// --- Theme Config Cache (Persistent in-memory across poll cycles) ---
+let themeConfigCache: Record<string, any> = {};
+
 export function getCachedThemeConfig(fresh = false): Record<string, any> | null {
-  if (fresh || !themeConfigCache) return null;
-  const age = Date.now() - themeConfigCache.timestamp;
-  if (age < 5000) { // 5s theme cache
-    return themeConfigCache.data;
+  if (fresh) return null;
+  if (Object.keys(themeConfigCache).length > 0) {
+    return themeConfigCache;
   }
   return null;
 }
 
 export function setCachedThemeConfig(data: Record<string, any>): void {
-  themeConfigCache = { data, timestamp: Date.now() };
+  themeConfigCache = { ...themeConfigCache, ...data };
 }
 
 // --- Cache Diagnostics ---

@@ -69,6 +69,7 @@ export interface H2HTeam {
   damage: number;
   hs: number;
   gloo: number;
+  assist?: number;
 }
 
 export interface H2HGroupAvgTeam {
@@ -99,6 +100,7 @@ export interface TeamFullStats {
   damage: number;
   hs: number;
   gloo: number;
+  assist?: number;
   avgElims: number;
   avgDmg: number;
   avgSurvMin: number;

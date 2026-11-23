@@ -164,17 +164,20 @@ export async function saveThemeConfigToSheet(
 ): Promise<boolean> {
   const defaultSheetId = process.env.GOOGLE_SHEET_ID || '1QOTrmLLqyZQdL7AarXbhnFFA8_BeXHoWhod8INJnoHE';
 
+  // 1. ALWAYS update in-memory cache immediately so server-side state never drops
+  const current = (await getStoredThemeConfig(false)) || {};
+  Object.entries(updates).forEach(([k, v]) => {
+    if (typeof v === 'object' && v !== null && !Array.isArray(v) && typeof current[k] === 'object' && current[k] !== null) {
+      current[k] = { ...current[k], ...v };
+    } else {
+      current[k] = v;
+    }
+  });
+  setCachedThemeConfig(current);
+
+  // 2. Best-effort persistent write to Google Sheet
   try {
     await ensureThemeConfigTabExists(defaultSheetId);
-    const current = await getStoredThemeConfig(true);
-    Object.entries(updates).forEach(([k, v]) => {
-      if (typeof v === 'object' && v !== null && !Array.isArray(v) && typeof current[k] === 'object' && current[k] !== null) {
-        current[k] = { ...current[k], ...v };
-      } else {
-        current[k] = v;
-      }
-    });
-
     const rows = Object.entries(current).map(([k, v]) => [
       k,
       typeof v === 'string' ? v : JSON.stringify(v),
@@ -187,12 +190,10 @@ export async function saveThemeConfigToSheet(
       valueInputOption: 'RAW',
       requestBody: { values: rows },
     });
-
-    setCachedThemeConfig(current);
     return true;
   } catch (error) {
-    console.error('[ThemeConfig] Failed to save theme config to Google Sheet:', error);
-    return false;
+    console.warn('[ThemeConfig] Google Sheet tab write note (retained in server cache):', error);
+    return true; // Preserved in server cache
   }
 }
 

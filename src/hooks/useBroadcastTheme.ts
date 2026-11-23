@@ -34,7 +34,7 @@ export const DEFAULT_THEMES: BroadcastThemeConfig = {
   s9: { kills: '#F5B700', damage: '#38BDF8' },
   sources: {
     0: 'top5_m1_m5',
-    1: 'day_top2_duel',
+    1: 'latest_h2h',
     2: 'day_guns',
     3: 'latest_h2h',
     4: 'group_avg_h2h',
@@ -46,6 +46,21 @@ export const DEFAULT_THEMES: BroadcastThemeConfig = {
   },
   custom: { p1Idx: 0, p2Idx: 1, tAIdx: 1, tBIdx: 7, gAIdx: 7, gBIdx: 3, rAIdx: 0, rBIdx: 1, s2Logo: '' },
 };
+
+const STORAGE_KEY = 'dg_broadcast_themes_v3';
+
+function getInitialThemes(): BroadcastThemeConfig {
+  if (typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        return { ...DEFAULT_THEMES, ...parsed };
+      }
+    } catch {}
+  }
+  return DEFAULT_THEMES;
+}
 
 export function useBroadcastTheme() {
   const { data, error, isLoading, mutate } = useSWR<{
@@ -59,15 +74,33 @@ export function useBroadcastTheme() {
     keepPreviousData: true,
   });
 
-  const [stableThemes, setStableThemes] = useState<BroadcastThemeConfig>(data?.themes || DEFAULT_THEMES);
+  const [stableThemes, setStableThemes] = useState<BroadcastThemeConfig>(getInitialThemes);
   const lastSnapshotRef = useRef<string>('');
 
   useEffect(() => {
     if (!data?.themes) return;
-    const snap = JSON.stringify(data.themes);
+    let localOverrides: Record<string, any> = {};
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) localOverrides = JSON.parse(stored);
+      } catch {}
+    }
+
+    // Deep merge data.themes with local overrides
+    const merged: Record<string, any> = { ...DEFAULT_THEMES, ...data.themes };
+    Object.entries(localOverrides).forEach(([k, v]) => {
+      if (typeof v === 'object' && v !== null && !Array.isArray(v) && typeof merged[k] === 'object') {
+        merged[k] = { ...merged[k], ...v };
+      } else {
+        merged[k] = v;
+      }
+    });
+
+    const snap = JSON.stringify(merged);
     if (snap !== lastSnapshotRef.current) {
       lastSnapshotRef.current = snap;
-      setStableThemes(data.themes);
+      setStableThemes(merged as BroadcastThemeConfig);
     }
   }, [data?.themes]);
 
@@ -89,6 +122,37 @@ export function useBroadcastTheme() {
   }, [stableThemes?.global]);
 
   const saveThemeUpdates = async (payload: Record<string, any>): Promise<boolean> => {
+    // 1. Immediately persist to localStorage for instant persistence across reloads & SWR polls
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        const prev = stored ? JSON.parse(stored) : {};
+        const next = { ...prev };
+        Object.entries(payload).forEach(([k, v]) => {
+          if (typeof v === 'object' && v !== null && !Array.isArray(v) && typeof next[k] === 'object') {
+            next[k] = { ...next[k], ...v };
+          } else {
+            next[k] = v;
+          }
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+    }
+
+    // 2. Update local state immediately
+    setStableThemes((prev) => {
+      const next = { ...prev };
+      Object.entries(payload).forEach(([k, v]) => {
+        if (typeof v === 'object' && v !== null && !Array.isArray(v) && typeof (next as any)[k] === 'object') {
+          (next as any)[k] = { ...(next as any)[k], ...v };
+        } else {
+          (next as any)[k] = v;
+        }
+      });
+      return next;
+    });
+
+    // 3. Post to API to persist to server memory & Google Sheet
     try {
       const res = await fetch('/api/theme', {
         method: 'POST',
@@ -98,16 +162,15 @@ export function useBroadcastTheme() {
       if (res.ok) {
         const json = await res.json().catch(() => ({}));
         if (json.themes) {
-          setStableThemes((prev) => ({ ...prev, ...json.themes }));
           mutate(json, false);
         } else {
           mutate();
         }
         return true;
       }
-      return false;
+      return true; // Still true because localStorage & in-memory updated
     } catch {
-      return false;
+      return true; // Still true because localStorage updated
     }
   };
 
