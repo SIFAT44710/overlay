@@ -10,6 +10,7 @@ interface AuthGateProps {
 export default function AuthGate({ children }: AuthGateProps) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -95,18 +96,29 @@ export default function AuthGate({ children }: AuthGateProps) {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs uppercase tracking-wider text-purple-300 font-bold mb-1.5">
-                অ্যাডমিন পাসওয়ার্ড লিখুন
+              <label className="block text-xs uppercase tracking-wider text-purple-300 font-bold mb-1.5 flex justify-between">
+                <span>অ্যাডমিন পাসওয়ার্ড লিখুন</span>
+                <span className="text-[11px] text-amber-300 font-normal">Default: admin123</span>
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter admin password..."
-                className="w-full bg-slate-950 border border-purple-500/40 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 font-hud text-lg tracking-wider"
-                required
-                autoFocus
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter password..."
+                  className="w-full bg-slate-950 border border-purple-500/40 rounded-xl px-4 py-2.5 pr-10 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 font-hud text-lg tracking-wider"
+                  required
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer text-sm"
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? '👁️' : '🙈'}
+                </button>
+              </div>
             </div>
 
             {errorMsg && (

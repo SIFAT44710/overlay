@@ -398,6 +398,14 @@ export default function AdminPage() {
               >
                 BG: {bgMode === 'obs-grid' ? 'OBS Grid' : bgMode === 'obs-white' ? 'White Test' : 'Transparent'}
               </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="px-2.5 py-1 rounded-lg bg-rose-950/85 hover:bg-rose-900 text-rose-300 hover:text-white font-hud font-bold text-sm cursor-pointer border border-rose-500/40 flex items-center gap-1 transition-all"
+                title="Lock suite and logout"
+              >
+                🔒 LOCK
+              </button>
             </div>
           </div>
 
