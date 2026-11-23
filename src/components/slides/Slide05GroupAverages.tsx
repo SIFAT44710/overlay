@@ -136,23 +136,10 @@ export default function Slide05GroupAverages({
   const CIRC_IN = 2 * Math.PI * R_IN;
 
   // 3 Requested Cards:
-  // 1: ELIMINATIONS & DAMAGE (Kills + Damage)
-  // 2: HEADSHOTS & ASSISTS (Headshots + Assists)
-  // 3: SURVIVAL & TOTAL POINTS (Survival + Total Points)
+  // 1: HEADSHOTS & ASSISTS (Left)
+  // 2: ELIMINATIONS & DAMAGE (Center / Middle)
+  // 3: SURVIVAL & TOTAL POINTS (Right)
   const cards = [
-    {
-      title: 'ELIMINATIONS & DAMAGE',
-      badge: 'COMBAT POWER',
-      m1Label: 'KILLS',
-      m1A: a.kills,
-      m1B: b.kills,
-      m2Label: 'DAMAGE',
-      m2A: a.damage,
-      m2B: b.damage,
-      scoreA: a.kills * 100 + a.damage * 0.1,
-      scoreB: b.kills * 100 + b.damage * 0.1,
-      accent: '#F5B700',
-    },
     {
       title: 'HEADSHOTS & ASSISTS',
       badge: 'PRECISION & TEAMPLAY',
@@ -165,6 +152,19 @@ export default function Slide05GroupAverages({
       scoreA: a.hs * 50 + a.assist * 30,
       scoreB: b.hs * 50 + b.assist * 30,
       accent: '#EC008C',
+    },
+    {
+      title: 'ELIMINATIONS & DAMAGE',
+      badge: 'COMBAT POWER',
+      m1Label: 'KILLS',
+      m1A: a.kills,
+      m1B: b.kills,
+      m2Label: 'DAMAGE',
+      m2A: a.damage,
+      m2B: b.damage,
+      scoreA: a.kills * 100 + a.damage * 0.1,
+      scoreB: b.kills * 100 + b.damage * 0.1,
+      accent: '#F5B700',
     },
     {
       title: 'SURVIVAL & TOTAL POINTS',
