@@ -66,10 +66,10 @@ const SLIDE_DATA_OPTIONS: Array<Array<{ id: string; name: string; tab: string; p
   ],
   [{ id: 'm1_m5_kd', name: 'GameStanding: Match 1–5 Kills & Damage', tab: 'GameStanding' }],
   [
-    { id: 'role_avg', name: 'Role Avg Kills vs. Avg Damage', tab: 'PlayerRoleStats' },
+    { id: 'team_polar_h2h', name: 'Team H2H: Dual Polar (Pick 2 Teams)', tab: 'TeamStats', pickerType: 'teams_s8' },
+    { id: 'day_top2_polar', name: 'Day Top 2 Teams: Dual Polar', tab: 'DayStanding' },
+    { id: 'role_avg', name: 'Role Avg Kills vs. Avg Damage (Legacy)', tab: 'PlayerRoleStats' },
     { id: 'role_total', name: 'Role Total Kills vs. Total Damage', tab: 'PlayerRoleStats' },
-    { id: 'role_hs_ast', name: 'Role Headshots vs. Assists', tab: 'PlayerRoleStats' },
-    { id: 'role_acc_mv', name: 'Role On-Target % vs. Moving Distance', tab: 'PlayerRoleStats' },
     { id: 'top4_teams', name: 'Top 4 Teams: Kills vs. Placement Pts', tab: 'DayStanding' },
   ],
   [
@@ -315,6 +315,60 @@ export default function SheetDataDrawer({
             </div>
           )}
 
+          {/* Slide 8: Dedicated Team Head-to-Head Dropdowns (Always visible for Slide 8) */}
+          {currentSlide === 7 && (
+            <div className="pt-2.5 border-t border-purple-500/30 space-y-2.5 bg-purple-950/20 p-2.5 rounded-xl border border-purple-500/20">
+              <div className="text-xs font-hud font-bold text-amber-300 flex items-center justify-between">
+                <span>⚡ SLIDE 8: PICK ANY 2 TEAMS (DUAL POLAR H2H):</span>
+                <span className="text-[10px] text-purple-300 font-normal">{teamsList.length} Teams</span>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-purple-300 block">
+                  TEAM 01 (LEFT CIRCLE):
+                </label>
+                <select
+                  value={customSettings.pAIdx ?? 1}
+                  onChange={(e) => {
+                    const idx = parseInt(e.target.value, 10);
+                    onUpdateCustom({ ...customSettings, pAIdx: idx });
+                    if (activeSourceId !== 'team_polar_h2h') {
+                      onSelectSource('team_polar_h2h');
+                    }
+                  }}
+                  className="w-full bg-slate-900 border border-purple-400/60 rounded-lg px-2 py-1.5 font-hud text-xs text-white focus:outline-none focus:border-amber-400"
+                >
+                  {teamsList.map((t: any, idx: number) => (
+                    <option key={idx} value={idx}>
+                      #{t.rank || idx + 1} {t.name} ({t.tag || 'TEAM'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-teal-300 block">
+                  TEAM 02 (RIGHT CIRCLE):
+                </label>
+                <select
+                  value={customSettings.pBIdx ?? 7}
+                  onChange={(e) => {
+                    const idx = parseInt(e.target.value, 10);
+                    onUpdateCustom({ ...customSettings, pBIdx: idx });
+                    if (activeSourceId !== 'team_polar_h2h') {
+                      onSelectSource('team_polar_h2h');
+                    }
+                  }}
+                  className="w-full bg-slate-900 border border-teal-400/60 rounded-lg px-2 py-1.5 font-hud text-xs text-white focus:outline-none focus:border-amber-400"
+                >
+                  {teamsList.map((t: any, idx: number) => (
+                    <option key={idx} value={idx}>
+                      #{t.rank || idx + 1} {t.name} ({t.tag || 'TEAM'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
           {/* Custom Pickers */}
           {pickerType === 'players' && (
             <div className="pt-2 border-t border-white/10 space-y-2">
@@ -350,7 +404,7 @@ export default function SheetDataDrawer({
             </div>
           )}
 
-          {pickerType && pickerType.startsWith('teams_') && currentSlide !== 1 && currentSlide !== 3 && (
+          {pickerType && pickerType.startsWith('teams_') && currentSlide !== 1 && currentSlide !== 3 && currentSlide !== 7 && (
             <div className="pt-2 border-t border-white/10 space-y-2">
               <div className="text-xs font-hud font-bold text-amber-300">
                 PICK ANY 2 TEAMS:

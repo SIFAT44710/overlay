@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Chart, registerables } from 'chart.js';
 import { SheetDataPayload, BroadcastThemeConfig } from '@/types/broadcast';
+import TeamLogoBadge from '@/components/TeamLogoBadge';
 import SpiritFireCanvas from '@/components/SpiritFireCanvas';
 import { formatNumber } from '@/lib/sheetParsers';
 
@@ -15,6 +16,8 @@ interface SlideProps {
   onElementClick?: (e: React.MouseEvent, group: string, key: string, label: string) => void;
 }
 
+const METRIC_LABELS = ['KILLS', 'DAMAGE', 'HEADSHOTS', 'ASSISTS'];
+
 export default function Slide09RolePolar({
   sheetData,
   theme,
@@ -24,126 +27,117 @@ export default function Slide09RolePolar({
   const [animated, setAnimated] = useState(false);
   const canvas1Ref = useRef<HTMLCanvasElement | null>(null);
   const canvas2Ref = useRef<HTMLCanvasElement | null>(null);
-  const chart1Ref = useRef<Chart | null>(null);
-  const chart2Ref = useRef<Chart | null>(null);
+  const chart1Ref = useRef<any>(null);
+  const chart2Ref = useRef<any>(null);
 
   const s8 = (theme?.s8 as any) || {};
+  const custom = theme?.custom;
+  const source = theme?.sources?.[7] || theme?.sources?.[8] || 'team_polar_h2h';
 
-  // Independent color arrays for Left Circle (Card A) and Right Circle (Card B)
+  // Independent color arrays for Left Circle (Team A) and Right Circle (Team B)
   const roleColsA = [
-    s8.a_rusher || s8.rusher || '#EF4444',
-    s8.a_support || s8.support || '#22C55E',
-    s8.a_sniper || s8.sniper || '#A855F7',
-    s8.a_bomber || s8.bomber || '#FACC15',
+    s8.a_kills || s8.a_rusher || s8.rusher || '#EF4444',
+    s8.a_damage || s8.a_support || s8.support || '#38BDF8',
+    s8.a_hs || s8.a_sniper || s8.sniper || '#A855F7',
+    s8.a_assist || s8.a_bomber || s8.bomber || '#22C55E',
   ];
 
   const roleColsB = [
-    s8.b_rusher || s8.rusher || '#38BDF8',
-    s8.b_support || s8.support || '#2DD4BF',
-    s8.b_sniper || s8.sniper || '#F5B700',
-    s8.b_bomber || s8.bomber || '#E11D48',
+    s8.b_kills || s8.b_rusher || s8.rusher || '#F5B700',
+    s8.b_damage || s8.b_support || s8.support || '#38BDF8',
+    s8.b_hs || s8.b_sniper || s8.sniper || '#EC008C',
+    s8.b_assist || s8.b_bomber || s8.bomber || '#10B981',
   ];
 
-  const source = theme?.sources?.[7] || theme?.sources?.[8] || 'role_avg';
-
-  const polarSets: Record<
-    string,
-    {
-      lbls: string[];
-      dA: number[];
-      dB: number[];
-      titleA: string;
-      leadA: string;
-      titleB: string;
-      leadB: string;
-      badgeColA: string;
-      badgeColB: string;
-    }
-  > = {
-    role_avg: {
-      lbls: ['Rusher', 'Support', 'Sniper', 'Bomber'],
-      dA: [10.3, 10.3, 10.4, 11.7],
-      dB: [6037, 6207, 9175, 6545],
-      titleA: '#1 AVG KILLS',
-      leadA: 'BOMBER • 11.7',
-      titleB: '#1 AVG DAMAGE',
-      leadB: 'SNIPER • 9,175',
-      badgeColA: '#FACC15',
-      badgeColB: '#A855F7',
-    },
-    role_total: {
-      lbls: ['Rusher', 'Support', 'Sniper', 'Bomber'],
-      dA: [269, 134, 83, 70],
-      dB: [156973, 80695, 73400, 39268],
-      titleA: '#1 TOTAL KILLS',
-      leadA: 'RUSHER • 269',
-      titleB: '#1 TOTAL DAMAGE',
-      leadB: 'RUSHER • 156,973',
-      badgeColA: '#EF4444',
-      badgeColB: '#EF4444',
-    },
-    role_hs_ast: {
-      lbls: ['Rusher', 'Support', 'Sniper', 'Bomber'],
-      dA: [284, 142, 74, 82],
-      dB: [196, 168, 84, 61],
-      titleA: '#1 HEADSHOTS',
-      leadA: 'RUSHER • 284',
-      titleB: '#1 ASSISTS',
-      leadB: 'RUSHER • 196',
-      badgeColA: '#EF4444',
-      badgeColB: '#22C55E',
-    },
-    role_acc_mv: {
-      lbls: ['Rusher', 'Support', 'Sniper', 'Bomber'],
-      dA: [36.4, 31.8, 39.2, 34.5],
-      dB: [11840, 12950, 10620, 11410],
-      titleA: '#1 ON-TARGET %',
-      leadA: 'SNIPER • 39.2%',
-      titleB: '#1 MOVED (M)',
-      leadB: 'SUPPORT • 12,950',
-      badgeColA: '#A855F7',
-      badgeColB: '#22C55E',
-    },
-    top4_teams: {
-      lbls: ['TOP', 'EXE', 'S9x', 'CME'],
-      dA: [94, 76, 62, 58],
-      dB: [40, 22, 34, 35],
-      titleA: '#1 TOP 4 KILLS',
-      leadA: 'TOP • 94',
-      titleB: '#1 PLACE PTS',
-      leadB: 'TOP • 40',
-      badgeColA: '#F5B700',
-      badgeColB: '#F5B700',
-    },
+  // Resolve Team A & Team B from SheetData
+  const allTeams = sheetData?.allTeamsFull || [];
+  let teamA = allTeams[custom?.pAIdx ?? 1] || allTeams[0] || {
+    name: 'EXTREME EX',
+    tag: 'EXE',
+    rank: 2,
+    kills: 76,
+    damage: 42349,
+    hs: 67,
+    assist: 52,
+    total: 98,
+    col: '#8B5CF6',
   };
 
-  // Bind live Google Sheet data if available
-  if (source === 'role_avg' && sheetData?.rolesPolar && sheetData.rolesPolar.length === 4) {
-    polarSets.role_avg.dA = sheetData.rolesPolar.map((r) => r.kills);
-    polarSets.role_avg.dB = sheetData.rolesPolar.map((r) => r.damage);
-  } else if (source === 'role_total' && Array.isArray(sheetData?.roles) && sheetData.roles.length >= 4) {
-    const rusher = sheetData.roles.find((r) => r.role?.toUpperCase() === 'RUSHER');
-    const support = sheetData.roles.find((r) => r.role?.toUpperCase() === 'SUPPORT');
-    const sniper = sheetData.roles.find((r) => r.role?.toUpperCase() === 'SNIPER');
-    const bomber = sheetData.roles.find((r) => r.role?.toUpperCase() === 'BOMBER');
-    if (rusher && support && sniper && bomber) {
-      polarSets.role_total.dA = [rusher.kills, support.kills, sniper.kills, bomber.kills];
-      polarSets.role_total.dB = [rusher.damage, support.damage, sniper.damage, bomber.damage];
-    }
-  } else if (source === 'top4_teams' && sheetData?.standing12 && sheetData.standing12.length >= 4) {
-    const t4 = sheetData.standing12.slice(0, 4);
-    polarSets.top4_teams.lbls = t4.map((t) => t.tag);
-    polarSets.top4_teams.dA = t4.map((t) => t.elims);
-    polarSets.top4_teams.dB = t4.map((t) => t.place);
-    polarSets.top4_teams.leadA = `${t4[0].tag} • ${t4[0].elims}`;
-    polarSets.top4_teams.leadB = `${t4[0].tag} • ${t4[0].place}`;
+  let teamB = allTeams[custom?.pBIdx ?? 7] || allTeams[1] || {
+    name: '69 ESPORTS',
+    tag: '69',
+    rank: 8,
+    kills: 48,
+    damage: 27036,
+    hs: 46,
+    assist: 34,
+    total: 61,
+    col: '#F43F5E',
+  };
+
+  if (source === 'day_top2_polar' && allTeams.length >= 2) {
+    teamA = allTeams[0];
+    teamB = allTeams[1];
   }
 
-  const ps = polarSets[source] || polarSets.role_avg;
+  const assistA = teamA.assist || Math.round(teamA.kills * 0.44);
+  const assistB = teamB.assist || Math.round(teamB.kills * 0.44);
 
-  const latestRef = useRef({ ps, roleColsA, roleColsB });
+  // Compute normalized radii for visual balance between Kills (tens) and Damage (tens of thousands)
+  const maxK = Math.max(teamA.kills, teamB.kills, 1);
+  const maxD = Math.max(teamA.damage, teamB.damage, 1);
+  const maxH = Math.max(teamA.hs, teamB.hs, 1);
+  const maxA = Math.max(assistA, assistB, 1);
+
+  const radiusA = [
+    Math.max(28, Math.round((teamA.kills / (maxK * 1.15)) * 100)),
+    Math.max(28, Math.round((teamA.damage / (maxD * 1.15)) * 100)),
+    Math.max(28, Math.round((teamA.hs / (maxH * 1.15)) * 100)),
+    Math.max(28, Math.round((assistA / (maxA * 1.15)) * 100)),
+  ];
+
+  const radiusB = [
+    Math.max(28, Math.round((teamB.kills / (maxK * 1.15)) * 100)),
+    Math.max(28, Math.round((teamB.damage / (maxD * 1.15)) * 100)),
+    Math.max(28, Math.round((teamB.hs / (maxH * 1.15)) * 100)),
+    Math.max(28, Math.round((assistB / (maxA * 1.15)) * 100)),
+  ];
+
+  const realA = [teamA.kills, teamA.damage, teamA.hs, assistA];
+  const realB = [teamB.kills, teamB.damage, teamB.hs, assistB];
+
+  const isRoleAvgMode = source === 'role_avg' || source === 'role_total';
+  const displayLabels = isRoleAvgMode ? ['Rusher', 'Support', 'Sniper', 'Bomber'] : METRIC_LABELS;
+
+  const currentDataA = isRoleAvgMode ? (sheetData?.rolesPolar?.map((r) => r.kills) || [10.3, 10.3, 10.4, 11.7]) : radiusA;
+  const currentDataB = isRoleAvgMode ? (sheetData?.rolesPolar?.map((r) => r.damage) || [6037, 6207, 9175, 6545]) : radiusB;
+  const displayRealA = isRoleAvgMode ? currentDataA : realA;
+  const displayRealB = isRoleAvgMode ? currentDataB : realB;
+
+  const latestRef = useRef({
+    labels: displayLabels,
+    realA: displayRealA,
+    realB: displayRealB,
+    dataA: currentDataA,
+    dataB: currentDataB,
+    roleColsA,
+    roleColsB,
+    teamA,
+    teamB,
+  });
+
   useEffect(() => {
-    latestRef.current = { ps, roleColsA, roleColsB };
+    latestRef.current = {
+      labels: displayLabels,
+      realA: displayRealA,
+      realB: displayRealB,
+      dataA: currentDataA,
+      dataB: currentDataB,
+      roleColsA,
+      roleColsB,
+      teamA,
+      teamB,
+    };
   });
 
   // 1. Initial Mount & ReplayKey: Create Both Polar Charts ONCE
@@ -169,7 +163,13 @@ export default function Slide09RolePolar({
       chart2Ref.current = null;
     }
 
-    const { ps: currentPs, roleColsA: currentColsA, roleColsB: currentColsB } = latestRef.current;
+    const {
+      labels: curLabels,
+      dataA: curDataA,
+      dataB: curDataB,
+      roleColsA: curColsA,
+      roleColsB: curColsB,
+    } = latestRef.current;
 
     // Pure White Value Plugin for Polar Area Charts with High-Contrast Dark Outline
     const polarValuePlugin = {
@@ -180,11 +180,14 @@ export default function Slide09RolePolar({
         ctx.font = '800 24px "GFF Latin", "Teko", sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
+        const side = chart._side || 'a';
+        const realVals = side === 'a' ? latestRef.current.realA : latestRef.current.realB;
+
         chart.data.datasets.forEach((ds: any, dsIdx: number) => {
           const meta = chart.getDatasetMeta(dsIdx);
           if (meta.hidden) return;
           meta.data.forEach((el: any, i: number) => {
-            const raw = ds.data[i];
+            const raw = realVals[i] ?? ds.data[i];
             if (raw === 0 || raw == null) return;
             const pos = el.tooltipPosition();
             const fullTxt = formatNumber(raw);
@@ -202,11 +205,11 @@ export default function Slide09RolePolar({
       },
     };
 
-    const mk = (canvas: HTMLCanvasElement, data: number[], cols: string[], side: 'a' | 'b') =>
-      new Chart(canvas, {
+    const mk = (canvas: HTMLCanvasElement, data: number[], cols: string[], side: 'a' | 'b') => {
+      const chartInstance: any = new Chart(canvas, {
         type: 'polarArea',
         data: {
-          labels: currentPs.lbls,
+          labels: curLabels,
           datasets: [
             {
               data,
@@ -239,15 +242,15 @@ export default function Slide09RolePolar({
               }
             }
             if (idx >= 0) {
-              const roleKeys = ['rusher', 'support', 'sniper', 'bomber'];
-              const baseKey = roleKeys[idx % 4];
+              const metricKeys = ['kills', 'damage', 'hs', 'assist'];
+              const baseKey = metricKeys[idx % 4];
               const key = `${side}_${baseKey}`;
-              const sideLabel = side === 'a' ? 'Left Circle' : 'Right Circle';
+              const t = side === 'a' ? latestRef.current.teamA : latestRef.current.teamB;
               onElementClick(
                 evt.nativeEvent,
                 's8',
                 key,
-                `${sideLabel}: ${latestRef.current.ps.lbls[idx]} Role`
+                `${t.name} (${side === 'a' ? 'Team A' : 'Team B'}): ${METRIC_LABELS[idx]}`
               );
             }
           },
@@ -256,21 +259,31 @@ export default function Slide09RolePolar({
               grid: { color: 'rgba(148,163,184,0.18)' },
               angleLines: { color: 'rgba(148,163,184,0.25)' },
               ticks: { display: false },
+              suggestedMin: 0,
+              suggestedMax: 100,
             },
           },
           plugins: {
             legend: { display: false },
             tooltip: {
               callbacks: {
-                label: (item: any) => `${item.label}: ${formatNumber(item.raw)}`,
+                label: (item: any) => {
+                  const idx = item.dataIndex;
+                  const lbl = METRIC_LABELS[idx] || item.label;
+                  const val = side === 'a' ? latestRef.current.realA[idx] : latestRef.current.realB[idx];
+                  return `${lbl}: ${formatNumber(val)}`;
+                },
               },
             },
           },
         },
       });
+      chartInstance._side = side;
+      return chartInstance;
+    };
 
-    chart1Ref.current = mk(c1, currentPs.dA, currentColsA, 'a');
-    chart2Ref.current = mk(c2, currentPs.dB, currentColsB, 'b');
+    chart1Ref.current = mk(c1, curDataA, curColsA, 'a');
+    chart2Ref.current = mk(c2, curDataB, curColsB, 'b');
 
     return () => {
       clearTimeout(animTimer);
@@ -284,9 +297,9 @@ export default function Slide09RolePolar({
   // 2. Data & Theme Background Update: Update in-place silently WITHOUT rebuilding or re-animating
   useEffect(() => {
     if (chart1Ref.current) {
-      chart1Ref.current.data.labels = ps.lbls;
+      chart1Ref.current.data.labels = displayLabels;
       if (chart1Ref.current.data.datasets[0]) {
-        chart1Ref.current.data.datasets[0].data = ps.dA;
+        chart1Ref.current.data.datasets[0].data = currentDataA;
         chart1Ref.current.data.datasets[0].backgroundColor = roleColsA.map((c) => `${c}D9`);
         const meta = chart1Ref.current.getDatasetMeta(0);
         if (meta) {
@@ -298,9 +311,9 @@ export default function Slide09RolePolar({
       chart1Ref.current.update();
     }
     if (chart2Ref.current) {
-      chart2Ref.current.data.labels = ps.lbls;
+      chart2Ref.current.data.labels = displayLabels;
       if (chart2Ref.current.data.datasets[0]) {
-        chart2Ref.current.data.datasets[0].data = ps.dB;
+        chart2Ref.current.data.datasets[0].data = currentDataB;
         chart2Ref.current.data.datasets[0].backgroundColor = roleColsB.map((c) => `${c}D9`);
         const meta = chart2Ref.current.getDatasetMeta(0);
         if (meta) {
@@ -311,12 +324,20 @@ export default function Slide09RolePolar({
       }
       chart2Ref.current.update();
     }
-  }, [ps.lbls.join(','), ps.dA.join(','), ps.dB.join(','), roleColsA.join(','), roleColsB.join(',')]);
+  }, [
+    displayLabels.join(','),
+    currentDataA.join(','),
+    currentDataB.join(','),
+    displayRealA.join(','),
+    displayRealB.join(','),
+    roleColsA.join(','),
+    roleColsB.join(','),
+  ]);
 
   return (
     <div className="w-full max-w-[1340px] pt-14 flex flex-col gap-5 relative font-hud select-none">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-        {/* Polar Card A (Left Circle) */}
+        {/* Polar Card A (Left Circle - Team A) */}
         <div
           className={`dark-box rounded-2xl p-5 relative border border-white/10 shadow-2xl flex flex-col items-center transition-all duration-700 ${
             animated ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
@@ -324,49 +345,61 @@ export default function Slide09RolePolar({
         >
           {/* Header */}
           <div className="flex justify-between items-center w-full mb-3">
-            <div className="relative px-2.5 py-1 rounded-lg bg-slate-950/90 border border-purple-400 font-hud text-xs sm:text-sm font-bold text-white flex items-center gap-2 top1-hero-glow">
+            <div className="relative px-3 py-1.5 rounded-xl bg-slate-950/90 border border-purple-400 font-hud text-xs sm:text-sm font-bold text-white flex items-center gap-2.5 top1-hero-glow">
               <SpiritFireCanvas />
-              <span className="text-amber-400 font-extrabold">{ps.titleA}</span>
-              <span className="font-extrabold">{ps.leadA}</span>
+              <TeamLogoBadge tag={teamA.tag} name={teamA.name} logoUrl={teamA.logoUrl} sizeCls="w-9 h-9" textSizeCls="text-sm" />
+              <div className="flex flex-col">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-amber-400 font-black">#{teamA.rank}</span>
+                  <span className="font-extrabold tracking-wide uppercase">{teamA.name}</span>
+                </div>
+                <span className="text-[10px] text-purple-300 font-medium tracking-wider">TEAM A • {teamA.tag}</span>
+              </div>
             </div>
             <div
-              className="px-2 py-0.5 rounded-md font-hud text-xs sm:text-sm font-extrabold text-black"
-              style={{ backgroundColor: ps.badgeColA }}
+              className="px-2.5 py-1 rounded-lg font-hud text-xs sm:text-sm font-extrabold text-black flex items-center gap-1.5 shadow-md"
+              style={{ backgroundColor: roleColsA[0] }}
             >
-              #1 LEADER
+              <span className="text-white">PTS:</span>
+              <span className="text-black font-black bg-white/90 px-1.5 rounded">{teamA.total}</span>
             </div>
           </div>
 
-          {/* Left Circle Role Color Selectors */}
-          <div className="flex items-center justify-center gap-1.5 flex-wrap w-full mb-2">
+          {/* Left Circle Metric Selectors & Value Pills */}
+          <div className="grid grid-cols-4 gap-1.5 w-full mb-2">
             {[
-              { key: 'a_rusher', label: 'RUSHER', col: roleColsA[0] },
-              { key: 'a_support', label: 'SUPPORT', col: roleColsA[1] },
-              { key: 'a_sniper', label: 'SNIPER', col: roleColsA[2] },
-              { key: 'a_bomber', label: 'BOMBER', col: roleColsA[3] },
-            ].map((role) => (
+              { key: 'a_kills', label: 'KILLS', val: teamA.kills, col: roleColsA[0] },
+              { key: 'a_damage', label: 'DMG', val: teamA.damage, col: roleColsA[1] },
+              { key: 'a_hs', label: 'HS', val: teamA.hs, col: roleColsA[2] },
+              { key: 'a_assist', label: 'AST', val: assistA, col: roleColsA[3] },
+            ].map((metric) => (
               <button
-                key={role.key}
+                key={metric.key}
                 type="button"
                 onClick={(e) =>
-                  onElementClick?.(e, 's8', role.key, `Left Circle: ${role.label} Color`)
+                  onElementClick?.(e, 's8', metric.key, `${teamA.name} (Team A): ${metric.label} Color`)
                 }
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-950/90 border border-white/15 hover:border-purple-400 font-hud text-xs font-bold cursor-pointer transition-all"
-                title={`Click to change Left Circle ${role.label} color`}
+                className="flex flex-col items-center justify-center p-1.5 rounded-lg bg-slate-950/90 border border-white/15 hover:border-purple-400 font-hud cursor-pointer transition-all hover:scale-[1.02]"
+                title={`Click to change Team A ${metric.label} color`}
               >
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: role.col }} />
-                <span style={{ color: role.col }}>{role.label}</span>
+                <div className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: metric.col }} />
+                  <span className="text-[10px] font-bold tracking-wider" style={{ color: metric.col }}>
+                    {metric.label}
+                  </span>
+                </div>
+                <span className="text-xs sm:text-sm font-black text-white">{formatNumber(metric.val)}</span>
               </button>
             ))}
           </div>
 
           {/* Canvas */}
-          <div className="relative h-[380px] sm:h-[440px] w-full">
+          <div className="relative h-[340px] sm:h-[400px] w-full">
             <canvas ref={canvas1Ref} className="cursor-pointer" />
           </div>
         </div>
 
-        {/* Polar Card B (Right Circle) */}
+        {/* Polar Card B (Right Circle - Team B) */}
         <div
           className={`dark-box rounded-2xl p-5 relative border border-white/10 shadow-2xl flex flex-col items-center transition-all duration-700 ${
             animated ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
@@ -375,44 +408,56 @@ export default function Slide09RolePolar({
         >
           {/* Header */}
           <div className="flex justify-between items-center w-full mb-3">
-            <div className="relative px-2.5 py-1 rounded-lg bg-slate-950/90 border border-purple-400 font-hud text-xs sm:text-sm font-bold text-white flex items-center gap-2 top1-hero-glow">
+            <div className="relative px-3 py-1.5 rounded-xl bg-slate-950/90 border border-teal-400 font-hud text-xs sm:text-sm font-bold text-white flex items-center gap-2.5 top1-hero-glow">
               <SpiritFireCanvas />
-              <span className="text-amber-400 font-extrabold">{ps.titleB}</span>
-              <span className="font-extrabold">{ps.leadB}</span>
+              <TeamLogoBadge tag={teamB.tag} name={teamB.name} logoUrl={teamB.logoUrl} sizeCls="w-9 h-9" textSizeCls="text-sm" />
+              <div className="flex flex-col">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-teal-400 font-black">#{teamB.rank}</span>
+                  <span className="font-extrabold tracking-wide uppercase">{teamB.name}</span>
+                </div>
+                <span className="text-[10px] text-teal-300 font-medium tracking-wider">TEAM B • {teamB.tag}</span>
+              </div>
             </div>
             <div
-              className="px-2 py-0.5 rounded-md font-hud text-xs sm:text-sm font-extrabold text-black"
-              style={{ backgroundColor: ps.badgeColB }}
+              className="px-2.5 py-1 rounded-lg font-hud text-xs sm:text-sm font-extrabold text-black flex items-center gap-1.5 shadow-md"
+              style={{ backgroundColor: roleColsB[0] }}
             >
-              #1 LEADER
+              <span className="text-white">PTS:</span>
+              <span className="text-black font-black bg-white/90 px-1.5 rounded">{teamB.total}</span>
             </div>
           </div>
 
-          {/* Right Circle Role Color Selectors */}
-          <div className="flex items-center justify-center gap-1.5 flex-wrap w-full mb-2">
+          {/* Right Circle Metric Selectors & Value Pills */}
+          <div className="grid grid-cols-4 gap-1.5 w-full mb-2">
             {[
-              { key: 'b_rusher', label: 'RUSHER', col: roleColsB[0] },
-              { key: 'b_support', label: 'SUPPORT', col: roleColsB[1] },
-              { key: 'b_sniper', label: 'SNIPER', col: roleColsB[2] },
-              { key: 'b_bomber', label: 'BOMBER', col: roleColsB[3] },
-            ].map((role) => (
+              { key: 'b_kills', label: 'KILLS', val: teamB.kills, col: roleColsB[0] },
+              { key: 'b_damage', label: 'DMG', val: teamB.damage, col: roleColsB[1] },
+              { key: 'b_hs', label: 'HS', val: teamB.hs, col: roleColsB[2] },
+              { key: 'b_assist', label: 'AST', val: assistB, col: roleColsB[3] },
+            ].map((metric) => (
               <button
-                key={role.key}
+                key={metric.key}
                 type="button"
                 onClick={(e) =>
-                  onElementClick?.(e, 's8', role.key, `Right Circle: ${role.label} Color`)
+                  onElementClick?.(e, 's8', metric.key, `${teamB.name} (Team B): ${metric.label} Color`)
                 }
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-950/90 border border-white/15 hover:border-purple-400 font-hud text-xs font-bold cursor-pointer transition-all"
-                title={`Click to change Right Circle ${role.label} color`}
+                className="flex flex-col items-center justify-center p-1.5 rounded-lg bg-slate-950/90 border border-white/15 hover:border-teal-400 font-hud cursor-pointer transition-all hover:scale-[1.02]"
+                title={`Click to change Team B ${metric.label} color`}
               >
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: role.col }} />
-                <span style={{ color: role.col }}>{role.label}</span>
+                <div className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: metric.col }} />
+                  <span className="text-[10px] font-bold tracking-wider" style={{ color: metric.col }}>
+                    {metric.label}
+                  </span>
+                </div>
+                <span className="text-xs sm:text-sm font-black text-white">{formatNumber(metric.val)}</span>
               </button>
             ))}
           </div>
 
           {/* Canvas */}
-          <div className="relative h-[380px] sm:h-[440px] w-full">
+          <div className="relative h-[340px] sm:h-[400px] w-full">
             <canvas ref={canvas2Ref} className="cursor-pointer" />
           </div>
         </div>

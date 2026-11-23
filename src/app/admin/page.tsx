@@ -30,7 +30,7 @@ const SLIDES = [
   { id: 5, label: '05. Single-Candle Dynamic Column' },
   { id: 6, label: '06. Top 2 / H2H Fast Radar' },
   { id: 7, label: '07. M1–M5 Kills & DMG Line' },
-  { id: 8, label: '08. Role Dual Polar' },
+  { id: 8, label: '08. Team Dual Polar Head-to-Head' },
   { id: 9, label: '09. Dual-Candle Comparison Column' },
   { id: 10, label: '10. Team H2H (Match 5 Standings)' },
 ];
