@@ -30,7 +30,7 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey = 0, onEl
 
   const themeS6 = theme?.s6 || { rank1: '#E11D48', rank2: '#A78BFA', outerBox: '#090b12' };
   const custom = theme?.custom;
-  const source = theme?.sources?.[6] || 'day_top2_radar';
+  const source = theme?.sources?.[5] || theme?.sources?.[6] || 'day_top2_radar';
 
   const allTeams = sheetData?.allTeamsFull || [];
   let teamA = allTeams[0] || {

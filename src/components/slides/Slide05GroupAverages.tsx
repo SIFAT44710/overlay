@@ -28,7 +28,7 @@ export default function Slide05GroupAverages({
 
   const themeS4 = theme?.s4 || { teamA: '#8b5cf6', teamB: '#2dd4bf' };
   const custom = theme?.custom;
-  const source = theme?.sources?.[4] || 'group_avg_h2h';
+  const source = theme?.sources?.[3] || theme?.sources?.[4] || 'group_avg_h2h';
 
   let a = sheetData?.h2hGroupAvg?.a || {
     name: '69 ESPORTS',

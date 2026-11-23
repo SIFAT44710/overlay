@@ -28,7 +28,7 @@ export default function Slide10DualColumn({
   const imgCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
 
   const themeS9 = theme?.s9 || { kills: '#F5B700', damage: '#38BDF8' };
-  const source = theme?.sources?.[9] || 'day_kd_12';
+  const source = theme?.sources?.[8] || theme?.sources?.[9] || 'day_kd_12';
 
   const list = sheetData?.teamKillsDmg12 || [
     { tag: 'TOP', name: 'RAAD VAI YT', kills: 94, dmg: 57261, col: '#F5B700' },

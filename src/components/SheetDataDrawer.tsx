@@ -47,11 +47,6 @@ const SLIDE_DATA_OPTIONS: Array<Array<{ id: string; name: string; tab: string; p
     { id: 'match_6_guns', name: 'Weapon Meta: Match 6', tab: 'GameStanding / M6' },
   ],
   [
-    { id: 'latest_h2h', name: 'Latest Match H2H (EXE vs 69)', tab: 'Vmix R43' },
-    { id: 'day_top2_h2h', name: 'Day Top 2 H2H (TOP vs EXE)', tab: 'DayStanding' },
-    { id: 'custom_h2h', name: 'Custom: Pick Any 2 Sheet Teams', tab: 'TeamStats', pickerType: 'teams_s4' },
-  ],
-  [
     { id: 'group_avg_h2h', name: 'Group Stage Avg (69 vs CME)', tab: 'Vmix R137' },
     { id: 'day_top2_avg', name: 'Day Top 2 Averages (TOP vs EXE)', tab: 'DayStanding' },
     { id: 'custom_avg_h2h', name: 'Custom: Pick Any 2 Sheet Teams', tab: 'TeamStats', pickerType: 'teams_s5' },
@@ -84,6 +79,11 @@ const SLIDE_DATA_OPTIONS: Array<Array<{ id: string; name: string; tab: string; p
     { id: 'm5_surv_kill', name: 'LastMatchStanding: Match 5 Survival vs. Kills', tab: 'LastMatchStanding' },
     { id: 'plrs_kd', name: 'Vmix: Top 10 Players Kills vs. Damage', tab: 'Vmix R78' },
     { id: 'plrs_k_hs', name: 'Vmix: Top 10 Players Kills vs. Headshots', tab: 'Vmix R78' },
+  ],
+  [
+    { id: 'latest_h2h', name: 'Latest Match H2H (EXE vs 69)', tab: 'Vmix R43' },
+    { id: 'day_top2_h2h', name: 'Day Top 2 H2H (TOP vs EXE)', tab: 'DayStanding' },
+    { id: 'custom_h2h', name: 'Custom: Pick Any 2 Sheet Teams', tab: 'TeamStats', pickerType: 'teams_s4' },
   ],
 ];
 

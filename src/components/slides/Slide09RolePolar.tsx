@@ -44,7 +44,7 @@ export default function Slide09RolePolar({
     s8.b_bomber || s8.bomber || '#E11D48',
   ];
 
-  const source = theme?.sources?.[8] || 'role_avg';
+  const source = theme?.sources?.[7] || theme?.sources?.[8] || 'role_avg';
 
   const polarSets: Record<
     string,

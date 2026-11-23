@@ -26,13 +26,13 @@ const SLIDES = [
   { id: 1, label: '01. Match 1–5 Points Race' },
   { id: 2, label: '02. Team Head to Head' },
   { id: 3, label: '03. Weapon Meta Rings' },
-  { id: 4, label: '04. Team H2H Match 5' },
-  { id: 5, label: '05. Group Stage Averages' },
-  { id: 6, label: '06. Single-Candle Dynamic Column' },
-  { id: 7, label: '07. Top 2 / H2H Fast Radar' },
-  { id: 8, label: '08. M1–M5 Kills & DMG Line' },
-  { id: 9, label: '09. Role Dual Polar' },
-  { id: 10, label: '10. Dual-Candle Comparison Column' },
+  { id: 4, label: '04. Group Stage Averages' },
+  { id: 5, label: '05. Single-Candle Dynamic Column' },
+  { id: 6, label: '06. Top 2 / H2H Fast Radar' },
+  { id: 7, label: '07. M1–M5 Kills & DMG Line' },
+  { id: 8, label: '08. Role Dual Polar' },
+  { id: 9, label: '09. Dual-Candle Comparison Column' },
+  { id: 10, label: '10. Team H2H (Match 5 Standings)' },
 ];
 
 export default function AdminPage() {
@@ -546,14 +546,6 @@ export default function AdminPage() {
             />
           )}
           {currentSlide === 3 && (
-            <Slide04TeamH2H
-              sheetData={sheetData}
-              theme={draftTheme}
-              replayKey={replayKey}
-              onElementClick={handleOpenColorPopover}
-            />
-          )}
-          {currentSlide === 4 && (
             <Slide05GroupAverages
               sheetData={sheetData}
               theme={draftTheme}
@@ -561,7 +553,7 @@ export default function AdminPage() {
               onElementClick={handleOpenColorPopover}
             />
           )}
-          {currentSlide === 5 && (
+          {currentSlide === 4 && (
             <Slide06SingleColumn
               sheetData={sheetData}
               theme={draftTheme}
@@ -569,7 +561,7 @@ export default function AdminPage() {
               onElementClick={handleOpenColorPopover}
             />
           )}
-          {currentSlide === 6 && (
+          {currentSlide === 5 && (
             <Slide07FastRadar
               sheetData={sheetData}
               theme={draftTheme}
@@ -577,7 +569,7 @@ export default function AdminPage() {
               onElementClick={handleOpenColorPopover}
             />
           )}
-          {currentSlide === 7 && (
+          {currentSlide === 6 && (
             <Slide08KillsDmgLine
               sheetData={sheetData}
               theme={draftTheme}
@@ -585,7 +577,7 @@ export default function AdminPage() {
               onElementClick={handleOpenColorPopover}
             />
           )}
-          {currentSlide === 8 && (
+          {currentSlide === 7 && (
             <Slide09RolePolar
               sheetData={sheetData}
               theme={draftTheme}
@@ -593,8 +585,16 @@ export default function AdminPage() {
               onElementClick={handleOpenColorPopover}
             />
           )}
-          {currentSlide === 9 && (
+          {currentSlide === 8 && (
             <Slide10DualColumn
+              sheetData={sheetData}
+              theme={draftTheme}
+              replayKey={replayKey}
+              onElementClick={handleOpenColorPopover}
+            />
+          )}
+          {currentSlide === 9 && (
+            <Slide04TeamH2H
               sheetData={sheetData}
               theme={draftTheme}
               replayKey={replayKey}

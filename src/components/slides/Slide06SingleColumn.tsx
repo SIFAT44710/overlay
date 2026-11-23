@@ -28,7 +28,7 @@ export default function Slide06SingleColumn({
   const imgCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
 
   const themeS5 = theme?.s5 || {};
-  const source = theme?.sources?.[5] || 'day_pts';
+  const source = theme?.sources?.[4] || theme?.sources?.[5] || 'day_pts';
 
   const defaultTags = ['TOP', 'EXE', 'S9x', 'CME', 'TRX', 'UEO', 'NK', '69', 'JG', 'ITZ', 'EGL', 'SG'];
   const defaultNames = [
