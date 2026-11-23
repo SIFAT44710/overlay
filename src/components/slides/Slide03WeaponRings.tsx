@@ -49,9 +49,18 @@ export default function Slide03WeaponRings({
     return () => cancelAnimationFrame(rafId);
   }, [replayKey]);
 
+  const source = theme?.sources?.[2] || 'day_guns';
+  const matchMatch = source.match(/match_(\d+)_guns/i);
+  const matchNum = matchMatch ? parseInt(matchMatch[1], 10) : 0;
+
+  let activeWeapons = sheetData?.weaponsDay;
+  if (matchNum >= 1 && matchNum <= 6 && sheetData?.weaponsByMatch?.[matchNum]?.length) {
+    activeWeapons = sheetData.weaponsByMatch[matchNum];
+  }
+
   const weapons =
-    sheetData?.weaponsDay && sheetData.weaponsDay.length > 0
-      ? sheetData.weaponsDay
+    activeWeapons && activeWeapons.length > 0
+      ? activeWeapons
       : [
           { name: 'EVO3', kills: 256, damage: 115964, hs: 283, color: '#8b5cf6' },
           { name: 'M7', kills: 61, damage: 35086, hs: 79, color: '#2dd4bf' },
@@ -59,6 +68,14 @@ export default function Slide03WeaponRings({
           { name: 'UZI', kills: 24, damage: 11059, hs: 66, color: '#f43f5e' },
           { name: 'WOODPECKER', kills: 17, damage: 14844, hs: 29, color: '#38bdf8' },
         ];
+
+  const matchBadgeLabel = matchNum >= 1
+    ? `MATCH 0${matchNum} • WEAPON META RINGS`
+    : 'OVERALL DAY • WEAPON META RINGS';
+
+  const matchSubtitle = matchNum >= 1
+    ? `Match 0${matchNum} Lethal Arsenal`
+    : 'All Matches Most Used Guns';
 
   const themeS2 = theme?.s2 || {
     w0: '#8b5cf6',
@@ -98,8 +115,16 @@ export default function Slide03WeaponRings({
 
   return (
     <div className="flex flex-col items-center w-full max-w-[1340px] font-hud select-none relative">
-      {/* Top Bar Button to Upload / Change Center Logo */}
-      <div className="w-full flex justify-end mb-2 z-20">
+      {/* Top Header Bar: Active Match Badge & Upload Button */}
+      <div className="w-full flex items-center justify-between mb-3 z-20">
+        <div className="flex items-center gap-2.5">
+          <span className="px-3 py-1 rounded-lg bg-gradient-to-r from-purple-900/90 to-slate-900/90 border border-purple-500/50 text-amber-300 font-hud text-xs sm:text-sm font-extrabold tracking-wider shadow-lg">
+            {matchBadgeLabel}
+          </span>
+          <span className="text-xs text-slate-300 font-hud tracking-wider hidden sm:inline-block">
+            {matchSubtitle}
+          </span>
+        </div>
         <button
           type="button"
           onClick={() => setIsLogoModalOpen(true)}

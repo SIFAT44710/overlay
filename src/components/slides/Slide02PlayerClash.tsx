@@ -225,51 +225,82 @@ export default function Slide02PlayerClash({
       };
     }
 
-    if (source === 'day_top2_h2h' && sheetData?.allTeamsFull?.length) {
-      const first = sheetData.allTeamsFull[0];
-      const second = sheetData.allTeamsFull[1] || first;
+    // Available teams pool combining sheetData.allTeamsFull, sheetData.standing12 and standard defaults
+    const allTeams = (sheetData?.allTeamsFull && sheetData.allTeamsFull.length > 0)
+      ? sheetData.allTeamsFull
+      : (sheetData?.standing12 && sheetData.standing12.length > 0)
+      ? sheetData.standing12.map((s, idx) => ({
+          rank: s.rank || idx + 1,
+          tag: s.tag,
+          name: s.name,
+          kills: s.elims,
+          damage: s.damage || 0,
+          hs: Math.round(s.elims * 0.38),
+          assist: Math.round(s.elims * 0.42),
+          logoUrl: s.logoUrl,
+        }))
+      : [
+          { rank: 1, name: 'NOCTRYX ESPORTS', tag: 'NTX', kills: 63, damage: 30737, hs: 45, assist: 130 },
+          { rank: 2, name: 'iQ LESS', tag: 'iQL', kills: 32, damage: 20341, hs: 32, assist: 48 },
+          { rank: 3, name: 'UNKNOWN BLOOD', tag: 'UB', kills: 42, damage: 22100, hs: 35, assist: 38 },
+          { rank: 4, name: 'ALCHEMIST', tag: 'ALC', kills: 39, damage: 21500, hs: 31, assist: 34 },
+          { rank: 5, name: 'NEXO BLIND', tag: 'NXB', kills: 36, damage: 19800, hs: 28, assist: 30 },
+          { rank: 6, name: 'AURA SMT', tag: 'AURA', kills: 31, damage: 17400, hs: 25, assist: 28 },
+          { rank: 7, name: 'WIDE YOUTH', tag: 'WY', kills: 28, damage: 16200, hs: 22, assist: 24 },
+          { rank: 8, name: 'NO SYMPATHY', tag: 'NSP', kills: 22, damage: 20106, hs: 30, assist: 56 },
+          { rank: 9, name: '6S BY AG', tag: '6S', kills: 24, damage: 14500, hs: 19, assist: 21 },
+          { rank: 10, name: 'POWER OF BGX', tag: 'BGX', kills: 20, damage: 13200, hs: 16, assist: 18 },
+          { rank: 11, name: 'DRAKEBORN', tag: 'DRK', kills: 18, damage: 11800, hs: 14, assist: 16 },
+          { rank: 12, name: 'EXTREME EX', tag: 'EXE', kills: 76, damage: 42349, hs: 67, assist: 32 },
+        ];
+
+    if (source === 'custom_h2h') {
+      const idxA = custom?.tAIdx ?? 1;
+      const idxB = custom?.tBIdx ?? 7;
+      const first = allTeams[idxA] || allTeams[0];
+      const second = allTeams[idxB] || allTeams[1] || first;
       tA = {
         name: first.name,
         tag: first.tag,
         rank: first.rank,
-        kills: first.kills,
-        damage: first.damage,
-        hs: first.hs,
-        assist: first.assist ?? Math.round(first.kills * 0.42),
-        logoUrl: first.logoUrl,
+        kills: (first as any).kills ?? (first as any).elims ?? 0,
+        damage: first.damage ?? 0,
+        hs: first.hs ?? Math.round(((first as any).kills || 0) * 0.38),
+        assist: (first as any).assist ?? Math.round(((first as any).kills || 0) * 0.42),
+        logoUrl: (first as any).logoUrl,
       };
       tB = {
         name: second.name,
         tag: second.tag,
         rank: second.rank,
-        kills: second.kills,
-        damage: second.damage,
-        hs: second.hs,
-        assist: second.assist ?? Math.round(second.kills * 0.42),
-        logoUrl: second.logoUrl,
+        kills: (second as any).kills ?? (second as any).elims ?? 0,
+        damage: second.damage ?? 0,
+        hs: second.hs ?? Math.round(((second as any).kills || 0) * 0.38),
+        assist: (second as any).assist ?? Math.round(((second as any).kills || 0) * 0.42),
+        logoUrl: (second as any).logoUrl,
       };
-    } else if (source === 'custom_h2h' && sheetData?.allTeamsFull?.length) {
-      const first = sheetData.allTeamsFull[custom?.tAIdx ?? 0] || sheetData.allTeamsFull[0];
-      const second = sheetData.allTeamsFull[custom?.tBIdx ?? 1] || sheetData.allTeamsFull[1];
+    } else if (source === 'day_top2_h2h') {
+      const first = allTeams[0];
+      const second = allTeams[1] || first;
       tA = {
         name: first.name,
         tag: first.tag,
         rank: first.rank,
-        kills: first.kills,
-        damage: first.damage,
-        hs: first.hs,
-        assist: first.assist ?? Math.round(first.kills * 0.42),
-        logoUrl: first.logoUrl,
+        kills: (first as any).kills ?? (first as any).elims ?? 0,
+        damage: first.damage ?? 0,
+        hs: first.hs ?? Math.round(((first as any).kills || 0) * 0.38),
+        assist: (first as any).assist ?? Math.round(((first as any).kills || 0) * 0.42),
+        logoUrl: (first as any).logoUrl,
       };
       tB = {
         name: second.name,
         tag: second.tag,
         rank: second.rank,
-        kills: second.kills,
-        damage: second.damage,
-        hs: second.hs,
-        assist: second.assist ?? Math.round(second.kills * 0.42),
-        logoUrl: second.logoUrl,
+        kills: (second as any).kills ?? (second as any).elims ?? 0,
+        damage: second.damage ?? 0,
+        hs: second.hs ?? Math.round(((second as any).kills || 0) * 0.38),
+        assist: (second as any).assist ?? Math.round(((second as any).kills || 0) * 0.42),
+        logoUrl: (second as any).logoUrl,
       };
     }
 

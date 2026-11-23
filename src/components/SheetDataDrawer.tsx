@@ -13,16 +13,39 @@ interface SheetDataDrawerProps {
   onUpdateCustom: (custom: any) => void;
 }
 
+const DEFAULT_ALL_TEAMS = [
+  { rank: 1, name: 'NOCTRYX ESPORTS', tag: 'NTX' },
+  { rank: 2, name: 'iQ LESS', tag: 'iQL' },
+  { rank: 3, name: 'UNKNOWN BLOOD', tag: 'UB' },
+  { rank: 4, name: 'ALCHEMIST', tag: 'ALC' },
+  { rank: 5, name: 'NEXO BLIND', tag: 'NXB' },
+  { rank: 6, name: 'AURA SMT', tag: 'AURA' },
+  { rank: 7, name: 'WIDE YOUTH', tag: 'WY' },
+  { rank: 8, name: 'NO SYMPATHY', tag: 'NSP' },
+  { rank: 9, name: '6S BY AG', tag: '6S' },
+  { rank: 10, name: 'POWER OF BGX', tag: 'BGX' },
+  { rank: 11, name: 'DRAKEBORN', tag: 'DRK' },
+  { rank: 12, name: 'EXTREME EX', tag: 'EXE' },
+];
+
 const SLIDE_DATA_OPTIONS: Array<Array<{ id: string; name: string; tab: string; pickerType?: string }>> = [
   [{ id: 'top5_m1_m5', name: 'GameStanding: Top 5 Teams (M1–M5)', tab: 'GameStanding' }],
   [
-    { id: 'latest_h2h', name: 'Team H2H: Latest Match (EXE vs 69)', tab: 'Vmix R43' },
-    { id: 'day_top2_h2h', name: 'Team H2H: Day Top 2 (TOP vs EXE)', tab: 'DayStanding' },
     { id: 'custom_h2h', name: 'Team H2H: Pick Any 2 Teams', tab: 'TeamStats', pickerType: 'teams_s2' },
+    { id: 'latest_h2h', name: 'Team H2H: Latest Match (Match 5)', tab: 'Vmix R43' },
+    { id: 'day_top2_h2h', name: 'Team H2H: Day Top 2 Teams', tab: 'DayStanding' },
     { id: 'day_top2_duel', name: 'Player 1v1: Day Top 2 (SHOVO vs SEJAN)', tab: 'Vmix R91' },
     { id: 'custom_duel', name: 'Player 1v1: Pick Any 2 Players', tab: 'PlayerData', pickerType: 'players' },
   ],
-  [{ id: 'day_guns', name: 'Day Most Used Guns (All Matches)', tab: 'Vmix R91' }],
+  [
+    { id: 'day_guns', name: 'Weapon Meta: All Matches (Day Total)', tab: 'Vmix R91' },
+    { id: 'match_1_guns', name: 'Weapon Meta: Match 1', tab: 'GameStanding / M1' },
+    { id: 'match_2_guns', name: 'Weapon Meta: Match 2', tab: 'GameStanding / M2' },
+    { id: 'match_3_guns', name: 'Weapon Meta: Match 3', tab: 'GameStanding / M3' },
+    { id: 'match_4_guns', name: 'Weapon Meta: Match 4', tab: 'GameStanding / M4' },
+    { id: 'match_5_guns', name: 'Weapon Meta: Match 5', tab: 'GameStanding / M5' },
+    { id: 'match_6_guns', name: 'Weapon Meta: Match 6', tab: 'GameStanding / M6' },
+  ],
   [
     { id: 'latest_h2h', name: 'Latest Match H2H (EXE vs 69)', tab: 'Vmix R43' },
     { id: 'day_top2_h2h', name: 'Day Top 2 H2H (TOP vs EXE)', tab: 'DayStanding' },
@@ -80,7 +103,12 @@ export default function SheetDataDrawer({
   const pickerType = currentOption?.pickerType;
 
   const playersList = sheetData?.dayTop10Players || [];
-  const teamsList = sheetData?.allTeamsFull || sheetData?.standing12 || [];
+  const rawTeams = (sheetData?.allTeamsFull && sheetData.allTeamsFull.length > 0)
+    ? sheetData.allTeamsFull
+    : (sheetData?.standing12 && sheetData.standing12.length > 0)
+    ? sheetData.standing12
+    : DEFAULT_ALL_TEAMS;
+  const teamsList = rawTeams.length > 0 ? rawTeams : DEFAULT_ALL_TEAMS;
 
   return (
     <div
@@ -99,6 +127,7 @@ export default function SheetDataDrawer({
       {isOpen && (
         <aside
           id="dataDrawer"
+          onClick={(e) => e.stopPropagation()}
           className="w-72 max-h-[76vh] overflow-y-auto admin-scroll bg-slate-950/95 border-y border-l border-purple-400/60 rounded-l-2xl p-3.5 shadow-[0_20px_50px_rgba(0,0,0,0.85)] space-y-3 backdrop-blur-md"
         >
           <div className="flex items-center justify-between border-b border-white/10 pb-2">
@@ -142,6 +171,96 @@ export default function SheetDataDrawer({
             })}
           </div>
 
+          {/* Slide 2: Dedicated Team Head-to-Head Dropdowns (Always visible for Slide 2 Team Mode) */}
+          {currentSlide === 1 && pickerType !== 'players' && (
+            <div className="pt-2.5 border-t border-purple-500/30 space-y-2.5 bg-purple-950/20 p-2.5 rounded-xl border border-purple-500/20">
+              <div className="text-xs font-hud font-bold text-amber-300 flex items-center justify-between">
+                <span>⚡ PICK ANY 2 TEAMS (যেকোনো ২ টিম):</span>
+                <span className="text-[10px] text-purple-300 font-normal">{teamsList.length} Teams</span>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-purple-300 block">
+                  TEAM 01 (LEFT / CONTENDER 1):
+                </label>
+                <select
+                  value={customSettings.tAIdx ?? 1}
+                  onChange={(e) => {
+                    const idx = parseInt(e.target.value, 10);
+                    onUpdateCustom({ ...customSettings, tAIdx: idx });
+                    if (activeSourceId !== 'custom_h2h') {
+                      onSelectSource('custom_h2h');
+                    }
+                  }}
+                  className="w-full bg-slate-900 border border-purple-400/60 rounded-lg px-2 py-1.5 font-hud text-xs text-white focus:outline-none focus:border-amber-400"
+                >
+                  {teamsList.map((t: any, idx: number) => (
+                    <option key={idx} value={idx}>
+                      #{t.rank || idx + 1} {t.name} ({t.tag || 'TEAM'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-teal-300 block">
+                  TEAM 02 (RIGHT / CONTENDER 2):
+                </label>
+                <select
+                  value={customSettings.tBIdx ?? 7}
+                  onChange={(e) => {
+                    const idx = parseInt(e.target.value, 10);
+                    onUpdateCustom({ ...customSettings, tBIdx: idx });
+                    if (activeSourceId !== 'custom_h2h') {
+                      onSelectSource('custom_h2h');
+                    }
+                  }}
+                  className="w-full bg-slate-900 border border-teal-400/60 rounded-lg px-2 py-1.5 font-hud text-xs text-white focus:outline-none focus:border-amber-400"
+                >
+                  {teamsList.map((t: any, idx: number) => (
+                    <option key={idx} value={idx}>
+                      #{t.rank || idx + 1} {t.name} ({t.tag || 'TEAM'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {/* Slide 3: Quick Match Selector (Match 1–6 or Day Total) */}
+          {currentSlide === 2 && (
+            <div className="pt-2.5 border-t border-purple-500/30 space-y-2 bg-purple-950/20 p-2.5 rounded-xl border border-purple-500/20">
+              <div className="text-xs font-hud font-bold text-amber-300">
+                ⚡ SELECT MATCH (যেকোনো ম্যাচ):
+              </div>
+              <div className="grid grid-cols-4 gap-1.5">
+                {[
+                  { id: 'day_guns', label: 'DAY' },
+                  { id: 'match_1_guns', label: 'M1' },
+                  { id: 'match_2_guns', label: 'M2' },
+                  { id: 'match_3_guns', label: 'M3' },
+                  { id: 'match_4_guns', label: 'M4' },
+                  { id: 'match_5_guns', label: 'M5' },
+                  { id: 'match_6_guns', label: 'M6' },
+                ].map((item) => {
+                  const isActive = activeSourceId === item.id || (!activeSourceId && item.id === 'day_guns');
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => onSelectSource(item.id)}
+                      className={`py-1 rounded text-center text-xs font-bold font-hud transition-all cursor-pointer ${
+                        isActive
+                          ? 'bg-amber-400 text-black font-extrabold shadow-md'
+                          : 'bg-slate-900 text-slate-300 border border-white/10 hover:border-purple-400'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Custom Pickers */}
           {pickerType === 'players' && (
             <div className="pt-2 border-t border-white/10 space-y-2">
@@ -177,14 +296,14 @@ export default function SheetDataDrawer({
             </div>
           )}
 
-          {pickerType && pickerType.startsWith('teams_') && (
+          {pickerType && pickerType.startsWith('teams_') && currentSlide !== 1 && (
             <div className="pt-2 border-t border-white/10 space-y-2">
               <div className="text-xs font-hud font-bold text-amber-300">
                 PICK ANY 2 TEAMS:
               </div>
               {(() => {
-                const kA = pickerType === 'teams_s2' || pickerType === 'teams_s4' ? 'tAIdx' : pickerType === 'teams_s5' ? 'gAIdx' : 'rAIdx';
-                const kB = pickerType === 'teams_s2' || pickerType === 'teams_s4' ? 'tBIdx' : pickerType === 'teams_s5' ? 'gBIdx' : 'rBIdx';
+                const kA = pickerType === 'teams_s4' ? 'tAIdx' : pickerType === 'teams_s5' ? 'gAIdx' : 'rAIdx';
+                const kB = pickerType === 'teams_s4' ? 'tBIdx' : pickerType === 'teams_s5' ? 'gBIdx' : 'rBIdx';
                 return (
                   <>
                     <select
@@ -194,9 +313,9 @@ export default function SheetDataDrawer({
                       }
                       className="w-full bg-slate-900 border border-purple-400/50 rounded-lg px-2 py-1 font-hud text-sm text-white"
                     >
-                      {teamsList.map((t, idx) => (
+                      {teamsList.map((t: any, idx: number) => (
                         <option key={idx} value={idx}>
-                          #{t.rank} {t.name} ({t.tag})
+                          #{t.rank || idx + 1} {t.name} ({t.tag || 'TEAM'})
                         </option>
                       ))}
                     </select>
@@ -207,9 +326,9 @@ export default function SheetDataDrawer({
                       }
                       className="w-full bg-slate-900 border border-teal-400/50 rounded-lg px-2 py-1 font-hud text-sm text-white"
                     >
-                      {teamsList.map((t, idx) => (
+                      {teamsList.map((t: any, idx: number) => (
                         <option key={idx} value={idx}>
-                          #{t.rank} {t.name} ({t.tag})
+                          #{t.rank || idx + 1} {t.name} ({t.tag || 'TEAM'})
                         </option>
                       ))}
                     </select>
