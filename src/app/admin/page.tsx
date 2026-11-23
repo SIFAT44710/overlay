@@ -26,7 +26,7 @@ const SLIDES = [
   { id: 1, label: '01. Match 1–5 Points Race' },
   { id: 2, label: '02. Team Head to Head' },
   { id: 3, label: '03. Weapon Meta Rings' },
-  { id: 4, label: '04. Group Stage Averages' },
+  { id: 4, label: '04. Team Circular Head-to-Head' },
   { id: 5, label: '05. Single-Candle Dynamic Column' },
   { id: 6, label: '06. Top 2 / H2H Fast Radar' },
   { id: 7, label: '07. M1–M5 Kills & DMG Line' },

@@ -261,6 +261,60 @@ export default function SheetDataDrawer({
             </div>
           )}
 
+          {/* Slide 4: Dedicated Team Head-to-Head Dropdowns (Always visible for Slide 4) */}
+          {currentSlide === 3 && (
+            <div className="pt-2.5 border-t border-purple-500/30 space-y-2.5 bg-purple-950/20 p-2.5 rounded-xl border border-purple-500/20">
+              <div className="text-xs font-hud font-bold text-amber-300 flex items-center justify-between">
+                <span>⚡ PICK ANY 2 TEAMS (যেকোনো ২ টিম):</span>
+                <span className="text-[10px] text-purple-300 font-normal">{teamsList.length} Teams</span>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-purple-300 block">
+                  TEAM 01 (LEFT / CONTENDER 1):
+                </label>
+                <select
+                  value={customSettings.gAIdx ?? 1}
+                  onChange={(e) => {
+                    const idx = parseInt(e.target.value, 10);
+                    onUpdateCustom({ ...customSettings, gAIdx: idx });
+                    if (activeSourceId !== 'custom_avg_h2h') {
+                      onSelectSource('custom_avg_h2h');
+                    }
+                  }}
+                  className="w-full bg-slate-900 border border-purple-400/60 rounded-lg px-2 py-1.5 font-hud text-xs text-white focus:outline-none focus:border-amber-400"
+                >
+                  {teamsList.map((t: any, idx: number) => (
+                    <option key={idx} value={idx}>
+                      #{t.rank || idx + 1} {t.name} ({t.tag || 'TEAM'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-teal-300 block">
+                  TEAM 02 (RIGHT / CONTENDER 2):
+                </label>
+                <select
+                  value={customSettings.gBIdx ?? 7}
+                  onChange={(e) => {
+                    const idx = parseInt(e.target.value, 10);
+                    onUpdateCustom({ ...customSettings, gBIdx: idx });
+                    if (activeSourceId !== 'custom_avg_h2h') {
+                      onSelectSource('custom_avg_h2h');
+                    }
+                  }}
+                  className="w-full bg-slate-900 border border-teal-400/60 rounded-lg px-2 py-1.5 font-hud text-xs text-white focus:outline-none focus:border-amber-400"
+                >
+                  {teamsList.map((t: any, idx: number) => (
+                    <option key={idx} value={idx}>
+                      #{t.rank || idx + 1} {t.name} ({t.tag || 'TEAM'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
           {/* Custom Pickers */}
           {pickerType === 'players' && (
             <div className="pt-2 border-t border-white/10 space-y-2">
@@ -296,7 +350,7 @@ export default function SheetDataDrawer({
             </div>
           )}
 
-          {pickerType && pickerType.startsWith('teams_') && currentSlide !== 1 && (
+          {pickerType && pickerType.startsWith('teams_') && currentSlide !== 1 && currentSlide !== 3 && (
             <div className="pt-2 border-t border-white/10 space-y-2">
               <div className="text-xs font-hud font-bold text-amber-300">
                 PICK ANY 2 TEAMS:

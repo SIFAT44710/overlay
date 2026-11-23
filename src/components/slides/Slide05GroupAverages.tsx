@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SheetDataPayload, BroadcastThemeConfig } from '@/types/broadcast';
 import TeamLogoBadge from '@/components/TeamLogoBadge';
 import SpiritFireCanvas from '@/components/SpiritFireCanvas';
@@ -13,6 +13,21 @@ interface SlideProps {
   onElementClick?: (e: React.MouseEvent, group: string, key: string, label: string) => void;
 }
 
+const DEFAULT_ALL_TEAMS = [
+  { rank: 1, name: 'NOCTRYX ESPORTS', tag: 'NTX', kills: 63, damage: 30737, hs: 45, assist: 130, surv: 35, total: 98 },
+  { rank: 2, name: 'iQ LESS', tag: 'iQL', kills: 32, damage: 20341, hs: 32, assist: 48, surv: 31, total: 63 },
+  { rank: 3, name: 'UNKNOWN BLOOD', tag: 'UB', kills: 42, damage: 22100, hs: 35, assist: 38, surv: 28, total: 70 },
+  { rank: 4, name: 'ALCHEMIST', tag: 'ALC', kills: 39, damage: 21500, hs: 31, assist: 34, surv: 26, total: 65 },
+  { rank: 5, name: 'NEXO BLIND', tag: 'NXB', kills: 36, damage: 19800, hs: 28, assist: 30, surv: 24, total: 60 },
+  { rank: 6, name: 'AURA SMT', tag: 'AURA', kills: 31, damage: 17400, hs: 25, assist: 28, surv: 22, total: 53 },
+  { rank: 7, name: 'WIDE YOUTH', tag: 'WY', kills: 28, damage: 16200, hs: 22, assist: 24, surv: 20, total: 48 },
+  { rank: 8, name: 'NO SYMPATHY', tag: 'NSP', kills: 22, damage: 20106, hs: 30, assist: 56, surv: 25, total: 47 },
+  { rank: 9, name: '6S BY AG', tag: '6S', kills: 24, damage: 14500, hs: 19, assist: 21, surv: 18, total: 42 },
+  { rank: 10, name: 'POWER OF BGX', tag: 'BGX', kills: 20, damage: 13200, hs: 16, assist: 18, surv: 16, total: 36 },
+  { rank: 11, name: 'DRAKEBORN', tag: 'DRK', kills: 18, damage: 11800, hs: 14, assist: 16, surv: 14, total: 32 },
+  { rank: 12, name: 'EXTREME EX', tag: 'EXE', kills: 76, damage: 42349, hs: 67, assist: 32, surv: 22, total: 98 },
+];
+
 export default function Slide05GroupAverages({
   sheetData,
   theme,
@@ -21,39 +36,78 @@ export default function Slide05GroupAverages({
 }: SlideProps) {
   const [animated, setAnimated] = useState(false);
   const [displayVals, setDisplayVals] = useState([
-    { a: 0, b: 0 },
-    { a: 0, b: 0 },
-    { a: 0, b: 0 },
+    { m1A: 0, m1B: 0, m2A: 0, m2B: 0 },
+    { m1A: 0, m1B: 0, m2A: 0, m2B: 0 },
+    { m1A: 0, m1B: 0, m2A: 0, m2B: 0 },
   ]);
 
   const themeS4 = theme?.s4 || { teamA: '#8b5cf6', teamB: '#2dd4bf' };
   const custom = theme?.custom;
-  const source = theme?.sources?.[3] || theme?.sources?.[4] || 'group_avg_h2h';
+  const source = theme?.sources?.[3] || theme?.sources?.[4] || 'custom_avg_h2h';
 
-  let a = sheetData?.h2hGroupAvg?.a || {
-    name: '69 ESPORTS',
-    tag: '69',
-    avgElims: 9.6,
-    avgDmg: 5407,
-    avgSurvMin: 8.5,
-  };
-  let b = sheetData?.h2hGroupAvg?.b || {
-    name: 'COFFIN MAKERS ESP',
-    tag: 'CME',
-    avgElims: 11.6,
-    avgDmg: 8805,
-    avgSurvMin: 14.5,
-  };
+  // Available teams pool combining sheetData.allTeamsFull, sheetData.standing12 and standard defaults
+  const allTeams = (sheetData?.allTeamsFull && sheetData.allTeamsFull.length > 0)
+    ? sheetData.allTeamsFull
+    : (sheetData?.standing12 && sheetData.standing12.length > 0)
+    ? sheetData.standing12.map((s, idx) => ({
+        rank: s.rank || idx + 1,
+        tag: s.tag,
+        name: s.name,
+        kills: s.elims,
+        damage: s.damage || 0,
+        hs: Math.round(s.elims * 0.38),
+        assist: Math.round(s.elims * 0.42),
+        surv: s.place,
+        total: s.total,
+        logoUrl: s.logoUrl,
+      }))
+    : DEFAULT_ALL_TEAMS;
 
-  if (source === 'custom_avg_h2h' && sheetData?.allTeamsFull?.length) {
-    a = sheetData.allTeamsFull[custom?.gAIdx ?? 7] || sheetData.allTeamsFull[0];
-    b = sheetData.allTeamsFull[custom?.gBIdx ?? 3] || sheetData.allTeamsFull[1];
-  } else if (source === 'day_top2_avg' && sheetData?.allTeamsFull?.length) {
-    a = sheetData.allTeamsFull[0];
-    b = sheetData.allTeamsFull[1];
+  // Resolve Team A & Team B based on custom indices or defaults
+  const idxA = custom?.gAIdx ?? 1; // Default to #2 iQ LESS
+  const idxB = custom?.gBIdx ?? 7; // Default to #8 NO SYMPATHY
+
+  let rawA: any = allTeams[idxA] || allTeams[0];
+  let rawB: any = allTeams[idxB] || allTeams[1] || rawA;
+
+  if (source === 'day_top2_avg' && allTeams.length >= 2) {
+    rawA = allTeams[0];
+    rawB = allTeams[1];
+  } else if (source === 'group_avg_h2h' && sheetData?.h2hGroupAvg?.a && sheetData?.h2hGroupAvg?.b) {
+    // If standard group average data is available, preserve team names
+    const matchA = allTeams.find((t) => t.tag === sheetData.h2hGroupAvg.a.tag || t.name === sheetData.h2hGroupAvg.a.name);
+    const matchB = allTeams.find((t) => t.tag === sheetData.h2hGroupAvg.b.tag || t.name === sheetData.h2hGroupAvg.b.name);
+    if (matchA) rawA = matchA;
+    if (matchB) rawB = matchB;
   }
 
-  // Resolve Drive Logo for each team with full tag & name coverage
+  const a = {
+    name: rawA.name,
+    tag: rawA.tag,
+    rank: rawA.rank,
+    kills: rawA.kills ?? rawA.elims ?? 0,
+    damage: rawA.damage ?? 0,
+    hs: rawA.hs ?? Math.round((rawA.kills || 0) * 0.38),
+    assist: rawA.assist ?? Math.round((rawA.kills || 0) * 0.44),
+    surv: rawA.surv ?? rawA.place ?? 0,
+    total: rawA.total ?? 0,
+    logoUrl: rawA.logoUrl,
+  };
+
+  const b = {
+    name: rawB.name,
+    tag: rawB.tag,
+    rank: rawB.rank,
+    kills: rawB.kills ?? rawB.elims ?? 0,
+    damage: rawB.damage ?? 0,
+    hs: rawB.hs ?? Math.round((rawB.kills || 0) * 0.38),
+    assist: rawB.assist ?? Math.round((rawB.kills || 0) * 0.44),
+    surv: rawB.surv ?? rawB.place ?? 0,
+    total: rawB.total ?? 0,
+    logoUrl: rawB.logoUrl,
+  };
+
+  // Resolve Drive Logo for each team
   const teamLogoMap: Record<string, string> = {};
   const registerLogo = (tag?: string, name?: string, url?: string) => {
     if (!url) return;
@@ -81,19 +135,59 @@ export default function Slide05GroupAverages({
   const R_IN = 36;
   const CIRC_IN = 2 * Math.PI * R_IN;
 
+  // 3 Requested Cards:
+  // 1: ELIMINATIONS & DAMAGE (Kills + Damage)
+  // 2: HEADSHOTS & ASSISTS (Headshots + Assists)
+  // 3: SURVIVAL & TOTAL POINTS (Survival + Total Points)
   const cards = [
-    { title: 'AVG ELIMS / MATCH', va: a.avgElims, vb: b.avgElims, max: 20, suf: '', dec: 1 },
-    { title: 'AVG DAMAGE / MATCH', va: Math.round(a.avgDmg), vb: Math.round(b.avgDmg), max: 12000, suf: '', dec: 0 },
-    { title: 'AVG SURVIVAL (MIN)', va: a.avgSurvMin, vb: b.avgSurvMin, max: 18, suf: 'm', dec: 1 },
+    {
+      title: 'ELIMINATIONS & DAMAGE',
+      badge: 'COMBAT POWER',
+      m1Label: 'KILLS',
+      m1A: a.kills,
+      m1B: b.kills,
+      m2Label: 'DAMAGE',
+      m2A: a.damage,
+      m2B: b.damage,
+      scoreA: a.kills * 100 + a.damage * 0.1,
+      scoreB: b.kills * 100 + b.damage * 0.1,
+      accent: '#F5B700',
+    },
+    {
+      title: 'HEADSHOTS & ASSISTS',
+      badge: 'PRECISION & TEAMPLAY',
+      m1Label: 'HEADSHOTS',
+      m1A: a.hs,
+      m1B: b.hs,
+      m2Label: 'ASSISTS',
+      m2A: a.assist,
+      m2B: b.assist,
+      scoreA: a.hs * 50 + a.assist * 30,
+      scoreB: b.hs * 50 + b.assist * 30,
+      accent: '#EC008C',
+    },
+    {
+      title: 'SURVIVAL & TOTAL POINTS',
+      badge: 'STANDINGS & PLACEMENT',
+      m1Label: 'SURVIVAL',
+      m1A: a.surv,
+      m1B: b.surv,
+      m2Label: 'TOTAL PTS',
+      m2A: a.total,
+      m2B: b.total,
+      scoreA: a.surv * 2 + a.total * 3,
+      scoreB: b.surv * 2 + b.total * 3,
+      accent: '#00DF82',
+    },
   ];
 
   // 60fps Smooth Count-Up & Ring Bloom Animation
   useEffect(() => {
     setAnimated(false);
     setDisplayVals([
-      { a: 0, b: 0 },
-      { a: 0, b: 0 },
-      { a: 0, b: 0 },
+      { m1A: 0, m1B: 0, m2A: 0, m2B: 0 },
+      { m1A: 0, m1B: 0, m2A: 0, m2B: 0 },
+      { m1A: 0, m1B: 0, m2A: 0, m2B: 0 },
     ]);
 
     let rafId: number;
@@ -110,9 +204,24 @@ export default function Slide05GroupAverages({
         const ease = 1 - Math.pow(1 - curProgress, 3);
 
         setDisplayVals([
-          { a: cards[0].va * ease, b: cards[0].vb * ease },
-          { a: cards[1].va * ease, b: cards[1].vb * ease },
-          { a: cards[2].va * ease, b: cards[2].vb * ease },
+          {
+            m1A: cards[0].m1A * ease,
+            m1B: cards[0].m1B * ease,
+            m2A: cards[0].m2A * ease,
+            m2B: cards[0].m2B * ease,
+          },
+          {
+            m1A: cards[1].m1A * ease,
+            m1B: cards[1].m1B * ease,
+            m2A: cards[1].m2A * ease,
+            m2B: cards[1].m2B * ease,
+          },
+          {
+            m1A: cards[2].m1A * ease,
+            m1B: cards[2].m1B * ease,
+            m2A: cards[2].m2A * ease,
+            m2B: cards[2].m2B * ease,
+          },
         ]);
 
         if (curProgress < 1) {
@@ -127,11 +236,11 @@ export default function Slide05GroupAverages({
       clearTimeout(timer);
       cancelAnimationFrame(rafId);
     };
-  }, [replayKey, a.avgElims, b.avgElims, a.avgDmg, b.avgDmg, a.avgSurvMin, b.avgSurvMin]);
+  }, [replayKey, a.kills, b.kills, a.damage, b.damage, a.hs, b.hs, a.assist, b.assist, a.surv, b.surv, a.total, b.total]);
 
   const colA = themeS4.teamA;
   const colB = themeS4.teamB;
-  const winnerTeam = b.avgDmg >= a.avgDmg ? 'b' : 'a';
+  const winnerTeam = b.total >= a.total ? 'b' : 'a';
 
   return (
     <div className="w-full max-w-[1340px] pt-18 relative font-hud select-none">
@@ -139,7 +248,7 @@ export default function Slide05GroupAverages({
       <div className="absolute top-1 inset-x-3 sm:inset-x-6 flex justify-between items-center text-sm sm:text-base font-bold font-hud z-30">
         <div
           id="m14-team-a"
-          className={`px-3 py-1 rounded-lg text-white inline-flex items-center gap-2.5 shadow-xl relative cursor-pointer transition-all duration-500 ${
+          className={`px-3.5 py-1.5 rounded-xl text-white inline-flex items-center gap-2.5 shadow-xl relative cursor-pointer transition-all duration-500 border border-purple-400/40 ${
             winnerTeam === 'a' && animated ? 'top1-hero-glow fire-winner-card top1-scale' : ''
           }`}
           style={{
@@ -149,21 +258,25 @@ export default function Slide05GroupAverages({
             transition: 'transform 0.5s cubic-bezier(0.22,1,0.36,1), opacity 0.4s ease',
           }}
           onClick={(e) => onElementClick?.(e, 's4', 'teamA', `${a.name} Color`)}
+          title={`Click to change ${a.name} color`}
         >
           {winnerTeam === 'a' && <SpiritFireCanvas />}
           <TeamLogoBadge
             tag={a.tag}
             name={a.name}
-            logoUrl={teamLogoMap[a.tag.toUpperCase()] || teamLogoMap[a.name.toUpperCase()]}
+            logoUrl={a.logoUrl || teamLogoMap[a.tag.toUpperCase()] || teamLogoMap[a.name.toUpperCase()]}
             color={colA}
             sizeCls="w-8 h-8 sm:w-9 sm:h-9"
           />
-          <span className="truncate max-w-[160px]">{a.name}</span>
+          <div className="flex flex-col text-left">
+            <span className="truncate max-w-[170px] text-sm sm:text-base font-extrabold leading-tight">{a.name}</span>
+            <span className="text-[10px] text-white/80 font-bold tracking-wider">{a.tag} • RANK #{a.rank}</span>
+          </div>
         </div>
 
         <div
           id="m14-team-b"
-          className={`px-3 py-1 rounded-lg text-slate-950 inline-flex items-center gap-2.5 shadow-xl ml-auto relative cursor-pointer transition-all duration-500 ${
+          className={`px-3.5 py-1.5 rounded-xl text-slate-950 inline-flex items-center gap-2.5 shadow-xl ml-auto relative cursor-pointer transition-all duration-500 border border-teal-300/40 ${
             winnerTeam === 'b' && animated ? 'top1-hero-glow fire-winner-card top1-scale' : ''
           }`}
           style={{
@@ -173,13 +286,17 @@ export default function Slide05GroupAverages({
             transition: 'transform 0.5s cubic-bezier(0.22,1,0.36,1), opacity 0.4s ease',
           }}
           onClick={(e) => onElementClick?.(e, 's4', 'teamB', `${b.name} Color`)}
+          title={`Click to change ${b.name} color`}
         >
           {winnerTeam === 'b' && <SpiritFireCanvas />}
-          <span className="truncate max-w-[160px]">{b.name}</span>
+          <div className="flex flex-col text-right">
+            <span className="truncate max-w-[170px] text-sm sm:text-base font-extrabold leading-tight text-slate-950">{b.name}</span>
+            <span className="text-[10px] text-slate-900/80 font-bold tracking-wider">{b.tag} • RANK #{b.rank}</span>
+          </div>
           <TeamLogoBadge
             tag={b.tag}
             name={b.name}
-            logoUrl={teamLogoMap[b.tag.toUpperCase()] || teamLogoMap[b.name.toUpperCase()]}
+            logoUrl={b.logoUrl || teamLogoMap[b.tag.toUpperCase()] || teamLogoMap[b.name.toUpperCase()]}
             color={colB}
             sizeCls="w-8 h-8 sm:w-9 sm:h-9"
           />
@@ -189,24 +306,32 @@ export default function Slide05GroupAverages({
       {/* 3 Metric Cards with Dual Concentric Circular Gauges & Pulsing Neon Lights */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {cards.map((c, i) => {
-          const fracA = Math.min(1, c.va / c.max);
-          const fracB = Math.min(1, c.vb / c.max);
+          const maxScore = Math.max(c.scoreA, c.scoreB, 1);
+          const fracA = Math.max(0.12, Math.min(1, c.scoreA / maxScore));
+          const fracB = Math.max(0.12, Math.min(1, c.scoreB / maxScore));
 
           return (
             <div
               key={c.title}
-              className="hud-card rounded-2xl p-6 flex flex-col items-center bg-slate-950/80 border border-purple-500/30 shadow-2xl transition-all duration-700"
+              className="hud-card rounded-2xl p-5 sm:p-6 flex flex-col items-center bg-slate-950/85 border border-purple-500/35 shadow-2xl transition-all duration-700 hover:border-amber-400/60"
               style={{
                 opacity: animated ? 1 : 0,
                 transform: animated ? 'translateY(0) scale(1)' : 'translateY(16px) scale(0.96)',
                 transition: `transform 0.65s cubic-bezier(0.22, 1, 0.36, 1) ${i * 0.12}s, opacity 0.5s ease ${i * 0.12}s`,
               }}
             >
-              <div className="font-hud text-lg font-extrabold text-slate-200 tracking-wider mb-4">
-                {c.title}
+              {/* Card Header Title & Badge */}
+              <div className="text-center mb-3">
+                <span className="px-2.5 py-0.5 rounded bg-white/10 text-amber-300 font-hud text-[10px] font-extrabold tracking-widest uppercase">
+                  {c.badge}
+                </span>
+                <div className="font-hud text-base sm:text-lg font-extrabold text-white tracking-wider mt-1">
+                  {c.title}
+                </div>
               </div>
 
-              <svg viewBox="0 0 140 140" className="w-56 h-56 sm:w-64 sm:h-64 overflow-visible">
+              {/* Dual Concentric Circular SVG Rings */}
+              <svg viewBox="0 0 140 140" className="w-52 h-52 sm:w-60 sm:h-60 overflow-visible">
                 {/* Outer Ring Background Track */}
                 <circle
                   cx="70"
@@ -266,32 +391,56 @@ export default function Slide05GroupAverages({
                   }}
                   onClick={(e) => onElementClick?.(e, 's4', 'teamB', `${b.name} Ring`)}
                 />
+
+                {/* Center High-Tech VS Emblem */}
+                <g transform="translate(70,70)">
+                  <circle cx="0" cy="0" r="18" fill="#0b0f1d" stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" />
+                  <text
+                    x="0"
+                    y="4.5"
+                    textAnchor="middle"
+                    fill="#F5B700"
+                    fontFamily="inherit"
+                    fontSize="11"
+                    fontWeight="900"
+                    letterSpacing="1"
+                  >
+                    VS
+                  </text>
+                </g>
               </svg>
 
-              {/* Exact Full Comma Numbers with Smooth 60fps Count-up */}
-              <div className="w-full flex justify-between mt-4 pt-3 border-t border-white/15 font-hud text-2xl sm:text-3xl font-extrabold">
-                <span
-                  className="cursor-pointer hover:opacity-80"
-                  style={{ color: colA }}
-                  onClick={(e) => onElementClick?.(e, 's4', 'teamA', `${a.name} Color`)}
-                  title={`Click to change ${a.name} color`}
-                >
-                  {c.dec > 0
-                    ? displayVals[i].a.toFixed(c.dec)
-                    : formatNumber(Math.round(displayVals[i].a))}
-                  {c.suf}
-                </span>
-                <span
-                  className="cursor-pointer hover:opacity-80"
-                  style={{ color: colB }}
-                  onClick={(e) => onElementClick?.(e, 's4', 'teamB', `${b.name} Color`)}
-                  title={`Click to change ${b.name} color`}
-                >
-                  {c.dec > 0
-                    ? displayVals[i].b.toFixed(c.dec)
-                    : formatNumber(Math.round(displayVals[i].b))}
-                  {c.suf}
-                </span>
+              {/* Exact Metrics Data Display (Left Team A vs Right Team B) */}
+              <div className="w-full mt-3 pt-3 border-t border-white/15 space-y-2">
+                {/* Metric 1 (e.g. KILLS / HEADSHOTS / SURVIVAL) */}
+                <div className="flex justify-between items-center text-xs sm:text-sm font-hud">
+                  <span className="font-extrabold text-sm sm:text-base flex items-center gap-1.5" style={{ color: colA }}>
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: colA }} />
+                    {formatNumber(Math.round(displayVals[i].m1A))}
+                  </span>
+                  <span className="text-[10px] font-extrabold text-slate-300 uppercase tracking-wider px-2 py-0.5 rounded bg-white/10 border border-white/10">
+                    {c.m1Label}
+                  </span>
+                  <span className="font-extrabold text-sm sm:text-base flex items-center gap-1.5" style={{ color: colB }}>
+                    {formatNumber(Math.round(displayVals[i].m1B))}
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: colB }} />
+                  </span>
+                </div>
+
+                {/* Metric 2 (e.g. DAMAGE / ASSISTS / TOTAL PTS) */}
+                <div className="flex justify-between items-center text-xs sm:text-sm font-hud">
+                  <span className="font-extrabold text-sm sm:text-base flex items-center gap-1.5" style={{ color: colA }}>
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: colA }} />
+                    {formatNumber(Math.round(displayVals[i].m2A))}
+                  </span>
+                  <span className="text-[10px] font-extrabold text-slate-300 uppercase tracking-wider px-2 py-0.5 rounded bg-white/10 border border-white/10">
+                    {c.m2Label}
+                  </span>
+                  <span className="font-extrabold text-sm sm:text-base flex items-center gap-1.5" style={{ color: colB }}>
+                    {formatNumber(Math.round(displayVals[i].m2B))}
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: colB }} />
+                  </span>
+                </div>
               </div>
             </div>
           );
