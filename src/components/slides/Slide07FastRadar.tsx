@@ -122,9 +122,9 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey = 0, onEl
     },
   ];
 
-  const CX = 280;
-  const CY = 265;
-  const maxR = 192;
+  const CX = 310;
+  const CY = 275;
+  const maxR = 175;
 
   const ptAt = (axisIdx: number, pct: number) => {
     const ang = -Math.PI / 2 + (axisIdx * 2 * Math.PI) / 5;
@@ -206,7 +206,7 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey = 0, onEl
       </div>
 
       {/* Radar SVG with overflow-visible to ensure no text clipping */}
-      <svg viewBox="0 0 560 535" className="w-full max-w-[620px] overflow-visible">
+      <svg viewBox="0 0 620 550" className="w-full max-w-[660px] overflow-visible">
         {/* Radar Expanding Rings */}
         {[25, 50, 75, 100].map((p, idx) => (
           <polygon
@@ -227,9 +227,15 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey = 0, onEl
         {/* Radar Spokes & Axis Text Labels */}
         {axes.map((lbl, i) => {
           const [x2, y2] = ptAt(i, 100);
-          const [lx, ly] = ptAt(i, 118);
+          // Separated well outside the radar polygon (128% radius + directional padding)
+          const [lx, ly] = ptAt(i, 128);
+          const anchor = i === 0 ? 'middle' : i === 1 || i === 2 ? 'start' : 'end';
+          const dxOffset = i === 1 || i === 2 ? 14 : i === 3 || i === 4 ? -14 : 0;
+          const dyOffset = i === 0 ? -12 : i === 2 || i === 3 ? 10 : 4;
+
           return (
             <g key={lbl}>
+              {/* Spoke line from center to outer ring */}
               <line
                 x1={CX}
                 y1={CY}
@@ -238,16 +244,27 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey = 0, onEl
                 stroke="rgba(226,232,240,0.24)"
                 strokeWidth="1.4"
               />
+              {/* Subtle guide tick pointing toward the detached label */}
+              <line
+                x1={x2.toFixed(1)}
+                y1={y2.toFixed(1)}
+                x2={(CX + (x2 - CX) * 1.09).toFixed(1)}
+                y2={(CY + (y2 - CY) * 1.09).toFixed(1)}
+                stroke="rgba(251,191,36,0.5)"
+                strokeWidth="1.5"
+                strokeDasharray="2 2"
+              />
               <text
-                x={lx.toFixed(1)}
-                y={(ly + 6).toFixed(1)}
-                textAnchor="middle"
+                x={(lx + dxOffset).toFixed(1)}
+                y={(ly + dyOffset).toFixed(1)}
+                textAnchor={anchor}
                 fill="#ffffff"
                 stroke="rgba(9,11,18,0.96)"
-                strokeWidth="3.5"
+                strokeWidth="4"
                 paintOrder="stroke fill"
-                fontSize="20"
-                fontWeight="800"
+                fontSize="21"
+                fontWeight="900"
+                letterSpacing="1"
                 className="font-hud"
                 style={{
                   opacity: mounted ? 1 : 0,
