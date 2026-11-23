@@ -25,9 +25,9 @@ const SLIDES: SlideItem[] = [
   {
     id: 2,
     badge: 'Slide 02',
-    title: 'Team Head to Head',
+    title: '1v1 Player Clash',
     desc: 'Pure black semi-circle clash gauge with laser scanner needle, collision shockwave, and exact numbers.',
-    tag: 'Team H2H',
+    tag: '1v1 Clash',
     color: '#8b5cf6',
   },
   {

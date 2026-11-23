@@ -13,19 +13,6 @@ interface SlideProps {
   onElementClick?: (e: React.MouseEvent, group: string, key: string, label: string) => void;
 }
 
-interface H2HContender {
-  name: string;
-  tag: string;
-  rank?: number;
-  total?: number;
-  kills?: number;
-  damage?: number;
-  hs?: number;
-  surv?: number;
-  gloo?: number;
-  logoUrl?: string;
-}
-
 export default function Slide02PlayerClash({
   sheetData,
   theme,
@@ -54,124 +41,33 @@ export default function Slide02PlayerClash({
 
   const themeS1 = theme?.s1 || { p1: '#8b5cf6', p2: '#2dd4bf', accent: '#fbbf24' };
   const custom = theme?.custom;
-  const source = theme?.sources?.[1] || 'latest_h2h';
+  const source = theme?.sources?.[1] || 'day_top2_duel';
 
-  // Determine Team 1 (A) and Team 2 (B) based on selected source / custom pickers
-  let tA: H2HContender = {
-    name: 'EXTREME EX',
+  // Determine contender 1 and contender 2 based on selected source / custom pickers
+  let p1 = sheetData?.duel1v1?.p1 || {
+    name: 'TOP.1SHOVO',
+    team: 'RAAD VAI YT',
+    tag: 'TOP',
+    kills: 29,
+    damage: 11859,
+    hs: 31,
+    assist: 22,
+  };
+  let p2 = sheetData?.duel1v1?.p2 || {
+    name: 'EXE.SEJAN',
+    team: 'EXTREME EX',
     tag: 'EXE',
-    rank: 2,
-    total: 98,
-    kills: 76,
-    damage: 42349,
-    hs: 67,
-    surv: 22,
-    gloo: 340,
+    kills: 27,
+    damage: 11890,
+    hs: 22,
+    assist: 13,
   };
 
-  let tB: H2HContender = {
-    name: '69 ESPORTS',
-    tag: '69',
-    rank: 8,
-    total: 61,
-    kills: 48,
-    damage: 27036,
-    hs: 46,
-    surv: 13,
-    gloo: 185,
-  };
-
-  if (sheetData?.h2hMatch5?.a && sheetData?.h2hMatch5?.b) {
-    tA = {
-      name: sheetData.h2hMatch5.a.name,
-      tag: sheetData.h2hMatch5.a.tag,
-      rank: sheetData.h2hMatch5.a.rank,
-      total: sheetData.h2hMatch5.a.total,
-      kills: sheetData.h2hMatch5.a.kills,
-      damage: sheetData.h2hMatch5.a.damage,
-      hs: sheetData.h2hMatch5.a.hs,
-      surv: sheetData.h2hMatch5.a.surv,
-      gloo: sheetData.h2hMatch5.a.gloo,
-      logoUrl: undefined,
-    };
-    tB = {
-      name: sheetData.h2hMatch5.b.name,
-      tag: sheetData.h2hMatch5.b.tag,
-      rank: sheetData.h2hMatch5.b.rank,
-      total: sheetData.h2hMatch5.b.total,
-      kills: sheetData.h2hMatch5.b.kills,
-      damage: sheetData.h2hMatch5.b.damage,
-      hs: sheetData.h2hMatch5.b.hs,
-      surv: sheetData.h2hMatch5.b.surv,
-      gloo: sheetData.h2hMatch5.b.gloo,
-      logoUrl: undefined,
-    };
-  } else if (sheetData?.allTeamsFull?.length) {
-    const first = sheetData.allTeamsFull[0];
-    const second = sheetData.allTeamsFull[1] || first;
-    tA = {
-      name: first.name,
-      tag: first.tag,
-      rank: first.rank,
-      total: first.total,
-      kills: first.kills,
-      damage: first.damage,
-      hs: first.hs,
-      surv: first.surv,
-      gloo: first.gloo,
-      logoUrl: first.logoUrl,
-    };
-    tB = {
-      name: second.name,
-      tag: second.tag,
-      rank: second.rank,
-      total: second.total,
-      kills: second.kills,
-      damage: second.damage,
-      hs: second.hs,
-      surv: second.surv,
-      gloo: second.gloo,
-      logoUrl: second.logoUrl,
-    };
-  } else if (sheetData?.standing12?.length) {
-    const first = sheetData.standing12[0];
-    const second = sheetData.standing12[1] || first;
-    tA = {
-      name: first.name,
-      tag: first.tag,
-      rank: first.rank,
-      total: first.total,
-      kills: first.elims,
-      damage: first.damage || 0,
-      hs: 0,
-      surv: first.place,
-      gloo: 0,
-      logoUrl: first.logoUrl,
-    };
-    tB = {
-      name: second.name,
-      tag: second.tag,
-      rank: second.rank,
-      total: second.total,
-      kills: second.elims,
-      damage: second.damage || 0,
-      hs: 0,
-      surv: second.place,
-      gloo: 0,
-      logoUrl: second.logoUrl,
-    };
-  }
-
-  if (source === 'day_top2_h2h' && sheetData?.allTeamsFull?.length) {
-    const first = sheetData.allTeamsFull[0];
-    const second = sheetData.allTeamsFull[1] || first;
-    tA = { ...first };
-    tB = { ...second };
-  } else if (source === 'custom_h2h' && sheetData?.allTeamsFull?.length) {
-    const first = sheetData.allTeamsFull[custom?.tAIdx ?? 0] || sheetData.allTeamsFull[0];
-    const second = sheetData.allTeamsFull[custom?.tBIdx ?? 1] || sheetData.allTeamsFull[1];
-    tA = { ...first };
-    tB = { ...second };
+  if (source === 'custom_duel' && sheetData?.dayTop10Players?.length) {
+    const a = sheetData.dayTop10Players[custom?.p1Idx ?? 0] || sheetData.dayTop10Players[0];
+    const b = sheetData.dayTop10Players[custom?.p2Idx ?? 1] || sheetData.dayTop10Players[1];
+    p1 = { name: a.name, team: a.team, tag: a.tag, kills: a.kills, damage: a.dmg, hs: a.hs, assist: a.assist };
+    p2 = { name: b.name, team: b.team, tag: b.tag, kills: b.kills, damage: b.dmg, hs: b.hs, assist: b.assist };
   }
 
   // Resolve Drive Logo for each contender with full tag & name coverage
@@ -197,9 +93,9 @@ export default function Slide02PlayerClash({
     sheetData.allTeamsFull.forEach((t) => registerLogo(t.tag, t.name, t.logoUrl));
   }
 
-  const s1 = (tA.total || 0) * 100 + (tA.kills || 0) * 20 + Math.round((tA.damage || 0) * 0.05);
-  const s2 = (tB.total || 0) * 100 + (tB.kills || 0) * 20 + Math.round((tB.damage || 0) * 0.05);
-  const pct1 = Math.min(95, Math.max(5, Math.round((s1 / (s1 + s2 || 1)) * 100)));
+  const s1 = p1.kills * 100 + p1.damage * 0.1 + p1.hs * 40;
+  const s2 = p2.kills * 100 + p2.damage * 0.1 + p2.hs * 40;
+  const pct1 = Math.round((s1 / (s1 + s2 || 1)) * 100);
   const pct2 = 100 - pct1;
 
   const R = 125;
@@ -210,15 +106,11 @@ export default function Slide02PlayerClash({
   const px = CX + R * Math.cos(theta);
   const py = CY - R * Math.sin(theta);
 
-  const fourthLabel = (tA.hs || tB.hs) ? 'HEADSHOTS' : (tA.surv || tB.surv) ? 'SURVIVAL POINTS' : 'HEADSHOTS';
-  const fourthA = (tA.hs || tB.hs) ? (tA.hs || 0) : (tA.surv || 0);
-  const fourthB = (tA.hs || tB.hs) ? (tB.hs || 0) : (tB.surv || 0);
-
   const rows = [
-    { label: 'TOTAL POINTS', a: tA.total || 0, b: tB.total || 0 },
-    { label: 'ELIMINATIONS', a: tA.kills || 0, b: tB.kills || 0 },
-    { label: 'TOTAL DAMAGE', a: tA.damage || 0, b: tB.damage || 0 },
-    { label: fourthLabel, a: fourthA, b: fourthB },
+    { label: 'ELIMINATIONS', a: p1.kills, b: p2.kills },
+    { label: 'TOTAL DAMAGE', a: p1.damage, b: p2.damage },
+    { label: 'HEADSHOTS', a: p1.hs, b: p2.hs },
+    { label: 'ASSISTS', a: p1.assist, b: p2.assist },
   ];
 
   const winnerSide = s1 >= s2 ? 'p1' : 'p2';
@@ -232,14 +124,14 @@ export default function Slide02PlayerClash({
           id="s3-card-p1"
           className="dark-box rounded-lg px-3 py-1.5 border-l-4 text-left relative transition-all duration-700 w-fit max-w-[280px]"
           style={{ borderLeftColor: themeS1.p1 }}
-          onClick={(e) => onElementClick?.(e, 's1', 'p1', `${tA.name} Color`)}
+          onClick={(e) => onElementClick?.(e, 's1', 'p1', 'Contender 1 Color')}
         >
           {winnerSide === 'p1' && <SpiritFireCanvas />}
           <div className="relative z-10 flex items-center gap-2.5">
             <TeamLogoBadge
-              tag={tA.tag}
-              name={tA.name}
-              logoUrl={teamLogoMap[tA.tag.toUpperCase()] || teamLogoMap[tA.name.toUpperCase()] || tA.logoUrl}
+              tag={p1.tag}
+              name={p1.team}
+              logoUrl={teamLogoMap[p1.tag.toUpperCase()] || teamLogoMap[p1.team.toUpperCase()]}
               color={themeS1.p1}
               sizeCls="w-8 h-8 sm:w-9 sm:h-9"
             />
@@ -248,12 +140,12 @@ export default function Slide02PlayerClash({
                 className="text-[10px] font-bold uppercase tracking-wider"
                 style={{ color: themeS1.p1 }}
               >
-                TEAM 01 {tA.rank ? `• RANK #${tA.rank}` : ''}
+                CONTENDER 01
               </div>
               <div className="font-hud text-base sm:text-lg font-extrabold text-white leading-tight truncate max-w-[150px]">
-                {tA.name}
+                {p1.name}
               </div>
-              <div className="text-[11px] font-bold text-slate-300">{tA.tag}</div>
+              <div className="text-[11px] font-bold text-slate-300">{p1.team}</div>
             </div>
           </div>
         </div>
@@ -263,7 +155,7 @@ export default function Slide02PlayerClash({
           id="s3-card-p2"
           className="dark-box rounded-lg px-3 py-1.5 border-r-4 text-right relative transition-all duration-700 w-fit max-w-[280px] ml-auto"
           style={{ borderRightColor: themeS1.p2 }}
-          onClick={(e) => onElementClick?.(e, 's1', 'p2', `${tB.name} Color`)}
+          onClick={(e) => onElementClick?.(e, 's1', 'p2', 'Contender 2 Color')}
         >
           {winnerSide === 'p2' && <SpiritFireCanvas />}
           <div className="relative z-10 flex items-center gap-2.5">
@@ -272,17 +164,17 @@ export default function Slide02PlayerClash({
                 className="text-[10px] font-bold uppercase tracking-wider"
                 style={{ color: themeS1.p2 }}
               >
-                TEAM 02 {tB.rank ? `• RANK #${tB.rank}` : ''}
+                CONTENDER 02
               </div>
               <div className="font-hud text-base sm:text-lg font-extrabold text-white leading-tight truncate max-w-[150px]">
-                {tB.name}
+                {p2.name}
               </div>
-              <div className="text-[11px] font-bold text-slate-300">{tB.tag}</div>
+              <div className="text-[11px] font-bold text-slate-300">{p2.team}</div>
             </div>
             <TeamLogoBadge
-              tag={tB.tag}
-              name={tB.name}
-              logoUrl={teamLogoMap[tB.tag.toUpperCase()] || teamLogoMap[tB.name.toUpperCase()] || tB.logoUrl}
+              tag={p2.tag}
+              name={p2.team}
+              logoUrl={teamLogoMap[p2.tag.toUpperCase()] || teamLogoMap[p2.team.toUpperCase()]}
               color={themeS1.p2}
               sizeCls="w-8 h-8 sm:w-9 sm:h-9"
             />
@@ -410,20 +302,23 @@ export default function Slide02PlayerClash({
             <span
               className="cursor-pointer hover:opacity-80"
               style={{ color: themeS1.p1 }}
-              onClick={(e) => onElementClick?.(e, 's1', 'p1', `${tA.name} Color`)}
+              onClick={(e) => onElementClick?.(e, 's1', 'p1', `${p1.name} Color`)}
+              title="Click to change Contender 1 color"
             >
               {animated ? `${pct1}%` : '0%'}
             </span>
             <span
               className="text-amber-400 text-base mx-2 cursor-pointer hover:scale-110 transition-transform"
               onClick={(e) => onElementClick?.(e, 's1', 'accent', 'Accent Color')}
+              title="Click to change accent color"
             >
               VS
             </span>
             <span
               className="cursor-pointer hover:opacity-80"
               style={{ color: themeS1.p2 }}
-              onClick={(e) => onElementClick?.(e, 's1', 'p2', `${tB.name} Color`)}
+              onClick={(e) => onElementClick?.(e, 's1', 'p2', `${p2.name} Color`)}
+              title="Click to change Contender 2 color"
             >
               {animated ? `${pct2}%` : '0%'}
             </span>
@@ -454,7 +349,8 @@ export default function Slide02PlayerClash({
                 {/* Left Bar (Contender 1) */}
                 <div
                   className="w-1/2 h-full flex justify-end overflow-hidden cursor-pointer"
-                  onClick={(e) => onElementClick?.(e, 's1', 'p1', `${tA.name} Bar Color`)}
+                  onClick={(e) => onElementClick?.(e, 's1', 'p1', `${p1.name} Bar Color`)}
+                  title="Click to change Contender 1 color"
                 >
                   <div
                     className="bar-live h-full rounded-l-md flex items-center justify-start pl-6 overflow-hidden"
@@ -473,7 +369,8 @@ export default function Slide02PlayerClash({
                 {/* Right Bar (Contender 2) */}
                 <div
                   className="w-1/2 h-full flex justify-start overflow-hidden cursor-pointer"
-                  onClick={(e) => onElementClick?.(e, 's1', 'p2', `${tB.name} Bar Color`)}
+                  onClick={(e) => onElementClick?.(e, 's1', 'p2', `${p2.name} Bar Color`)}
+                  title="Click to change Contender 2 color"
                 >
                   <div
                     className="bar-live h-full rounded-r-md flex items-center justify-end pr-6 overflow-hidden"

@@ -24,7 +24,7 @@ import Slide10DualColumn from '@/components/slides/Slide10DualColumn';
 
 const SLIDES = [
   { id: 1, label: '01. Match 1–5 Points Race' },
-  { id: 2, label: '02. Team Head to Head' },
+  { id: 2, label: '02. 1v1 Player Clash' },
   { id: 3, label: '03. Weapon Meta Rings' },
   { id: 4, label: '04. Team H2H Match 5' },
   { id: 5, label: '05. Group Stage Averages' },

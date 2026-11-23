@@ -34,7 +34,7 @@ export const DEFAULT_THEMES: BroadcastThemeConfig = {
   s9: { kills: '#F5B700', damage: '#38BDF8' },
   sources: {
     0: 'top5_m1_m5',
-    1: 'latest_h2h',
+    1: 'day_top2_duel',
     2: 'day_guns',
     3: 'latest_h2h',
     4: 'group_avg_h2h',
