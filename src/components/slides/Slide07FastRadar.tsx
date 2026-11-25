@@ -35,23 +35,23 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey = 0, onEl
   const allTeams = sheetData?.allTeamsFull || [];
   let teamA = allTeams[0] || {
     rank: 1,
-    name: 'RAAD VAI YT',
-    tag: 'TOP',
-    total: 134,
-    kills: 94,
-    damage: 57261,
-    hs: 89,
-    gloo: 297,
+    name: 'LOADING...',
+    tag: '---',
+    total: 0,
+    kills: 0,
+    damage: 0,
+    hs: 0,
+    gloo: 0,
   };
   let teamB = allTeams[1] || {
     rank: 2,
-    name: 'EXTREME EX',
-    tag: 'EXE',
-    total: 98,
-    kills: 76,
-    damage: 42349,
-    hs: 67,
-    gloo: 340,
+    name: 'LOADING...',
+    tag: '---',
+    total: 0,
+    kills: 0,
+    damage: 0,
+    hs: 0,
+    gloo: 0,
   };
 
   if (source === 'custom_radar_h2h' && allTeams.length >= 2) {
