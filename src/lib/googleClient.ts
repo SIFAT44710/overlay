@@ -4,11 +4,14 @@
 import { google } from 'googleapis';
 import {
   getCachedRange,
+  getStaleRangeIfValid,
   setCachedRange,
   getStaleRangeFallback,
   getCachedDriveLogos,
+  getStaleDriveLogosIfValid,
   setCachedDriveLogos,
   getCachedThemeConfig,
+  getStaleThemeIfValid,
   setCachedThemeConfig,
 } from './sheetCache';
 import { safeString, safeInt } from './sheetParsers';
@@ -112,12 +115,28 @@ export async function ensureThemeConfigTabExists(sheetId: string): Promise<void>
   }
 }
 
+let themeRefreshPromise: Promise<Record<string, any>> | null = null;
+let driveRefreshPromise: Promise<DriveFileItem[]> | null = null;
+let batchRefreshInFlight = false;
+
 /**
- * Reads persistent theme & source selections from ThemeConfig tab
+ * Reads persistent theme & source selections from ThemeConfig tab (with sub-10ms SWR)
  */
 export async function getStoredThemeConfig(fresh = false): Promise<Record<string, any>> {
   const cached = getCachedThemeConfig(fresh);
   if (cached) return cached;
+
+  if (!fresh) {
+    const stale = getStaleThemeIfValid();
+    if (stale) {
+      if (stale.needsRefresh && !themeRefreshPromise) {
+        themeRefreshPromise = getStoredThemeConfig(true).finally(() => {
+          themeRefreshPromise = null;
+        });
+      }
+      return stale.data;
+    }
+  }
 
   const defaultSheetId = process.env.GOOGLE_SHEET_ID || '1QOTrmLLqyZQdL7AarXbhnFFA8_BeXHoWhod8INJnoHE';
 
@@ -210,14 +229,31 @@ export async function getBatchSheetRanges(
 
   const result: Record<string, any[][]> = {};
   const rangesToFetch: string[] = [];
+  const staleRangesToRefresh: string[] = [];
 
   for (const r of ranges) {
     const cached = getCachedRange(r, fresh);
     if (cached) {
       result[r] = cached;
+    } else if (!fresh) {
+      const stale = getStaleRangeIfValid(r);
+      if (stale) {
+        result[r] = stale.values;
+        if (stale.needsRefresh) staleRangesToRefresh.push(r);
+      } else {
+        rangesToFetch.push(r);
+      }
     } else {
       rangesToFetch.push(r);
     }
+  }
+
+  // Trigger non-blocking background refresh for stale ranges
+  if (staleRangesToRefresh.length > 0 && !batchRefreshInFlight) {
+    batchRefreshInFlight = true;
+    void getBatchSheetRanges(staleRangesToRefresh, sheetId, true).finally(() => {
+      batchRefreshInFlight = false;
+    });
   }
 
   if (rangesToFetch.length === 0) {
@@ -255,6 +291,18 @@ export async function getBatchSheetRanges(
 export async function getDriveLogos(fresh = false): Promise<DriveFileItem[]> {
   const cached = getCachedDriveLogos(fresh);
   if (cached) return cached;
+
+  if (!fresh) {
+    const stale = getStaleDriveLogosIfValid();
+    if (stale) {
+      if (stale.needsRefresh && !driveRefreshPromise) {
+        driveRefreshPromise = getDriveLogos(true).finally(() => {
+          driveRefreshPromise = null;
+        });
+      }
+      return stale.files;
+    }
+  }
 
   const config = await getActiveConfig();
   const driveFolderId = config.driveFolderId;

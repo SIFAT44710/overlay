@@ -8,8 +8,9 @@ interface SheetCacheEntry {
   timestamp: number;
 }
 
-const SHEET_CACHE_TTL_MS = 1500; // 1.5 seconds TTL for sheet values
-const DRIVE_CACHE_TTL_MS = 1500; // 1.5 seconds TTL for Drive logo list (Instant sync with Google Drive)
+const SHEET_CACHE_TTL_MS = 2000; // Fresh window: 2s
+const DRIVE_CACHE_TTL_MS = 2000; // Fresh window: 2s
+const STALE_WINDOW_MS = 60000; // Stale-while-revalidate window: 60s for sub-50ms server responses
 
 const sheetRangeCache = new Map<string, SheetCacheEntry>();
 const staleRangeCache = new Map<string, any[][]>();
@@ -24,6 +25,16 @@ export function getCachedRange(range: string, fresh = false): any[][] | null {
   const age = Date.now() - entry.timestamp;
   if (age < SHEET_CACHE_TTL_MS) {
     return entry.values;
+  }
+  return null;
+}
+
+export function getStaleRangeIfValid(range: string): { values: any[][]; needsRefresh: boolean } | null {
+  const entry = sheetRangeCache.get(range);
+  if (!entry) return null;
+  const age = Date.now() - entry.timestamp;
+  if (age < STALE_WINDOW_MS) {
+    return { values: entry.values, needsRefresh: age >= SHEET_CACHE_TTL_MS };
   }
   return null;
 }
@@ -48,6 +59,15 @@ export function getCachedDriveLogos(fresh = false): DriveFileItem[] | null {
   return null;
 }
 
+export function getStaleDriveLogosIfValid(): { files: DriveFileItem[]; needsRefresh: boolean } | null {
+  if (!driveFilesCache) return null;
+  const age = Date.now() - driveFilesCache.timestamp;
+  if (age < STALE_WINDOW_MS) {
+    return { files: driveFilesCache.files, needsRefresh: age >= DRIVE_CACHE_TTL_MS };
+  }
+  return null;
+}
+
 export function setCachedDriveLogos(files: DriveFileItem[]): void {
   driveFilesCache = { files, timestamp: Date.now() };
 }
@@ -56,7 +76,7 @@ export function flushDriveCache(): void {
   driveFilesCache = null;
 }
 
-// --- Theme Config Cache (Short 2s TTL so serverless instances stay synced with Google Sheet ThemeConfig) ---
+// --- Theme Config Cache (Short 2s TTL + 60s SWR window for instant response) ---
 const THEME_CACHE_TTL_MS = 2000;
 let themeConfigCache: { data: Record<string, any>; timestamp: number } | null = null;
 
@@ -64,6 +84,15 @@ export function getCachedThemeConfig(fresh = false): Record<string, any> | null 
   if (fresh || !themeConfigCache) return null;
   if (Date.now() - themeConfigCache.timestamp < THEME_CACHE_TTL_MS && Object.keys(themeConfigCache.data).length > 0) {
     return themeConfigCache.data;
+  }
+  return null;
+}
+
+export function getStaleThemeIfValid(): { data: Record<string, any>; needsRefresh: boolean } | null {
+  if (!themeConfigCache || Object.keys(themeConfigCache.data).length === 0) return null;
+  const age = Date.now() - themeConfigCache.timestamp;
+  if (age < STALE_WINDOW_MS) {
+    return { data: themeConfigCache.data, needsRefresh: age >= THEME_CACHE_TTL_MS };
   }
   return null;
 }

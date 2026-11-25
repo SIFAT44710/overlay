@@ -59,13 +59,13 @@ export default function Slide01PointsRace({
     setAnimated(false);
   }
 
-  // Run entrance animation once on initial mount or when replayKey changes
+  // Run entrance animation immediately on mount or when replayKey changes
   useEffect(() => {
     const rafId = requestAnimationFrame(() => {
       const timer = setTimeout(() => {
         setAnimated(true);
         hasAnimatedRef.current = true;
-      }, 140);
+      }, 30);
       return () => clearTimeout(timer);
     });
     return () => cancelAnimationFrame(rafId);
@@ -269,7 +269,7 @@ export default function Slide01PointsRace({
                   filter: `drop-shadow(0 0 6px ${col})`,
                   strokeDasharray: '2000',
                   strokeDashoffset: animated ? '0' : '2000',
-                  transition: `stroke-dashoffset 2.0s cubic-bezier(0.22, 1, 0.36, 1) ${tIdx * 0.18}s`,
+                  transition: `stroke-dashoffset 0.85s cubic-bezier(0.22, 1, 0.36, 1) ${tIdx * 0.08}s`,
                 }}
                 data-edit-group="s0"
                 data-edit-key={colKey}
@@ -291,7 +291,7 @@ export default function Slide01PointsRace({
                   opacity={animated ? 1 : 0}
                   className="cursor-pointer"
                   style={{
-                    transition: `opacity 0.5s ease ${1.1 + tIdx * 0.18}s`,
+                    transition: `opacity 0.3s ease ${0.3 + tIdx * 0.08}s`,
                   }}
                   onClick={(e) =>
                     onElementClick?.(e, 's0', colKey, `#${tIdx + 1} ${rawTeam.tag} Node`)
@@ -303,7 +303,7 @@ export default function Slide01PointsRace({
               <g
                 opacity={animated ? 1 : 0}
                 style={{
-                  transition: `opacity 0.6s ease ${1.2 + tIdx * 0.18}s`,
+                  transition: `opacity 0.35s ease ${0.35 + tIdx * 0.08}s`,
                 }}
               >
                 {/* Dashed connector line to spread tag position */}

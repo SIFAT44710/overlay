@@ -1,11 +1,13 @@
 // SWR Client Hook for Live Tournament Data Sync
-// Polls /api/live-data with snapshot memoization to eliminate unwanted re-renders & flickering
+// Hydrates instantaneously from localStorage at 0ms on reload, then polls /api/live-data every 2s
 
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { SheetDataPayload } from '@/types/broadcast';
+
+const CACHE_KEY = 'dg_live_sheet_cache_v1';
 
 const fetcher = async (url: string): Promise<SheetDataPayload> => {
   const res = await fetch(url, { cache: 'no-store' });
@@ -15,7 +17,20 @@ const fetcher = async (url: string): Promise<SheetDataPayload> => {
   return res.json();
 };
 
+function getInitialSheetData(): SheetDataPayload | undefined {
+  if (typeof window !== 'undefined') {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (raw) return JSON.parse(raw) as SheetDataPayload;
+    } catch {}
+  }
+  return undefined;
+}
+
 export function useLiveSheetData() {
+  const [stableData, setStableData] = useState<SheetDataPayload | undefined>(getInitialSheetData);
+  const lastSnapshotRef = useRef<string>('');
+
   const { data, error, isLoading, mutate } = useSWR<SheetDataPayload>(
     '/api/live-data',
     fetcher,
@@ -24,11 +39,9 @@ export function useLiveSheetData() {
       revalidateOnFocus: true,
       dedupingInterval: 1000,
       keepPreviousData: true,
+      fallbackData: stableData,
     }
   );
-
-  const [stableData, setStableData] = useState<SheetDataPayload | undefined>(data);
-  const lastSnapshotRef = useRef<string>('');
 
   useEffect(() => {
     if (!data) return;
@@ -39,6 +52,11 @@ export function useLiveSheetData() {
     if (currentSnapshot !== lastSnapshotRef.current) {
       lastSnapshotRef.current = currentSnapshot;
       setStableData(data);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+        } catch {}
+      }
     }
   }, [data]);
 

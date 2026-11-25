@@ -349,9 +349,9 @@ export default function Slide06SingleColumn({
         responsive: true,
         maintainAspectRatio: false,
         animation: {
-          duration: 1350,
-          delay: (c: any) => c.dataIndex * 80,
-          easing: 'easeOutBounce',
+          duration: 650,
+          delay: (c: any) => c.dataIndex * 25,
+          easing: 'easeOutQuart',
         },
         layout: {
           padding: {
