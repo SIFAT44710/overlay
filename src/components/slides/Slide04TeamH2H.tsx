@@ -94,7 +94,7 @@ export default function Slide04TeamH2H({
 
     let rafId: number;
     let start: number | null = null;
-    const duration = 1600;
+    const duration = 1850;
 
     const timer = setTimeout(() => {
       setAnimated(true);
@@ -405,7 +405,7 @@ export default function Slide04TeamH2H({
                 style={{
                   strokeDasharray: `${ARC} ${ARC}`,
                   strokeDashoffset: animated ? ARC * (1 - pctA / 100) : ARC,
-                  transition: 'stroke-dashoffset 1.4s cubic-bezier(0.22, 1, 0.36, 1)',
+                  transition: 'stroke-dashoffset 1.65s cubic-bezier(0.22, 1, 0.36, 1)',
                   filter: `drop-shadow(0 0 8px ${colA})`,
                 }}
                 onClick={(e) => onElementClick?.(e, 's3', 'teamA', `${a.name} Color`)}
@@ -421,7 +421,7 @@ export default function Slide04TeamH2H({
                 style={{
                   strokeDasharray: `${ARC} ${ARC}`,
                   strokeDashoffset: animated ? ARC * (1 - pctB / 100) : ARC,
-                  transition: 'stroke-dashoffset 1.4s cubic-bezier(0.22, 1, 0.36, 1)',
+                  transition: 'stroke-dashoffset 1.65s cubic-bezier(0.22, 1, 0.36, 1)',
                   filter: `drop-shadow(0 0 8px ${colB})`,
                 }}
                 onClick={(e) => onElementClick?.(e, 's3', 'teamB', `${b.name} Color`)}

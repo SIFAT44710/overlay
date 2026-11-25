@@ -515,8 +515,8 @@ export default function Slide10DualColumn({
         },
         layout: { padding: { top: 75, bottom: 94, left: 10, right: 10 } },
         animation: {
-          duration: 650,
-          delay: (c: any) => c.dataIndex * 25 + c.datasetIndex * 20,
+          duration: 1050,
+          delay: (c: any) => c.dataIndex * 45 + c.datasetIndex * 35,
           easing: 'easeOutQuart',
         },
         plugins: {

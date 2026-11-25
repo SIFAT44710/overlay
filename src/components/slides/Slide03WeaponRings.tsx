@@ -182,7 +182,7 @@ export default function Slide03WeaponRings({
                       color: col,
                       strokeDasharray: circ,
                       strokeDashoffset: animated ? targetOffset : circ,
-                      transition: `stroke-dashoffset 1.8s cubic-bezier(0.22, 1.08, 0.36, 1) ${i * 0.15}s`,
+                      transition: `stroke-dashoffset 2.05s cubic-bezier(0.22, 1.08, 0.36, 1) ${i * 0.15}s`,
                       animationDelay: `${(i * 0.3).toFixed(2)}s`,
                     }}
                     data-edit-group="s2"
@@ -257,7 +257,7 @@ export default function Slide03WeaponRings({
                       ? 'translateX(0) scale(1.03)'
                       : 'translateX(0)'
                     : 'translateX(28px)',
-                  transition: `transform 0.85s cubic-bezier(0.22, 1.15, 0.36, 1) ${i * 0.12}s, opacity 0.65s ease ${i * 0.12}s`,
+                  transition: `transform 1.10s cubic-bezier(0.22, 1.15, 0.36, 1) ${i * 0.12}s, opacity 0.85s ease ${i * 0.12}s`,
                 }}
                 onClick={(e) => onElementClick?.(e, 's2', colKey, `${w.name} Color`)}
                 title={`Click to change ${w.name} ring and bar color`}
@@ -282,7 +282,7 @@ export default function Slide03WeaponRings({
                     style={{
                       backgroundColor: col,
                       width: animated ? `${barW}%` : '0%',
-                      transition: `width 1.5s cubic-bezier(0.22, 1, 0.36, 1) ${0.15 + i * 0.12}s`,
+                      transition: `width 1.75s cubic-bezier(0.22, 1, 0.36, 1) ${0.15 + i * 0.12}s`,
                     }}
                   />
                 </div>

@@ -434,7 +434,7 @@ export default function Slide02PlayerClash({
                 y1={y1}
                 x2={x2}
                 y2={y2}
-                stroke={isMajor ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.28)'}
+                stroke={isMajor ? '#000000' : 'rgba(0,0,0,0.45)'}
                 strokeWidth={isMajor ? 3 : 1.8}
                 strokeLinecap="round"
               />
@@ -459,19 +459,20 @@ export default function Slide02PlayerClash({
             style={{
               strokeDasharray: ARC,
               strokeDashoffset: animated ? ARC * (1 - pct1 / 100) : ARC,
-              transition: 'stroke-dashoffset 1.85s cubic-bezier(0.22, 1.08, 0.36, 1)',
+              transition: 'stroke-dashoffset 2.10s cubic-bezier(0.22, 1.08, 0.36, 1)',
             }}
             data-edit-group="s1"
             data-edit-key="p1"
             onClick={(e) => onElementClick?.(e, 's1', 'p1', 'Contender 1 Color')}
           />
 
-          {/* Subtle Glass Center Dividing Line */}
+          {/* Black Center Dividing Energy Line */}
           <path
             d="M 55 170 A 125 125 0 0 1 305 170"
             fill="none"
-            stroke="rgba(255,255,255,0.28)"
-            strokeWidth="4"
+            stroke="#000000"
+            strokeOpacity="0.92"
+            strokeWidth="6"
             className="energy-line"
           />
 
@@ -485,7 +486,7 @@ export default function Slide02PlayerClash({
             style={{
               strokeDasharray: ARC,
               strokeDashoffset: animated ? ARC * (1 - pct2 / 100) : ARC,
-              transition: 'stroke-dashoffset 1.85s cubic-bezier(0.22, 1.08, 0.36, 1)',
+              transition: 'stroke-dashoffset 2.10s cubic-bezier(0.22, 1.08, 0.36, 1)',
             }}
             data-edit-group="s1"
             data-edit-key="p2"
@@ -498,7 +499,7 @@ export default function Slide02PlayerClash({
             y1="170"
             x2="180"
             y2="26"
-            stroke="rgba(255,255,255,0.65)"
+            stroke="#000000"
             strokeWidth="3.5"
             strokeLinecap="round"
             className={animated ? 'scanner-run' : 'opacity-0'}
@@ -510,7 +511,7 @@ export default function Slide02PlayerClash({
             cy={py.toFixed(1)}
             r="6"
             fill="none"
-            stroke="#ffffff"
+            stroke="#000000"
             className={animated ? 'shock-run' : 'opacity-0'}
           />
 
@@ -519,12 +520,12 @@ export default function Slide02PlayerClash({
             cx={animated ? px.toFixed(1) : '55'}
             cy={animated ? py.toFixed(1) : '170'}
             r="8"
-            fill="#ffffff"
-            stroke={themeS1.accent}
-            strokeWidth="2.5"
+            fill="#000000"
+            stroke="#000000"
+            strokeWidth="2"
             style={{
               transition:
-                'cx 1.85s cubic-bezier(0.22, 1.08, 0.36, 1), cy 1.85s cubic-bezier(0.22, 1.08, 0.36, 1)',
+                'cx 2.10s cubic-bezier(0.22, 1.08, 0.36, 1), cy 2.10s cubic-bezier(0.22, 1.08, 0.36, 1)',
             }}
           />
         </svg>
@@ -572,7 +573,7 @@ export default function Slide02PlayerClash({
                 transform: animated
                   ? 'skewX(-10deg) translateY(0) scaleX(1)'
                   : 'skewX(-10deg) translateY(24px) scaleX(0.32)',
-                transition: `opacity 0.5s ease ${0.2 + idx * 0.15}s, transform 0.65s cubic-bezier(0.22, 1.12, 0.36, 1) ${0.2 + idx * 0.15}s`,
+                transition: `opacity 0.65s ease ${0.25 + idx * 0.16}s, transform 0.90s cubic-bezier(0.22, 1.12, 0.36, 1) ${0.25 + idx * 0.16}s`,
               }}
             >
               <div className="relative flex items-center h-14 w-full">
@@ -582,7 +583,7 @@ export default function Slide02PlayerClash({
                   style={{
                     backgroundColor: themeS1.p1,
                     width: animated ? `${wA}%` : '50%',
-                    transition: 'width 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.25s',
+                    transition: 'width 1.65s cubic-bezier(0.22, 1, 0.36, 1) 0.25s',
                   }}
                   onClick={(e) => onElementClick?.(e, 's1', 'p1', `${c1.name} Bar Color`)}
                 />
@@ -593,7 +594,7 @@ export default function Slide02PlayerClash({
                   style={{
                     backgroundColor: themeS1.p2,
                     width: animated ? `${wB}%` : '50%',
-                    transition: 'width 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.25s',
+                    transition: 'width 1.65s cubic-bezier(0.22, 1, 0.36, 1) 0.25s',
                   }}
                   onClick={(e) => onElementClick?.(e, 's1', 'p2', `${c2.name} Bar Color`)}
                 />

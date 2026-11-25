@@ -267,7 +267,7 @@ export default function Slide01PointsRace({
                   filter: `drop-shadow(0 0 6px ${col})`,
                   strokeDasharray: '2000',
                   strokeDashoffset: animated ? '0' : '2000',
-                  transition: `stroke-dashoffset 1.85s cubic-bezier(0.22, 1, 0.36, 1) ${tIdx * 0.16}s`,
+                  transition: `stroke-dashoffset 2.30s cubic-bezier(0.22, 1, 0.36, 1) ${tIdx * 0.2}s`,
                 }}
                 data-edit-group="s0"
                 data-edit-key={colKey}
@@ -289,7 +289,7 @@ export default function Slide01PointsRace({
                   opacity={animated ? 1 : 0}
                   className="cursor-pointer"
                   style={{
-                    transition: `opacity 0.55s ease ${0.9 + tIdx * 0.16}s`,
+                    transition: `opacity 0.70s ease ${1.15 + tIdx * 0.2}s`,
                   }}
                   onClick={(e) =>
                     onElementClick?.(e, 's0', colKey, `#${tIdx + 1} ${rawTeam.tag} Node`)
@@ -301,7 +301,7 @@ export default function Slide01PointsRace({
               <g
                 opacity={animated ? 1 : 0}
                 style={{
-                  transition: `opacity 0.65s ease ${1.05 + tIdx * 0.16}s`,
+                  transition: `opacity 0.80s ease ${1.35 + tIdx * 0.2}s`,
                 }}
               >
                 {/* Dashed connector line to spread tag position */}

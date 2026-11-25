@@ -246,7 +246,7 @@ export default function Slide09RolePolar({
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          animation: { animateRotate: true, animateScale: true, duration: 1550 },
+          animation: { animateRotate: true, animateScale: true, duration: 1800 },
           onClick: (evt: any, elems: any[]) => {
             if (!onElementClick) return;
             let idx = -1;

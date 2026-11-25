@@ -188,7 +188,7 @@ export default function Slide05GroupAverages({
 
     let rafId: number;
     let start: number | null = null;
-    const duration = 1400;
+    const duration = 1650;
 
     const timer = setTimeout(() => {
       setAnimated(true);
@@ -346,7 +346,7 @@ export default function Slide05GroupAverages({
                     color: colA,
                     strokeDasharray: `${CIRC} ${CIRC}`,
                     strokeDashoffset: animated ? CIRC * (1 - fracA) : CIRC,
-                    transition: `stroke-dashoffset 1.35s cubic-bezier(0.22, 1, 0.36, 1) ${0.1 + i * 0.12}s`,
+                    transition: `stroke-dashoffset 1.60s cubic-bezier(0.22, 1, 0.36, 1) ${0.1 + i * 0.12}s`,
                     animationDelay: `${i * 0.25}s`,
                   }}
                   onClick={(e) => onElementClick?.(e, 's4', 'teamA', `${a.name} Ring`)}
@@ -376,7 +376,7 @@ export default function Slide05GroupAverages({
                     color: colB,
                     strokeDasharray: `${CIRC_IN} ${CIRC_IN}`,
                     strokeDashoffset: animated ? CIRC_IN * (1 - fracB) : CIRC_IN,
-                    transition: `stroke-dashoffset 1.35s cubic-bezier(0.22, 1, 0.36, 1) ${0.18 + i * 0.12}s`,
+                    transition: `stroke-dashoffset 1.60s cubic-bezier(0.22, 1, 0.36, 1) ${0.18 + i * 0.12}s`,
                     animationDelay: `${0.15 + i * 0.25}s`,
                   }}
                   onClick={(e) => onElementClick?.(e, 's4', 'teamB', `${b.name} Ring`)}

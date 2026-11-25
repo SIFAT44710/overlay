@@ -201,7 +201,7 @@ export default function Slide08KillsDmgLine({
         responsive: true,
         maintainAspectRatio: false,
         animation: {
-          duration: 1600,
+          duration: 1850,
           easing: 'easeOutCubic',
         },
         onClick: (evt: any, elems: any[]) => {

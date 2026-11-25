@@ -217,7 +217,7 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey = 0, onEl
               transformOrigin: `${CX}px ${CY}px`,
               transform: mounted ? 'scale(1)' : 'scale(0)',
               opacity: mounted ? 1 : 0,
-              transition: `transform 0.36s cubic-bezier(0.22,1,0.36,1) ${idx * 0.05}s, opacity 0.28s ease`,
+              transition: `transform 0.60s cubic-bezier(0.22,1,0.36,1) ${idx * 0.05}s, opacity 0.45s ease`,
             }}
           />
         ))}
@@ -297,7 +297,7 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey = 0, onEl
                 transformOrigin: `${CX}px ${CY}px`,
                 transform: mounted ? 'scale(1)' : 'scale(0)',
                 opacity: mounted ? 1 : 0,
-                transition: `transform 0.65s cubic-bezier(0.16, 1.12, 0.3, 1) ${delaySec}s, opacity 0.4s ease ${delaySec}s`,
+                transition: `transform 0.90s cubic-bezier(0.16, 1.12, 0.3, 1) ${delaySec}s, opacity 0.65s ease ${delaySec}s`,
               }}
               onMouseMove={(e) =>
                 setTooltip({
