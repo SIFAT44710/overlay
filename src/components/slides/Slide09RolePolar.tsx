@@ -339,7 +339,7 @@ export default function Slide09RolePolar({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
         {/* Polar Card A (Left Circle - Team A) */}
         <div
-          className={`dark-box rounded-2xl p-5 relative border border-white/10 shadow-2xl flex flex-col items-center transition-all duration-700 ${
+          className={`hud-card rounded-2xl p-5 relative flex flex-col items-center transition-all duration-700 ${
             animated ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
           }`}
         >
@@ -401,7 +401,7 @@ export default function Slide09RolePolar({
 
         {/* Polar Card B (Right Circle - Team B) */}
         <div
-          className={`dark-box rounded-2xl p-5 relative border border-white/10 shadow-2xl flex flex-col items-center transition-all duration-700 ${
+          className={`hud-card rounded-2xl p-5 relative flex flex-col items-center transition-all duration-700 ${
             animated ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
           }`}
           style={{ transitionDelay: '0.12s' }}
