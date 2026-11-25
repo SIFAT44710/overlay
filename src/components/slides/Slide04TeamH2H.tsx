@@ -29,26 +29,26 @@ export default function Slide04TeamH2H({
   const source = theme?.sources?.[9] || theme?.sources?.[3] || 'latest_h2h';
 
   let a = sheetData?.h2hMatch5?.a || {
-    name: 'EXTREME EX',
-    tag: 'EXE',
-    rank: 2,
-    surv: 22,
-    kills: 76,
-    total: 98,
-    damage: 42349,
-    hs: 67,
-    gloo: 340,
+    name: 'LOADING...',
+    tag: '---',
+    rank: 1,
+    surv: 0,
+    kills: 0,
+    total: 0,
+    damage: 0,
+    hs: 0,
+    gloo: 0,
   };
   let b = sheetData?.h2hMatch5?.b || {
-    name: '69 ESPORTS',
-    tag: '69',
-    rank: 8,
-    surv: 13,
-    kills: 48,
-    total: 61,
-    damage: 27036,
-    hs: 46,
-    gloo: 185,
+    name: 'LOADING...',
+    tag: '---',
+    rank: 2,
+    surv: 0,
+    kills: 0,
+    total: 0,
+    damage: 0,
+    hs: 0,
+    gloo: 0,
   };
 
   if (source === 'custom_h2h' && sheetData?.allTeamsFull?.length) {

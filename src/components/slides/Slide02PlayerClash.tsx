@@ -88,22 +88,22 @@ export default function Slide02PlayerClash({
   if (isPlayerMode) {
     // 1v1 Player Clash Mode
     let p1 = sheetData?.duel1v1?.p1 || {
-      name: 'TOP.1SHOVO',
-      team: 'RAAD VAI YT',
-      tag: 'TOP',
-      kills: 29,
-      damage: 11859,
-      hs: 31,
-      assist: 22,
+      name: 'LOADING...',
+      team: '---',
+      tag: '---',
+      kills: 0,
+      damage: 0,
+      hs: 0,
+      assist: 0,
     };
     let p2 = sheetData?.duel1v1?.p2 || {
-      name: 'EXE.SEJAN',
-      team: 'EXTREME EX',
-      tag: 'EXE',
-      kills: 27,
-      damage: 11890,
-      hs: 22,
-      assist: 13,
+      name: 'LOADING...',
+      team: '---',
+      tag: '---',
+      kills: 0,
+      damage: 0,
+      hs: 0,
+      assist: 0,
     };
 
     if (source === 'custom_duel' && sheetData?.dayTop10Players?.length) {
@@ -136,23 +136,23 @@ export default function Slide02PlayerClash({
   } else {
     // Team Head to Head Mode (Main / Default)
     let tA = {
-      name: 'EXTREME EX',
-      tag: 'EXE',
-      rank: 2,
-      kills: 76,
-      damage: 42349,
-      hs: 67,
-      assist: 32,
+      name: 'LOADING...',
+      tag: '---',
+      rank: 1,
+      kills: 0,
+      damage: 0,
+      hs: 0,
+      assist: 0,
       logoUrl: undefined as string | undefined,
     };
     let tB = {
-      name: '69 ESPORTS',
-      tag: '69',
-      rank: 8,
-      kills: 48,
-      damage: 27036,
-      hs: 46,
-      assist: 21,
+      name: 'LOADING...',
+      tag: '---',
+      rank: 2,
+      kills: 0,
+      damage: 0,
+      hs: 0,
+      assist: 0,
       logoUrl: undefined as string | undefined,
     };
 
@@ -579,49 +579,29 @@ export default function Slide02PlayerClash({
                 transition: `opacity 0.5s ease ${0.2 + idx * 0.15}s, transform 0.65s cubic-bezier(0.22, 1.12, 0.36, 1) ${0.2 + idx * 0.15}s`,
               }}
             >
-              <div className="relative flex items-center h-14 w-full">
-                {/* Left Bar (Contender 1) */}
+              <div className="relative flex items-center h-14 w-full px-2 gap-2">
+                {/* Left Side: Number pinned left, Bar grows from center-left */}
                 <div
-                  className="w-1/2 h-full flex justify-end overflow-hidden cursor-pointer"
+                  className="relative flex-1 h-full flex items-center justify-end overflow-hidden cursor-pointer rounded-l-md"
                   onClick={(e) => onElementClick?.(e, 's1', 'p1', `${c1.name} Bar Color`)}
                 >
                   <div
-                    className="bar-live h-full rounded-l-md flex items-center justify-start pl-6 overflow-hidden"
+                    className="bar-live h-full rounded-l-md"
                     style={{
                       backgroundColor: themeS1.p1,
                       width: animated ? `${wA}%` : '0%',
                       transition: 'width 1.65s cubic-bezier(0.22, 1, 0.36, 1) 0.3s',
                     }}
-                  >
-                    <span className="unskew font-hud font-extrabold text-2xl sm:text-3xl text-white">
-                      {formatNumber(r.a)}
-                    </span>
-                  </div>
+                  />
+                  <span className="unskew absolute left-3 z-10 font-hud font-extrabold text-2xl sm:text-3xl text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+                    {formatNumber(r.a)}
+                  </span>
                 </div>
 
-                {/* Right Bar (Contender 2) */}
-                <div
-                  className="w-1/2 h-full flex justify-start overflow-hidden cursor-pointer"
-                  onClick={(e) => onElementClick?.(e, 's1', 'p2', `${c2.name} Bar Color`)}
-                >
-                  <div
-                    className="bar-live h-full rounded-r-md flex items-center justify-end pr-6 overflow-hidden"
-                    style={{
-                      backgroundColor: themeS1.p2,
-                      width: animated ? `${wB}%` : '0%',
-                      transition: 'width 1.65s cubic-bezier(0.22, 1, 0.36, 1) 0.3s',
-                    }}
-                  >
-                    <span className="unskew font-hud font-extrabold text-2xl sm:text-3xl text-slate-950">
-                      {formatNumber(r.b)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Centered Stat Title Badge */}
-                <div className="absolute inset-0 flex items-center justify-center">
+                {/* Dedicated Center Stat Title Badge (Never overlaps numbers) */}
+                <div className="shrink-0 z-20 flex items-center justify-center">
                   <span
-                    className="unskew px-4 py-1 rounded-md text-sm sm:text-base font-extrabold tracking-widest border shadow-lg cursor-pointer hover:scale-105 transition-transform"
+                    className="unskew px-3.5 py-1 rounded-md text-xs sm:text-sm font-extrabold tracking-widest border shadow-lg cursor-pointer hover:scale-105 transition-transform whitespace-nowrap"
                     style={{
                       color: themeS1.accent,
                       borderColor: themeS1.accent,
@@ -631,6 +611,24 @@ export default function Slide02PlayerClash({
                     title="Click to change accent color"
                   >
                     {r.label}
+                  </span>
+                </div>
+
+                {/* Right Side: Number pinned right, Bar grows from center-right */}
+                <div
+                  className="relative flex-1 h-full flex items-center justify-start overflow-hidden cursor-pointer rounded-r-md"
+                  onClick={(e) => onElementClick?.(e, 's1', 'p2', `${c2.name} Bar Color`)}
+                >
+                  <div
+                    className="bar-live h-full rounded-r-md"
+                    style={{
+                      backgroundColor: themeS1.p2,
+                      width: animated ? `${wB}%` : '0%',
+                      transition: 'width 1.65s cubic-bezier(0.22, 1, 0.36, 1) 0.3s',
+                    }}
+                  />
+                  <span className="unskew absolute right-3 z-10 font-hud font-extrabold text-2xl sm:text-3xl text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
+                    {formatNumber(r.b)}
                   </span>
                 </div>
               </div>

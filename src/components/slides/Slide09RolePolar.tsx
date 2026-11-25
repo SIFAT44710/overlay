@@ -52,26 +52,26 @@ export default function Slide09RolePolar({
   // Resolve Team A & Team B from SheetData
   const allTeams = sheetData?.allTeamsFull || [];
   let teamA = allTeams[custom?.pAIdx ?? 1] || allTeams[0] || {
-    name: 'EXTREME EX',
-    tag: 'EXE',
-    rank: 2,
-    kills: 76,
-    damage: 42349,
-    hs: 67,
-    assist: 52,
-    total: 98,
+    name: 'LOADING...',
+    tag: '---',
+    rank: 1,
+    kills: 0,
+    damage: 0,
+    hs: 0,
+    assist: 0,
+    total: 0,
     col: '#8B5CF6',
   };
 
   let teamB = allTeams[custom?.pBIdx ?? 7] || allTeams[1] || {
-    name: '69 ESPORTS',
-    tag: '69',
-    rank: 8,
-    kills: 48,
-    damage: 27036,
-    hs: 46,
-    assist: 34,
-    total: 61,
+    name: 'LOADING...',
+    tag: '---',
+    rank: 2,
+    kills: 0,
+    damage: 0,
+    hs: 0,
+    assist: 0,
+    total: 0,
     col: '#F43F5E',
   };
 
