@@ -183,15 +183,19 @@ export default function Slide06SingleColumn({
 
     const { cfg: currentCfg, barColors: currentCols, teamLogoMap: currentLogos } = latestDataRef.current;
 
-    // Custom Plugin: Exact Comma Full Numbers (Zero 'K')
+    // Custom Plugin: Exact Comma Full Numbers with Vertical Anti-Collision (Up/Down stacking)
     const valuePlugin = {
       id: 'valuePlugin',
       afterDatasetsDraw(chart: any) {
-        const { ctx } = chart;
+        const { ctx, chartArea } = chart;
         ctx.save();
         ctx.font = '800 24px "GFF Latin", "Teko", sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
+
+        const topLimit = (chartArea?.top ?? 12) + 14;
+        const placed: Array<{ x1: number; x2: number; y1: number; y2: number }> = [];
+
         chart.data.datasets.forEach((ds: any, dsIdx: number) => {
           const meta = chart.getDatasetMeta(dsIdx);
           if (meta.hidden) return;
@@ -200,11 +204,24 @@ export default function Slide06SingleColumn({
             if (raw === 0 || raw == null) return;
             const pos = el.tooltipPosition();
             const fullTxt = formatNumber(raw);
+            const halfW = ctx.measureText(fullTxt).width / 2 + 5;
+
+            let y = pos.y - 16;
+            for (let attempt = 0; attempt < 4; attempt++) {
+              const box = { x1: pos.x - halfW, x2: pos.x + halfW, y1: y - 13, y2: y + 13 };
+              const hits = placed.some(
+                (b) => !(box.x2 < b.x1 || box.x1 > b.x2 || box.y2 < b.y1 || box.y1 > b.y2)
+              );
+              if (!hits) break;
+              y = y - 28 >= topLimit ? y - 28 : pos.y + 22;
+            }
+            placed.push({ x1: pos.x - halfW, x2: pos.x + halfW, y1: y - 13, y2: y + 13 });
+
             ctx.fillStyle = '#ffffff';
             ctx.strokeStyle = 'rgba(0,0,0,0.95)';
             ctx.lineWidth = 4.5;
-            ctx.strokeText(fullTxt, pos.x, pos.y - 16);
-            ctx.fillText(fullTxt, pos.x, pos.y - 16);
+            ctx.strokeText(fullTxt, pos.x, y);
+            ctx.fillText(fullTxt, pos.x, y);
           });
         });
         ctx.restore();

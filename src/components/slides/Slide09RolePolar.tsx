@@ -171,17 +171,20 @@ export default function Slide09RolePolar({
       roleColsB: curColsB,
     } = latestRef.current;
 
-    // Pure White Value Plugin for Polar Area Charts with High-Contrast Dark Outline
+    // Pure White Value Plugin for Polar Area Charts with Anti-Collision Radial Offset
     const polarValuePlugin = {
       id: 'polarValuePlugin',
       afterDatasetsDraw(chart: any) {
-        const { ctx } = chart;
+        const { ctx, chartArea } = chart;
         ctx.save();
-        ctx.font = '800 24px "GFF Latin", "Teko", sans-serif';
+        ctx.font = '800 22px "GFF Latin", "Teko", sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         const side = chart._side || 'a';
         const realVals = side === 'a' ? latestRef.current.realA : latestRef.current.realB;
+        const cx = chartArea ? (chartArea.left + chartArea.right) / 2 : chart.width / 2;
+        const cy = chartArea ? (chartArea.top + chartArea.bottom) / 2 : chart.height / 2;
+        const placed: Array<{ x1: number; x2: number; y1: number; y2: number }> = [];
 
         chart.data.datasets.forEach((ds: any, dsIdx: number) => {
           const meta = chart.getDatasetMeta(dsIdx);
@@ -191,13 +194,34 @@ export default function Slide09RolePolar({
             if (raw === 0 || raw == null) return;
             const pos = el.tooltipPosition();
             const fullTxt = formatNumber(raw);
+            const halfW = ctx.measureText(fullTxt).width / 2 + 6;
+            const dx = pos.x - cx;
+            const dy = pos.y - cy;
+            const dist = Math.hypot(dx, dy) || 1;
+            const ux = dx / dist;
+            const uy = dy / dist;
+
+            let tx = pos.x;
+            let ty = pos.y;
+            for (let attempt = 0; attempt < 4; attempt++) {
+              const box = { x1: tx - halfW, x2: tx + halfW, y1: ty - 13, y2: ty + 13 };
+              const hits = placed.some(
+                (b) => !(box.x2 < b.x1 || box.x1 > b.x2 || box.y2 < b.y1 || box.y1 > b.y2)
+              );
+              if (!hits) break;
+              // Step outward along wedge direction and slightly separate vertically
+              tx += ux * 24;
+              ty += uy * 24 + (i % 2 === 0 ? -12 : 12);
+            }
+            placed.push({ x1: tx - halfW, x2: tx + halfW, y1: ty - 13, y2: ty + 13 });
+
             ctx.fillStyle = '#ffffff'; // Always crisp pure white text
             ctx.strokeStyle = 'rgba(9,11,18,0.96)';
             ctx.lineWidth = 4.5;
             ctx.shadowColor = 'rgba(0,0,0,0.85)';
             ctx.shadowBlur = 6;
-            ctx.strokeText(fullTxt, pos.x, pos.y);
-            ctx.fillText(fullTxt, pos.x, pos.y);
+            ctx.strokeText(fullTxt, tx, ty);
+            ctx.fillText(fullTxt, tx, ty);
             ctx.shadowBlur = 0;
           });
         });

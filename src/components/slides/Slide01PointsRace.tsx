@@ -245,7 +245,7 @@ export default function Slide01PointsRace({
 
           const last = pts[pts.length - 1];
           const ly = safeYs[tIdx] ?? last.y;
-          const boxW = isLeader ? 268 : 248;
+          const boxW = isLeader ? 290 : 272;
           const boxH = isLeader ? 58 : 52;
           const logoR = isLeader ? 23 : 20;
           const logoCx = last.x + 62;

@@ -193,11 +193,11 @@ export default function Slide10DualColumn({
 
     const { cfg: currentCfg, themeS9: currentTheme } = latestRef.current;
 
-    // Custom Plugin: Large 24px Numbers cleanly positioned above each candle with Guaranteed Zero Overlap
+    // Custom Plugin: Large 24px Numbers cleanly positioned with 2D Anti-Collision Stacking (Up/Down)
     const valuePlugin = {
       id: 'dualValuePlugin',
       afterDatasetsDraw(chart: any) {
-        const { ctx } = chart;
+        const { ctx, chartArea } = chart;
         ctx.save();
 
         const meta0 = chart.getDatasetMeta(0);
@@ -215,6 +215,35 @@ export default function Slide10DualColumn({
         ctx.textBaseline = 'bottom';
         ctx.lineWidth = 4.5;
         ctx.strokeStyle = 'rgba(0,0,0,0.96)';
+
+        const topBound = (chartArea?.top ?? 10) + 26;
+        const placedBoxes: Array<{ x1: number; x2: number; yTop: number; yBot: number }> = [];
+
+        const resolveY = (cx: number, w: number, baseY: number): number => {
+          let y = baseY;
+          const halfW = w / 2 + 5;
+          for (let attempt = 0; attempt < 5; attempt++) {
+            const box = { x1: cx - halfW, x2: cx + halfW, yTop: y - 26, yBot: y + 2 };
+            const collides = placedBoxes.some(
+              (b) => !(box.x2 < b.x1 || box.x1 > b.x2 || box.yBot < b.yTop || box.yTop > b.yBot)
+            );
+            if (!collides) {
+              placedBoxes.push(box);
+              return y;
+            }
+            // Stack upward; if near chart top, drop down inside bar
+            if (y - 30 >= topBound) {
+              y -= 30;
+            } else {
+              y += 28;
+            }
+          }
+          placedBoxes.push({ x1: cx - halfW, x2: cx + halfW, yTop: y - 26, yBot: y + 2 });
+          return y;
+        };
+
+        const liveKillsCol = latestRef.current.themeS9.kills;
+        const liveDamageCol = latestRef.current.themeS9.damage;
 
         for (let i = 0; i < total; i++) {
           const el0 = meta0.data[i];
@@ -234,29 +263,27 @@ export default function Slide10DualColumn({
           const w0 = has0 ? ctx.measureText(txt0).width : 0;
           const w1 = has1 ? ctx.measureText(txt1).width : 0;
 
-          // Default: Centered directly over the top of each candle
-          let x0 = p0 ? p0.x - 2 : 0;
-          let x1 = p1 ? p1.x : 0;
-          let y0 = p0 ? p0.y - 12 : 0;
-          let y1 = p1 ? p1.y - 12 : 0;
+          const x0 = p0 ? p0.x - 2 : 0;
+          const x1 = p1 ? p1.x : 0;
+          const baseY0 = p0 ? p0.y - 10 : 0;
+          const baseY1 = p1 ? p1.y - 10 : 0;
 
-          if (has0 && has1 && p0 && p1) {
-            // Check horizontal overlap between yellow number bounds and blue number bounds
-            const right0 = x0 + w0 / 2;
-            const left1 = x1 - w1 / 2;
-            const hOverlap = right0 - left1; // Positive if bounds overlap
-            const vDist = Math.abs(y0 - y1);
-
-            // Guaranteed Zero Collision: If labels are close horizontally (or overlapping) AND close vertically:
-            // Elevate the Damage (blue) label cleanly above Kills so they NEVER collide or merge into each other
-            if (hOverlap > -10 && vDist < 38) {
-              y1 = Math.min(y0, y1) - 26;
+          // Place lower bar's label first, then higher/adjacent label resolves cleanly above
+          let y0 = baseY0;
+          let y1 = baseY1;
+          if (has0 && has1) {
+            if (baseY0 >= baseY1) {
+              y0 = resolveY(x0, w0, baseY0);
+              y1 = resolveY(x1, w1, baseY1);
+            } else {
+              y1 = resolveY(x1, w1, baseY1);
+              y0 = resolveY(x0, w0, baseY0);
             }
+          } else if (has0) {
+            y0 = resolveY(x0, w0, baseY0);
+          } else if (has1) {
+            y1 = resolveY(x1, w1, baseY1);
           }
-
-          // Draw Yellow (Kills) label cleanly centered directly above yellow candle with neon glow
-          const liveKillsCol = latestRef.current.themeS9.kills;
-          const liveDamageCol = latestRef.current.themeS9.damage;
 
           if (has0) {
             ctx.textAlign = 'center';
@@ -268,7 +295,6 @@ export default function Slide10DualColumn({
             ctx.shadowBlur = 0;
           }
 
-          // Draw Blue (Damage) label cleanly centered directly above blue candle with neon glow
           if (has1) {
             ctx.textAlign = 'center';
             ctx.fillStyle = liveDamageCol;
