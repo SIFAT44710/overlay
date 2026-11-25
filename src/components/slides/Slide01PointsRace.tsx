@@ -75,11 +75,8 @@ export default function Slide01PointsRace({
     sheetData?.matchProgression && sheetData.matchProgression.length >= 2
       ? sheetData.matchProgression
       : [
-          { tag: 'TOP', name: 'RAAD VAI YT', color: '#fbbf24', pts: [21, 67, 81, 104, 134] },
-          { tag: 'EXE', name: 'EXTREME EX', color: '#a78bfa', pts: [29, 34, 55, 73, 98] },
-          { tag: 'S9x', name: 'SNEAKY9X', color: '#2dd4bf', pts: [29, 31, 62, 93, 96] },
-          { tag: 'CME', name: 'COFFIN MAKERS ESP', color: '#f43f5e', pts: [14, 34, 56, 69, 93] },
-          { tag: 'TRX', name: 'TITANOVA REX', color: '#38bdf8', pts: [12, 27, 41, 67, 85] },
+          { tag: '---', name: 'LOADING...', color: '#fbbf24', pts: [0, 0, 0, 0, 0] },
+          { tag: '---', name: 'LOADING...', color: '#a78bfa', pts: [0, 0, 0, 0, 0] },
         ];
 
   const themeS0 = theme?.s0 || {

@@ -8,8 +8,8 @@ interface SheetCacheEntry {
   timestamp: number;
 }
 
-const SHEET_CACHE_TTL_MS = 3000; // 3 seconds TTL for sheet values
-const DRIVE_CACHE_TTL_MS = 3000; // 3 seconds TTL for Drive logo list (Instant sync with Google Drive)
+const SHEET_CACHE_TTL_MS = 1500; // 1.5 seconds TTL for sheet values
+const DRIVE_CACHE_TTL_MS = 1500; // 1.5 seconds TTL for Drive logo list (Instant sync with Google Drive)
 
 const sheetRangeCache = new Map<string, SheetCacheEntry>();
 const staleRangeCache = new Map<string, any[][]>();

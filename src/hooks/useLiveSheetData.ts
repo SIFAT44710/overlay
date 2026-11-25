@@ -20,9 +20,9 @@ export function useLiveSheetData() {
     '/api/live-data',
     fetcher,
     {
-      refreshInterval: 3000, // Poll every 3 seconds
-      revalidateOnFocus: false, // Don't trigger flash when switching window
-      dedupingInterval: 2000,
+      refreshInterval: 2000, // Poll every 2 seconds for instant Sheet & Drive updates
+      revalidateOnFocus: true,
+      dedupingInterval: 1000,
       keepPreviousData: true,
     }
   );

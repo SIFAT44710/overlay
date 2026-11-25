@@ -30,12 +30,8 @@ export default function Slide06SingleColumn({
   const themeS5 = theme?.s5 || {};
   const source = theme?.sources?.[4] || theme?.sources?.[5] || 'day_pts';
 
-  const defaultTags = ['TOP', 'EXE', 'S9x', 'CME', 'TRX', 'UEO', 'NK', '69', 'JG', 'ITZ', 'EGL', 'SG'];
-  const defaultNames = [
-    'RAAD VAI YT', 'EXTREME EX', 'SNEAKY9X', 'COFFIN MAKERS', 'TITANOVA REX',
-    'TEAM UNIONIZED', 'NOVA KNIGHT', '69 ESPORTS', 'JUMA GAMING', 'ITZ KABBO',
-    'TEAM EAGLE', 'SADIA GAMING',
-  ];
+  const defaultTags = Array(12).fill('---');
+  const defaultNames = Array(12).fill('LOADING...');
 
   const barColors = Array.from({ length: 12 }, (_, idx) => (themeS5 as any)[`c${idx}`] || [
     '#F5B700', '#E11D48', '#8B5CF6', '#2DD4BF', '#38BDF8', '#6366F1',
@@ -45,11 +41,11 @@ export default function Slide06SingleColumn({
   // Determine active dataset based on source
   let cfg = {
     badge: '#1 TOP POINTS',
-    leader: 'RAAD VAI YT (TOP)',
-    valTxt: '134 PTS',
+    leader: 'LOADING...',
+    valTxt: '0 PTS',
     tags: defaultTags,
     names: defaultNames,
-    vals: [134, 98, 96, 93, 85, 78, 69, 61, 58, 36, 33, 0],
+    vals: Array(12).fill(0),
   };
 
   const st12 = sheetData?.standing12 || [];

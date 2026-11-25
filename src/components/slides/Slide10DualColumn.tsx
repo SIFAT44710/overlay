@@ -30,20 +30,13 @@ export default function Slide10DualColumn({
   const themeS9 = theme?.s9 || { kills: '#F5B700', damage: '#38BDF8' };
   const source = theme?.sources?.[8] || theme?.sources?.[9] || 'day_kd_12';
 
-  const list = sheetData?.teamKillsDmg12 || [
-    { tag: 'TOP', name: 'RAAD VAI YT', kills: 94, dmg: 57261, col: '#F5B700' },
-    { tag: 'EXE', name: 'EXTREME EX', kills: 76, dmg: 42349, col: '#E11D48' },
-    { tag: 'S9x', name: 'SNEAKY9X', kills: 62, dmg: 41088, col: '#8B5CF6' },
-    { tag: 'CME', name: 'COFFIN MAKERS', kills: 58, dmg: 44026, col: '#2DD4BF' },
-    { tag: 'TRX', name: 'TITANOVA REX', kills: 49, dmg: 31573, col: '#38BDF8' },
-    { tag: 'UEO', name: 'TEAM UNIONIZED', kills: 50, dmg: 29641, col: '#6366F1' },
-    { tag: 'NK', name: 'NOVA KNIGHT', kills: 46, dmg: 27420, col: '#A78BFA' },
-    { tag: '69', name: '69 ESPORTS', kills: 48, dmg: 27036, col: '#F43F5E' },
-    { tag: 'JG', name: 'JUMA GAMING', kills: 35, dmg: 22180, col: '#14B8A6' },
-    { tag: 'ITZ', name: 'ITZ KABBO', kills: 22, dmg: 16450, col: '#60A5FA' },
-    { tag: 'EGL', name: 'TEAM EAGLE', kills: 16, dmg: 14210, col: '#94A3B8' },
-    { tag: 'SG', name: 'SADIA GAMING', kills: 0, dmg: 892, col: '#64748B' },
-  ];
+  const list = sheetData?.teamKillsDmg12 || Array.from({ length: 12 }, () => ({
+    tag: '---',
+    name: 'LOADING...',
+    kills: 0,
+    dmg: 0,
+    col: '#F5B700',
+  }));
 
   const st12 = sheetData?.standing12 || [];
   const m5 = sheetData?.mapStandingM5 || [];
