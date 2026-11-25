@@ -13,20 +13,17 @@ interface SlideProps {
   onElementClick?: (e: React.MouseEvent, group: string, key: string, label: string) => void;
 }
 
-const DEFAULT_ALL_TEAMS = [
-  { rank: 1, name: 'NOCTRYX ESPORTS', tag: 'NTX', kills: 63, damage: 30737, hs: 45, assist: 130, surv: 35, total: 98 },
-  { rank: 2, name: 'iQ LESS', tag: 'iQL', kills: 32, damage: 20341, hs: 32, assist: 48, surv: 31, total: 63 },
-  { rank: 3, name: 'UNKNOWN BLOOD', tag: 'UB', kills: 42, damage: 22100, hs: 35, assist: 38, surv: 28, total: 70 },
-  { rank: 4, name: 'ALCHEMIST', tag: 'ALC', kills: 39, damage: 21500, hs: 31, assist: 34, surv: 26, total: 65 },
-  { rank: 5, name: 'NEXO BLIND', tag: 'NXB', kills: 36, damage: 19800, hs: 28, assist: 30, surv: 24, total: 60 },
-  { rank: 6, name: 'AURA SMT', tag: 'AURA', kills: 31, damage: 17400, hs: 25, assist: 28, surv: 22, total: 53 },
-  { rank: 7, name: 'WIDE YOUTH', tag: 'WY', kills: 28, damage: 16200, hs: 22, assist: 24, surv: 20, total: 48 },
-  { rank: 8, name: 'NO SYMPATHY', tag: 'NSP', kills: 22, damage: 20106, hs: 30, assist: 56, surv: 25, total: 47 },
-  { rank: 9, name: '6S BY AG', tag: '6S', kills: 24, damage: 14500, hs: 19, assist: 21, surv: 18, total: 42 },
-  { rank: 10, name: 'POWER OF BGX', tag: 'BGX', kills: 20, damage: 13200, hs: 16, assist: 18, surv: 16, total: 36 },
-  { rank: 11, name: 'DRAKEBORN', tag: 'DRK', kills: 18, damage: 11800, hs: 14, assist: 16, surv: 14, total: 32 },
-  { rank: 12, name: 'EXTREME EX', tag: 'EXE', kills: 76, damage: 42349, hs: 67, assist: 32, surv: 22, total: 98 },
-];
+const DEFAULT_ALL_TEAMS = Array.from({ length: 12 }, (_, idx) => ({
+  rank: idx + 1,
+  name: 'LOADING...',
+  tag: '---',
+  kills: 0,
+  damage: 0,
+  hs: 0,
+  assist: 0,
+  surv: 0,
+  total: 0,
+}));
 
 export default function Slide05GroupAverages({
   sheetData,

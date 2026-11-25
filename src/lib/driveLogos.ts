@@ -22,13 +22,15 @@ export function resolveDriveLogo(
   const normTeam = normalizeStr(teamName);
   const normTag = normalizeStr(tagName);
 
-  const getCleanName = (fName: string) => normalizeStr(fName.replace(/\.[^/.]+$/, ''));
+  const getCleanName = (fName: string) =>
+    normalizeStr(fName.replace(/(\.(png|jpe?g|webp|gif|svg|bmp|avif))+$/i, ''));
 
   const buildUrl = (file: DriveFileItem) => {
     const ver = file.version || file.modifiedTime || '';
     const nameParam = file.name ? `&n=${encodeURIComponent(file.name)}` : '';
-    const cacheParam = ver ? `&v=${encodeURIComponent(ver)}` : '';
-    return `https://drive.google.com/thumbnail?id=${file.id}&sz=w240${cacheParam}${nameParam}`;
+    const cacheParam = ver ? `v=${encodeURIComponent(ver)}` : 'v=1';
+    // Direct lh3 CDN URL avoids the 302 redirect hop from drive.google.com/thumbnail
+    return `https://lh3.googleusercontent.com/d/${file.id}=w240?${cacheParam}${nameParam}`;
   };
 
   // Pass 1: Exact Tag Match (case-insensitive, extension-stripped)
@@ -57,7 +59,7 @@ export function resolveDriveLogo(
   // Pass 3: Word boundary / Delimiter match (e.g. "TOP_LOGO.png", "EXE-LOGO.png", "TOP LOGO.png")
   for (const file of driveFiles) {
     if (!file.name) continue;
-    const base = file.name.replace(/\.[^/.]+$/, '').toLowerCase();
+    const base = file.name.replace(/(\.(png|jpe?g|webp|gif|svg|bmp|avif))+$/i, '').toLowerCase();
     const words = base.split(/[\s_\-]+/).filter(Boolean);
     if (normTag && words.includes(normTag)) {
       return buildUrl(file);
