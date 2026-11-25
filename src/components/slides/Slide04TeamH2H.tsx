@@ -3,7 +3,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { SheetDataPayload, BroadcastThemeConfig } from '@/types/broadcast';
 import TeamLogoBadge from '@/components/TeamLogoBadge';
-import SpiritFireCanvas from '@/components/SpiritFireCanvas';
 import { formatNumber } from '@/lib/sheetParsers';
 
 interface SlideProps {
@@ -168,9 +167,7 @@ export default function Slide04TeamH2H({
         {/* Team A Card */}
         <div
           id="m12-card-a"
-          className={`skew-box dark-box border-l-4 px-3 py-1 rounded-lg transition-all duration-500 w-fit max-w-[340px] relative cursor-pointer ${
-            winnerSide === 'a' && animated ? 'top1-hero-glow fire-winner-card top1-scale' : ''
-          }`}
+          className="skew-box hud-card border-l-4 px-3 py-1 rounded-lg transition-all duration-500 w-fit max-w-[340px] relative cursor-pointer"
           style={{
             borderLeftColor: colA,
             transform: animated ? 'translateY(0)' : 'translateY(-14px)',
@@ -179,7 +176,6 @@ export default function Slide04TeamH2H({
           }}
           onClick={(e) => onElementClick?.(e, 's3', 'teamA', `${a.name} Color`)}
         >
-          {winnerSide === 'a' && <SpiritFireCanvas />}
           <div className="unskew flex items-center gap-2.5">
             <TeamLogoBadge
               tag={a.tag}
@@ -205,9 +201,7 @@ export default function Slide04TeamH2H({
         {/* Team B Card */}
         <div
           id="m12-card-b"
-          className={`skew-box dark-box border-r-4 px-3 py-1 rounded-lg transition-all duration-500 w-fit max-w-[340px] ml-auto relative cursor-pointer ${
-            winnerSide === 'b' && animated ? 'top1-hero-glow fire-winner-card top1-scale' : ''
-          }`}
+          className="skew-box hud-card border-r-4 px-3 py-1 rounded-lg transition-all duration-500 w-fit max-w-[340px] ml-auto relative cursor-pointer"
           style={{
             borderRightColor: colB,
             transform: animated ? 'translateY(0)' : 'translateY(-14px)',
@@ -216,7 +210,6 @@ export default function Slide04TeamH2H({
           }}
           onClick={(e) => onElementClick?.(e, 's3', 'teamB', `${b.name} Color`)}
         >
-          {winnerSide === 'b' && <SpiritFireCanvas />}
           <div className="unskew flex items-center gap-2.5">
             <div className="font-hud text-lg sm:text-xl font-bold mr-1" style={{ color: colB }}>
               {b.total} PTS
@@ -242,8 +235,8 @@ export default function Slide04TeamH2H({
 
       {/* Main Grid: Diamond Radar on Left, Semi-Circle Gauge on Right */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-        {/* Dynamic 4-Corner Diamond Radar */}
-        <div className="dark-box rounded-2xl p-6 flex justify-center">
+        {/* Dynamic 4-Corner Diamond Radar (100% Transparent OBS HUD) */}
+        <div className="hud-card rounded-2xl p-6 flex justify-center">
           <svg viewBox="0 0 420 330" className="w-full max-w-[500px] overflow-visible">
             <defs>
               <filter id="glowA" x="-20%" y="-20%" width="140%" height="140%">
@@ -396,11 +389,11 @@ export default function Slide04TeamH2H({
           </svg>
         </div>
 
-        {/* Semi-Circle Head-to-Head Comparison Gauge on Right */}
-        <div className="dark-box rounded-2xl p-6 flex flex-col items-center">
+        {/* Semi-Circle Head-to-Head Comparison Gauge on Right (100% Transparent OBS HUD) */}
+        <div className="hud-card rounded-2xl p-6 flex flex-col items-center">
           <div className="relative w-full max-w-[440px]">
             <svg viewBox="0 0 320 175" className="w-full overflow-visible">
-              <path d="M 45 155 A 115 115 0 0 1 275 155" fill="none" stroke="#0b0f19" strokeWidth="30" />
+              <path d="M 45 155 A 115 115 0 0 1 275 155" fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="30" />
               <path
                 id="m12-a1"
                 className="arc-sweep cursor-pointer hover:opacity-85"

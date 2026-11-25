@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Chart, registerables } from 'chart.js';
 import { SheetDataPayload, BroadcastThemeConfig } from '@/types/broadcast';
 import TeamLogoBadge from '@/components/TeamLogoBadge';
-import SpiritFireCanvas from '@/components/SpiritFireCanvas';
 import { formatNumber } from '@/lib/sheetParsers';
 
 Chart.register(...registerables);
@@ -318,7 +317,7 @@ export default function Slide09RolePolar({
     };
   }, [replayKey]);
 
-  // 2. Data & Theme Background Update: Update in-place silently WITHOUT rebuilding or re-animating
+  // 2. Data & Theme Background Update: Update in-place silently ('none') to prevent Polar animation glitching
   useEffect(() => {
     if (chart1Ref.current) {
       chart1Ref.current.data.labels = displayLabels;
@@ -332,7 +331,7 @@ export default function Slide09RolePolar({
           });
         }
       }
-      chart1Ref.current.update();
+      chart1Ref.current.update('none');
     }
     if (chart2Ref.current) {
       chart2Ref.current.data.labels = displayLabels;
@@ -346,7 +345,7 @@ export default function Slide09RolePolar({
           });
         }
       }
-      chart2Ref.current.update();
+      chart2Ref.current.update('none');
     }
   }, [
     displayLabels.join(','),
@@ -359,7 +358,7 @@ export default function Slide09RolePolar({
   ]);
 
   return (
-    <div className="w-full max-w-[1340px] pt-14 flex flex-col gap-5 relative font-hud select-none">
+    <div className="w-full max-w-[1340px] pt-10 flex flex-col gap-5 relative font-hud select-none">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
         {/* Polar Card A (Left Circle - Team A) */}
         <div
@@ -367,21 +366,20 @@ export default function Slide09RolePolar({
             animated ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-4 scale-95'
           }`}
         >
-          {/* Header */}
+          {/* Transparent Team A Header */}
           <div className="flex justify-between items-center w-full mb-3">
-            <div className="relative px-3 py-1.5 rounded-xl bg-slate-950/90 border border-purple-400 font-hud text-xs sm:text-sm font-bold text-white flex items-center gap-2.5 top1-hero-glow">
-              <SpiritFireCanvas />
+            <div className="relative px-3 py-1.5 rounded-xl bg-transparent border border-white/25 font-hud text-xs sm:text-sm font-bold text-white flex items-center gap-2.5">
               <TeamLogoBadge tag={teamA.tag} name={teamA.name} logoUrl={teamA.logoUrl} sizeCls="w-9 h-9" textSizeCls="text-sm" />
               <div className="flex flex-col">
                 <div className="flex items-center gap-1.5">
                   <span className="text-amber-400 font-black">#{teamA.rank}</span>
                   <span className="font-extrabold tracking-wide uppercase">{teamA.name}</span>
                 </div>
-                <span className="text-[10px] text-purple-300 font-medium tracking-wider">TEAM A • {teamA.tag}</span>
+                <span className="text-[10px] text-slate-300 font-medium tracking-wider">TEAM A • {teamA.tag}</span>
               </div>
             </div>
             <div
-              className="px-2.5 py-1 rounded-lg font-hud text-xs sm:text-sm font-extrabold text-black flex items-center gap-1.5 shadow-md"
+              className="px-2.5 py-1 rounded-lg font-hud text-xs sm:text-sm font-extrabold text-black flex items-center gap-1.5"
               style={{ backgroundColor: roleColsA[0] }}
             >
               <span className="text-white">PTS:</span>
@@ -389,8 +387,13 @@ export default function Slide09RolePolar({
             </div>
           </div>
 
-          {/* Left Circle Metric Selectors & Value Pills */}
-          <div className="grid grid-cols-4 gap-1.5 w-full mb-2">
+          {/* Canvas (Graph First) */}
+          <div className="relative h-[340px] sm:h-[390px] w-full">
+            <canvas ref={canvas1Ref} className="cursor-pointer" />
+          </div>
+
+          {/* Left Circle Metric Selectors & Value Pills (Moved BELOW Graph, Transparent) */}
+          <div className="grid grid-cols-4 gap-1.5 w-full mt-3">
             {[
               { key: 'a_kills', label: 'KILLS', val: teamA.kills, col: roleColsA[0] },
               { key: 'a_damage', label: 'DMG', val: teamA.damage, col: roleColsA[1] },
@@ -403,7 +406,7 @@ export default function Slide09RolePolar({
                 onClick={(e) =>
                   onElementClick?.(e, 's8', metric.key, `${teamA.name} (Team A): ${metric.label} Color`)
                 }
-                className="flex flex-col items-center justify-center p-1.5 rounded-lg bg-slate-950/90 border border-white/15 hover:border-purple-400 font-hud cursor-pointer transition-all hover:scale-[1.02]"
+                className="flex flex-col items-center justify-center p-1.5 rounded-lg bg-transparent border border-white/20 hover:border-white/50 font-hud cursor-pointer transition-all hover:scale-[1.02]"
                 title={`Click to change Team A ${metric.label} color`}
               >
                 <div className="flex items-center gap-1">
@@ -416,11 +419,6 @@ export default function Slide09RolePolar({
               </button>
             ))}
           </div>
-
-          {/* Canvas */}
-          <div className="relative h-[340px] sm:h-[400px] w-full">
-            <canvas ref={canvas1Ref} className="cursor-pointer" />
-          </div>
         </div>
 
         {/* Polar Card B (Right Circle - Team B) */}
@@ -430,21 +428,20 @@ export default function Slide09RolePolar({
           }`}
           style={{ transitionDelay: '0.12s' }}
         >
-          {/* Header */}
+          {/* Transparent Team B Header */}
           <div className="flex justify-between items-center w-full mb-3">
-            <div className="relative px-3 py-1.5 rounded-xl bg-slate-950/90 border border-teal-400 font-hud text-xs sm:text-sm font-bold text-white flex items-center gap-2.5 top1-hero-glow">
-              <SpiritFireCanvas />
+            <div className="relative px-3 py-1.5 rounded-xl bg-transparent border border-white/25 font-hud text-xs sm:text-sm font-bold text-white flex items-center gap-2.5">
               <TeamLogoBadge tag={teamB.tag} name={teamB.name} logoUrl={teamB.logoUrl} sizeCls="w-9 h-9" textSizeCls="text-sm" />
               <div className="flex flex-col">
                 <div className="flex items-center gap-1.5">
                   <span className="text-teal-400 font-black">#{teamB.rank}</span>
                   <span className="font-extrabold tracking-wide uppercase">{teamB.name}</span>
                 </div>
-                <span className="text-[10px] text-teal-300 font-medium tracking-wider">TEAM B • {teamB.tag}</span>
+                <span className="text-[10px] text-slate-300 font-medium tracking-wider">TEAM B • {teamB.tag}</span>
               </div>
             </div>
             <div
-              className="px-2.5 py-1 rounded-lg font-hud text-xs sm:text-sm font-extrabold text-black flex items-center gap-1.5 shadow-md"
+              className="px-2.5 py-1 rounded-lg font-hud text-xs sm:text-sm font-extrabold text-black flex items-center gap-1.5"
               style={{ backgroundColor: roleColsB[0] }}
             >
               <span className="text-white">PTS:</span>
@@ -452,8 +449,13 @@ export default function Slide09RolePolar({
             </div>
           </div>
 
-          {/* Right Circle Metric Selectors & Value Pills */}
-          <div className="grid grid-cols-4 gap-1.5 w-full mb-2">
+          {/* Canvas (Graph First) */}
+          <div className="relative h-[340px] sm:h-[390px] w-full">
+            <canvas ref={canvas2Ref} className="cursor-pointer" />
+          </div>
+
+          {/* Right Circle Metric Selectors & Value Pills (Moved BELOW Graph, Transparent) */}
+          <div className="grid grid-cols-4 gap-1.5 w-full mt-3">
             {[
               { key: 'b_kills', label: 'KILLS', val: teamB.kills, col: roleColsB[0] },
               { key: 'b_damage', label: 'DMG', val: teamB.damage, col: roleColsB[1] },
@@ -466,7 +468,7 @@ export default function Slide09RolePolar({
                 onClick={(e) =>
                   onElementClick?.(e, 's8', metric.key, `${teamB.name} (Team B): ${metric.label} Color`)
                 }
-                className="flex flex-col items-center justify-center p-1.5 rounded-lg bg-slate-950/90 border border-white/15 hover:border-teal-400 font-hud cursor-pointer transition-all hover:scale-[1.02]"
+                className="flex flex-col items-center justify-center p-1.5 rounded-lg bg-transparent border border-white/20 hover:border-white/50 font-hud cursor-pointer transition-all hover:scale-[1.02]"
                 title={`Click to change Team B ${metric.label} color`}
               >
                 <div className="flex items-center gap-1">
@@ -478,11 +480,6 @@ export default function Slide09RolePolar({
                 <span className="text-xs sm:text-sm font-black text-white">{formatNumber(metric.val)}</span>
               </button>
             ))}
-          </div>
-
-          {/* Canvas */}
-          <div className="relative h-[340px] sm:h-[400px] w-full">
-            <canvas ref={canvas2Ref} className="cursor-pointer" />
           </div>
         </div>
       </div>

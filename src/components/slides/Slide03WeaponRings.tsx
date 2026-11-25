@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { SheetDataPayload, BroadcastThemeConfig } from '@/types/broadcast';
-import SpiritFireCanvas from '@/components/SpiritFireCanvas';
 import { formatNumber } from '@/lib/sheetParsers';
 
 interface SlideProps {
@@ -250,9 +249,7 @@ export default function Slide03WeaponRings({
             return (
               <div
                 key={w.name}
-                className={`pop-card hud-card rounded-xl p-4 transition-all relative cursor-pointer hover:border-purple-400/80 ${
-                  isTopWeapon ? 'top1-hero-glow' : ''
-                }`}
+                className="pop-card hud-card rounded-xl p-4 transition-all relative cursor-pointer hover:border-white/50"
                 style={{
                   opacity: animated ? 1 : 0,
                   transform: animated
@@ -265,7 +262,6 @@ export default function Slide03WeaponRings({
                 onClick={(e) => onElementClick?.(e, 's2', colKey, `${w.name} Color`)}
                 title={`Click to change ${w.name} ring and bar color`}
               >
-                {isTopWeapon && <SpiritFireCanvas />}
                 <div className="flex justify-between items-center mb-1.5 relative z-10">
                   <span className="font-hud text-xl font-bold text-white flex items-center gap-2">
                     <span

@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react';
 import { SheetDataPayload, BroadcastThemeConfig } from '@/types/broadcast';
 import TeamLogoBadge from '@/components/TeamLogoBadge';
-import SpiritFireCanvas from '@/components/SpiritFireCanvas';
 import { formatNumber } from '@/lib/sheetParsers';
 
 interface SlideProps {
@@ -245,9 +244,7 @@ export default function Slide05GroupAverages({
       <div className="absolute top-1 inset-x-3 sm:inset-x-6 flex justify-between items-center text-sm sm:text-base font-bold font-hud z-30">
         <div
           id="m14-team-a"
-          className={`px-3.5 py-1.5 rounded-xl text-white inline-flex items-center gap-2.5 shadow-xl relative cursor-pointer transition-all duration-500 border border-purple-400/40 ${
-            winnerTeam === 'a' && animated ? 'top1-hero-glow fire-winner-card top1-scale' : ''
-          }`}
+          className="px-3.5 py-1.5 rounded-xl text-white inline-flex items-center gap-2.5 relative cursor-pointer transition-all duration-500 border border-white/25"
           style={{
             backgroundColor: colA,
             transform: animated ? 'translateY(0)' : 'translateY(-12px)',
@@ -257,7 +254,6 @@ export default function Slide05GroupAverages({
           onClick={(e) => onElementClick?.(e, 's4', 'teamA', `${a.name} Color`)}
           title={`Click to change ${a.name} color`}
         >
-          {winnerTeam === 'a' && <SpiritFireCanvas />}
           <TeamLogoBadge
             tag={a.tag}
             name={a.name}
@@ -273,9 +269,7 @@ export default function Slide05GroupAverages({
 
         <div
           id="m14-team-b"
-          className={`px-3.5 py-1.5 rounded-xl text-slate-950 inline-flex items-center gap-2.5 shadow-xl ml-auto relative cursor-pointer transition-all duration-500 border border-teal-300/40 ${
-            winnerTeam === 'b' && animated ? 'top1-hero-glow fire-winner-card top1-scale' : ''
-          }`}
+          className="px-3.5 py-1.5 rounded-xl text-slate-950 inline-flex items-center gap-2.5 ml-auto relative cursor-pointer transition-all duration-500 border border-white/25"
           style={{
             backgroundColor: colB,
             transform: animated ? 'translateY(0)' : 'translateY(-12px)',
@@ -285,7 +279,6 @@ export default function Slide05GroupAverages({
           onClick={(e) => onElementClick?.(e, 's4', 'teamB', `${b.name} Color`)}
           title={`Click to change ${b.name} color`}
         >
-          {winnerTeam === 'b' && <SpiritFireCanvas />}
           <div className="flex flex-col text-right">
             <span className="truncate max-w-[170px] text-sm sm:text-base font-extrabold leading-tight text-slate-950">{b.name}</span>
             <span className="text-[10px] text-slate-900/80 font-bold tracking-wider">{b.tag} • RANK #{b.rank}</span>
@@ -310,7 +303,7 @@ export default function Slide05GroupAverages({
           return (
             <div
               key={c.title}
-              className="hud-card rounded-2xl p-5 sm:p-6 flex flex-col items-center bg-slate-950/85 border border-purple-500/35 shadow-2xl transition-all duration-700 hover:border-amber-400/60"
+              className="hud-card rounded-2xl p-5 sm:p-6 flex flex-col items-center bg-transparent border border-white/25 transition-all duration-700 hover:border-amber-400/60"
               style={{
                 opacity: animated ? 1 : 0,
                 transform: animated ? 'translateY(0) scale(1)' : 'translateY(16px) scale(0.96)',

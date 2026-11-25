@@ -3,7 +3,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { SheetDataPayload, BroadcastThemeConfig } from '@/types/broadcast';
 import TeamLogoBadge from '@/components/TeamLogoBadge';
-import SpiritFireCanvas from '@/components/SpiritFireCanvas';
 import { formatNumber } from '@/lib/sheetParsers';
 
 interface SlideProps {
@@ -359,11 +358,10 @@ export default function Slide02PlayerClash({
         {/* Contender 1 Card */}
         <div
           id="s3-card-p1"
-          className="dark-box rounded-lg px-3 py-1.5 border-l-4 text-left relative transition-all duration-700 w-fit max-w-[280px]"
+          className="hud-card rounded-lg px-3 py-1.5 border-l-4 text-left relative transition-all duration-700 w-fit max-w-[280px]"
           style={{ borderLeftColor: themeS1.p1 }}
           onClick={(e) => onElementClick?.(e, 's1', 'p1', `${c1.name} Color`)}
         >
-          {winnerSide === 'p1' && <SpiritFireCanvas />}
           <div className="relative z-10 flex items-center gap-2.5">
             <TeamLogoBadge
               tag={c1.tag}
@@ -390,11 +388,10 @@ export default function Slide02PlayerClash({
         {/* Contender 2 Card */}
         <div
           id="s3-card-p2"
-          className="dark-box rounded-lg px-3 py-1.5 border-r-4 text-right relative transition-all duration-700 w-fit max-w-[280px] ml-auto"
+          className="hud-card rounded-lg px-3 py-1.5 border-r-4 text-right relative transition-all duration-700 w-fit max-w-[280px] ml-auto"
           style={{ borderRightColor: themeS1.p2 }}
           onClick={(e) => onElementClick?.(e, 's1', 'p2', `${c2.name} Color`)}
         >
-          {winnerSide === 'p2' && <SpiritFireCanvas />}
           <div className="relative z-10 flex items-center gap-2.5">
             <div>
               <div
@@ -437,19 +434,19 @@ export default function Slide02PlayerClash({
                 y1={y1}
                 x2={x2}
                 y2={y2}
-                stroke={isMajor ? '#000000' : 'rgba(0,0,0,0.45)'}
+                stroke={isMajor ? 'rgba(255,255,255,0.65)' : 'rgba(255,255,255,0.28)'}
                 strokeWidth={isMajor ? 3 : 1.8}
                 strokeLinecap="round"
               />
             );
           })}
 
-          {/* Pure Black Backing Track */}
+          {/* Translucent Backing Track (Zero solid black slab) */}
           <path
             d="M 55 170 A 125 125 0 0 1 305 170"
             fill="none"
-            stroke="#000000"
-            strokeWidth="34"
+            stroke="rgba(255,255,255,0.12)"
+            strokeWidth="30"
           />
 
           {/* Player 1 Laser Arc */}
@@ -469,13 +466,12 @@ export default function Slide02PlayerClash({
             onClick={(e) => onElementClick?.(e, 's1', 'p1', 'Contender 1 Color')}
           />
 
-          {/* Black Center Dividing Line */}
+          {/* Subtle Glass Center Dividing Line */}
           <path
             d="M 55 170 A 125 125 0 0 1 305 170"
             fill="none"
-            stroke="#000000"
-            strokeOpacity="0.92"
-            strokeWidth="6"
+            stroke="rgba(255,255,255,0.28)"
+            strokeWidth="4"
             className="energy-line"
           />
 
@@ -502,7 +498,7 @@ export default function Slide02PlayerClash({
             y1="170"
             x2="180"
             y2="26"
-            stroke="#000000"
+            stroke="rgba(255,255,255,0.65)"
             strokeWidth="3.5"
             strokeLinecap="round"
             className={animated ? 'scanner-run' : 'opacity-0'}
@@ -514,7 +510,7 @@ export default function Slide02PlayerClash({
             cy={py.toFixed(1)}
             r="6"
             fill="none"
-            stroke="#000000"
+            stroke="#ffffff"
             className={animated ? 'shock-run' : 'opacity-0'}
           />
 
@@ -523,9 +519,9 @@ export default function Slide02PlayerClash({
             cx={animated ? px.toFixed(1) : '55'}
             cy={animated ? py.toFixed(1) : '170'}
             r="8"
-            fill="#000000"
-            stroke="#000000"
-            strokeWidth="2"
+            fill="#ffffff"
+            stroke={themeS1.accent}
+            strokeWidth="2.5"
             style={{
               transition:
                 'cx 1.85s cubic-bezier(0.22, 1.08, 0.36, 1), cy 1.85s cubic-bezier(0.22, 1.08, 0.36, 1)',
@@ -535,7 +531,7 @@ export default function Slide02PlayerClash({
 
         {/* Center Percentage VS Display */}
         <div className="absolute inset-x-0 bottom-2 flex justify-center">
-          <div className="px-6 py-1.5 rounded-xl bg-slate-950/95 border border-purple-400/50 font-hud text-3xl sm:text-4xl font-extrabold text-white shadow-2xl flex items-center">
+          <div className="px-6 py-1.5 rounded-xl bg-transparent border border-white/25 font-hud text-3xl sm:text-4xl font-extrabold text-white flex items-center">
             <span
               className="cursor-pointer hover:opacity-80"
               style={{ color: themeS1.p1 }}
@@ -560,17 +556,17 @@ export default function Slide02PlayerClash({
         </div>
       </div>
 
-      {/* 4 Stat Rows with Full Exact Numbers (Zero 'K') */}
+      {/* 4 Stat Rows: Proportional Edge-to-Edge Split (Zero black gap in middle, Zero label overlap) */}
       <div className="space-y-3.5 max-w-4xl mx-auto">
         {rows.map((r, idx) => {
-          const rowMax = Math.max(r.a, r.b, 1) * 1.06;
-          const wA = Math.max(24, Math.round((r.a / rowMax) * 100));
-          const wB = Math.max(24, Math.round((r.b / rowMax) * 100));
+          const rowSum = Math.max(1, r.a + r.b);
+          const wA = Math.max(20, Math.min(80, Math.round((r.a / rowSum) * 100)));
+          const wB = 100 - wA;
 
           return (
             <div
               key={r.label}
-              className="skew-box bg-slate-950/95 border border-white/20 rounded-xl overflow-hidden shadow-2xl"
+              className="skew-box bg-transparent border border-white/25 rounded-xl overflow-hidden"
               style={{
                 opacity: animated ? 1 : 0,
                 transform: animated
@@ -579,33 +575,42 @@ export default function Slide02PlayerClash({
                 transition: `opacity 0.5s ease ${0.2 + idx * 0.15}s, transform 0.65s cubic-bezier(0.22, 1.12, 0.36, 1) ${0.2 + idx * 0.15}s`,
               }}
             >
-              <div className="relative flex items-center h-14 w-full px-2 gap-2">
-                {/* Left Side: Number pinned left, Bar grows from center-left */}
+              <div className="relative flex items-center h-14 w-full">
+                {/* Left Team Proportional Fill */}
                 <div
-                  className="relative flex-1 h-full flex items-center justify-end overflow-hidden cursor-pointer rounded-l-md"
+                  className="bar-live h-full cursor-pointer transition-all duration-1000"
+                  style={{
+                    backgroundColor: themeS1.p1,
+                    width: animated ? `${wA}%` : '50%',
+                    transition: 'width 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.25s',
+                  }}
                   onClick={(e) => onElementClick?.(e, 's1', 'p1', `${c1.name} Bar Color`)}
-                >
-                  <div
-                    className="bar-live h-full rounded-l-md"
-                    style={{
-                      backgroundColor: themeS1.p1,
-                      width: animated ? `${wA}%` : '0%',
-                      transition: 'width 1.65s cubic-bezier(0.22, 1, 0.36, 1) 0.3s',
-                    }}
-                  />
-                  <span className="unskew absolute left-3 z-10 font-hud font-extrabold text-2xl sm:text-3xl text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
-                    {formatNumber(r.a)}
-                  </span>
-                </div>
+                />
 
-                {/* Dedicated Center Stat Title Badge (Never overlaps numbers) */}
-                <div className="shrink-0 z-20 flex items-center justify-center">
+                {/* Right Team Proportional Fill */}
+                <div
+                  className="bar-live h-full cursor-pointer transition-all duration-1000"
+                  style={{
+                    backgroundColor: themeS1.p2,
+                    width: animated ? `${wB}%` : '50%',
+                    transition: 'width 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.25s',
+                  }}
+                  onClick={(e) => onElementClick?.(e, 's1', 'p2', `${c2.name} Bar Color`)}
+                />
+
+                {/* Left Number (Pinned Far Left) */}
+                <span className="unskew absolute left-5 z-10 pointer-events-none font-hud font-extrabold text-2xl sm:text-3xl text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
+                  {formatNumber(r.a)}
+                </span>
+
+                {/* Centered Stat Title Label (No heavy black block, crisp outline) */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
                   <span
-                    className="unskew px-3.5 py-1 rounded-md text-xs sm:text-sm font-extrabold tracking-widest border shadow-lg cursor-pointer hover:scale-105 transition-transform whitespace-nowrap"
+                    className="unskew pointer-events-auto px-3.5 py-0.5 rounded-md text-xs sm:text-sm font-extrabold tracking-widest border cursor-pointer hover:scale-105 transition-transform whitespace-nowrap backdrop-blur-[2px]"
                     style={{
                       color: themeS1.accent,
                       borderColor: themeS1.accent,
-                      backgroundColor: 'var(--ui-box-bg, #0a0c16)',
+                      backgroundColor: 'rgba(10, 12, 22, 0.35)',
                     }}
                     onClick={(e) => onElementClick?.(e, 's1', 'accent', 'Accent Color')}
                     title="Click to change accent color"
@@ -614,23 +619,10 @@ export default function Slide02PlayerClash({
                   </span>
                 </div>
 
-                {/* Right Side: Number pinned right, Bar grows from center-right */}
-                <div
-                  className="relative flex-1 h-full flex items-center justify-start overflow-hidden cursor-pointer rounded-r-md"
-                  onClick={(e) => onElementClick?.(e, 's1', 'p2', `${c2.name} Bar Color`)}
-                >
-                  <div
-                    className="bar-live h-full rounded-r-md"
-                    style={{
-                      backgroundColor: themeS1.p2,
-                      width: animated ? `${wB}%` : '0%',
-                      transition: 'width 1.65s cubic-bezier(0.22, 1, 0.36, 1) 0.3s',
-                    }}
-                  />
-                  <span className="unskew absolute right-3 z-10 font-hud font-extrabold text-2xl sm:text-3xl text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
-                    {formatNumber(r.b)}
-                  </span>
-                </div>
+                {/* Right Number (Pinned Far Right) */}
+                <span className="unskew absolute right-5 z-10 pointer-events-none font-hud font-extrabold text-2xl sm:text-3xl text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.95)]">
+                  {formatNumber(r.b)}
+                </span>
               </div>
             </div>
           );

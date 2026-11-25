@@ -452,9 +452,6 @@ export default function AdminPage() {
                 <span className="font-bold text-white">
                   {SLIDES[currentSlide].label.replace(/^\d+\.\s*/, '')}
                 </span>
-                <span className="px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-bold">
-                  {syncStatus}
-                </span>
                 <button
                   type="button"
                   onClick={() => handleToggleSlideEnabled(currentSlide)}
@@ -475,27 +472,6 @@ export default function AdminPage() {
               </div>
 
               <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => handleApplyPreset('rtb')}
-                  className="preset-btn px-2 py-0.5 rounded bg-purple-900/80 hover:bg-purple-700 border border-purple-400/50 text-white font-hud text-xs font-bold cursor-pointer"
-                >
-                  RTB Purple
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleApplyPreset('ffws')}
-                  className="preset-btn px-2 py-0.5 rounded bg-amber-900/70 hover:bg-amber-700 border border-amber-400/50 text-amber-200 font-hud text-xs font-bold cursor-pointer"
-                >
-                  FFWS Gold
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleApplyPreset('cyber')}
-                  className="preset-btn px-2 py-0.5 rounded bg-cyan-950/80 hover:bg-cyan-800 border border-cyan-400/50 text-cyan-200 font-hud text-xs font-bold cursor-pointer"
-                >
-                  Neon Cyber
-                </button>
                 <button
                   type="button"
                   onClick={handleResetThemes}

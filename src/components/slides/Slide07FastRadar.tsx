@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react';
 import { SheetDataPayload, BroadcastThemeConfig } from '@/types/broadcast';
 import TeamLogoBadge from '@/components/TeamLogoBadge';
-import SpiritFireCanvas from '@/components/SpiritFireCanvas';
 import { formatNumber } from '@/lib/sheetParsers';
 
 interface SlideProps {
@@ -151,7 +150,6 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey = 0, onEl
           }}
           onClick={(e) => onElementClick?.(e, 's6', 'rank1', `#${teamA.rank} ${teamA.name}`)}
         >
-          <SpiritFireCanvas />
           <TeamLogoBadge
             tag={teamA.tag}
             name={teamA.name}

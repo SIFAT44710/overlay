@@ -3,7 +3,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { SheetDataPayload, BroadcastThemeConfig } from '@/types/broadcast';
 import TeamLogoBadge from '@/components/TeamLogoBadge';
-import SpiritFireCanvas from '@/components/SpiritFireCanvas';
 
 interface SlideProps {
   sheetData?: SheetDataPayload;
@@ -129,11 +128,10 @@ export default function Slide01PointsRace({
         <div className="absolute top-1 right-3 sm:right-6 z-30">
           <div
             id="m2-top1-pill"
-            className={`transition-all duration-700 px-3 py-1 rounded-lg bg-slate-950/90 border border-purple-400/80 font-hud text-sm sm:text-base font-bold text-white flex items-center gap-2.5 shadow-xl top1-hero-glow ${
+            className={`transition-all duration-700 px-3 py-1 rounded-lg bg-transparent border border-amber-400/60 font-hud text-sm sm:text-base font-bold text-white flex items-center gap-2.5 ${
               animated ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
             }`}
           >
-            <SpiritFireCanvas />
             <TeamLogoBadge
               tag={leader.tag}
               name={leader.name}
@@ -269,7 +267,7 @@ export default function Slide01PointsRace({
                   filter: `drop-shadow(0 0 6px ${col})`,
                   strokeDasharray: '2000',
                   strokeDashoffset: animated ? '0' : '2000',
-                  transition: `stroke-dashoffset 0.85s cubic-bezier(0.22, 1, 0.36, 1) ${tIdx * 0.08}s`,
+                  transition: `stroke-dashoffset 1.85s cubic-bezier(0.22, 1, 0.36, 1) ${tIdx * 0.16}s`,
                 }}
                 data-edit-group="s0"
                 data-edit-key={colKey}
@@ -291,7 +289,7 @@ export default function Slide01PointsRace({
                   opacity={animated ? 1 : 0}
                   className="cursor-pointer"
                   style={{
-                    transition: `opacity 0.3s ease ${0.3 + tIdx * 0.08}s`,
+                    transition: `opacity 0.55s ease ${0.9 + tIdx * 0.16}s`,
                   }}
                   onClick={(e) =>
                     onElementClick?.(e, 's0', colKey, `#${tIdx + 1} ${rawTeam.tag} Node`)
@@ -303,7 +301,7 @@ export default function Slide01PointsRace({
               <g
                 opacity={animated ? 1 : 0}
                 style={{
-                  transition: `opacity 0.35s ease ${0.35 + tIdx * 0.08}s`,
+                  transition: `opacity 0.65s ease ${1.05 + tIdx * 0.16}s`,
                 }}
               >
                 {/* Dashed connector line to spread tag position */}
@@ -315,14 +313,14 @@ export default function Slide01PointsRace({
                   strokeDasharray="3 2"
                 />
 
-                {/* Pill Background Box */}
+                {/* Pill Background Box (Transparent OBS-ready) */}
                 <rect
                   x={last.x + 34}
                   y={ly - boxH / 2}
                   width={boxW}
                   height={boxH}
                   rx="10"
-                  fill="rgba(18,12,38,0.88)"
+                  fill="rgba(10,12,22,0.22)"
                   stroke={col}
                   strokeWidth={isLeader ? 2.8 : 2.2}
                   data-edit-group="s0"

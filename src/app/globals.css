@@ -99,19 +99,19 @@ body.obs-white, .obs-white {
 }
 
 .dark-box {
-  background: color-mix(in srgb, var(--ui-box-bg) calc(var(--ui-box-alpha) * 100%), transparent) !important;
-  border: 1.5px solid var(--ui-box-border) !important;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.52), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background: transparent !important;
+  border: 1.5px solid color-mix(in srgb, var(--ui-box-border) 55%, rgba(255, 255, 255, 0.2)) !important;
+  box-shadow: none !important;
 }
 
 .dyn-row-box {
-  background: color-mix(in srgb, var(--ui-box-bg) calc(var(--ui-box-alpha) * 100%), transparent) !important;
-  border-color: color-mix(in srgb, var(--ui-box-border) 55%, transparent) !important;
+  background: transparent !important;
+  border-color: color-mix(in srgb, var(--ui-box-border) 45%, rgba(255, 255, 255, 0.18)) !important;
 }
 
 .hud-card {
   background: transparent !important;
-  border: 1.5px solid rgba(192, 132, 252, 0.25);
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
   box-shadow: none !important;
 }
 
@@ -201,28 +201,16 @@ body.obs-white, .obs-white {
 .bar-grow-x { transition: width 1.5s cubic-bezier(0.22, 1, 0.36, 1); }
 .pop-card { transition: transform 0.85s cubic-bezier(0.22, 1.15, 0.36, 1), opacity 0.65s ease; }
 
-@keyframes fireAuraPulse {
-  0%, 100% {
-    box-shadow: 0 0 18px rgba(168, 85, 247, 0.55), 0 0 38px rgba(192, 38, 211, 0.32);
-    border-color: #a855f7;
-  }
-  50% {
-    box-shadow: 0 0 28px rgba(216, 180, 254, 0.78), 0 0 54px rgba(147, 51, 234, 0.48);
-    border-color: #d8b4fe;
-  }
-}
 .fire-winner-card {
-  animation: fireAuraPulse 1.45s ease-in-out infinite !important;
-  border-color: #c084fc !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
   background: transparent !important;
 }
 
 .top1-hero-glow {
-  box-shadow: 0 0 22px rgba(168, 85, 247, 0.52), 0 0 44px rgba(192, 38, 211, 0.26) !important;
-  border-color: #c084fc !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
   z-index: 15;
 }
-.top1-scale { transform: scale(1.03) !important; }
+.top1-scale { transform: scale(1.02) !important; }
 
 /* Admin Controls */
 .color-chip-input {

@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Chart, registerables } from 'chart.js';
 import { SheetDataPayload, BroadcastThemeConfig } from '@/types/broadcast';
 import TeamLogoBadge from '@/components/TeamLogoBadge';
-import SpiritFireCanvas from '@/components/SpiritFireCanvas';
 import { formatNumber } from '@/lib/sheetParsers';
 
 Chart.register(...registerables);
@@ -648,11 +647,10 @@ export default function Slide10DualColumn({
         }`}
       >
         <div
-          className={`relative px-3 py-1 rounded-lg bg-slate-950/90 border border-purple-400/80 font-hud text-sm sm:text-base font-bold text-white flex items-center gap-2.5 shadow-xl transition-all duration-700 ${
-            animated ? 'top1-hero-glow top1-scale opacity-100' : 'opacity-0 scale-95'
+          className={`relative px-3 py-1 rounded-lg bg-transparent border border-white/25 font-hud text-sm sm:text-base font-bold text-white flex items-center gap-2.5 transition-all duration-700 ${
+            animated ? 'opacity-100' : 'opacity-0 scale-95'
           }`}
         >
-          <SpiritFireCanvas />
           <TeamLogoBadge
             tag={cfg.tags[0]}
             name={cfg.names[0]}

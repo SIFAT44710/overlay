@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Chart, registerables } from 'chart.js';
 import { SheetDataPayload, BroadcastThemeConfig } from '@/types/broadcast';
 import TeamLogoBadge from '@/components/TeamLogoBadge';
-import SpiritFireCanvas from '@/components/SpiritFireCanvas';
 
 Chart.register(...registerables);
 
@@ -334,12 +333,11 @@ export default function Slide08KillsDmgLine({
       {/* Top Peak Badge with Smooth Animated Entrance */}
       <div className="absolute top-1 right-3 sm:right-6 z-30">
         <div
-          className={`relative px-3 py-1 rounded-lg bg-slate-950/90 border border-purple-400/80 font-hud text-sm sm:text-base font-bold text-white flex items-center gap-2.5 shadow-xl transition-all duration-700 ${
-            animated ? 'top1-hero-glow top1-scale opacity-100 translate-y-0' : 'opacity-0 -translate-y-3 scale-95'
+          className={`relative px-3 py-1 rounded-lg bg-transparent border border-white/25 font-hud text-sm sm:text-base font-bold text-white flex items-center gap-2.5 transition-all duration-700 ${
+            animated ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-3 scale-95'
           }`}
           style={{ borderColor: themeS7.kills }}
         >
-          <SpiritFireCanvas />
           <TeamLogoBadge
             tag={`M${peakIdx + 1}`}
             color={themeS7.kills}
