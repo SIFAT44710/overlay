@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface TeamLogoBadgeProps {
   tag: string;
@@ -22,7 +22,13 @@ export default function TeamLogoBadge({
   className = '',
 }: TeamLogoBadgeProps) {
   const [imgError, setImgError] = useState(false);
-  const up = (tag || name || 'TOP').toUpperCase().trim().slice(0, 3);
+
+  // Reset error state whenever logoUrl changes (e.g. Drive file renamed or synced)
+  useEffect(() => {
+    setImgError(false);
+  }, [logoUrl]);
+
+  const up = (tag || name || '---').toUpperCase().trim().slice(0, 3);
   const isLight =
     color === '#F5B700' ||
     color === '#2DD4BF' ||
@@ -37,8 +43,10 @@ export default function TeamLogoBadge({
         title={`Team: ${name || tag}`}
       >
         <img
+          key={logoUrl}
           src={logoUrl}
           alt={tag}
+          referrerPolicy="no-referrer"
           className="w-full h-full object-contain"
           onError={() => setImgError(true)}
         />

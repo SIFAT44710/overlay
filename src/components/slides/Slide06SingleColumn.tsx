@@ -153,6 +153,7 @@ export default function Slide06SingleColumn({
     Object.values(teamLogoMap).forEach((url) => {
       if (url && typeof url === 'string' && !imgCacheRef.current.has(url)) {
         const newImg = new Image();
+        newImg.referrerPolicy = 'no-referrer';
         newImg.src = url;
         newImg.onload = () => {
           if (chartInstanceRef.current) {
@@ -237,6 +238,7 @@ export default function Slide06SingleColumn({
             if (!imgCacheRef.current.has(logoUrl)) {
               const newImg = new Image();
               // Do NOT set crossOrigin='anonymous' to prevent Google Drive / ui-avatars CORS errors
+              newImg.referrerPolicy = 'no-referrer';
               newImg.src = logoUrl;
               newImg.onload = () => {
                 if (chartInstanceRef.current) {

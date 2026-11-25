@@ -8,7 +8,7 @@ import useSWR from 'swr';
 import { SheetDataPayload } from '@/types/broadcast';
 
 const fetcher = async (url: string): Promise<SheetDataPayload> => {
-  const res = await fetch(url);
+  const res = await fetch(url, { cache: 'no-store' });
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}: Failed to fetch live data`);
   }

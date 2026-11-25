@@ -263,8 +263,8 @@ export async function getDriveLogos(fresh = false): Promise<DriveFileItem[]> {
   try {
     const { drive } = getGoogleClients();
     const res = await drive.files.list({
-      q: `'${driveFolderId}' in parents and trashed = false`,
-      fields: 'files(id, name, modifiedTime, version)',
+      q: `'${driveFolderId}' in parents and trashed = false and mimeType != 'application/vnd.google-apps.folder'`,
+      fields: 'files(id, name, modifiedTime, version, mimeType)',
       pageSize: 150,
     });
 

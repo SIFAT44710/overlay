@@ -163,6 +163,7 @@ export default function Slide10DualColumn({
     Object.values(teamLogoMap).forEach((url) => {
       if (url && typeof url === 'string' && !imgCacheRef.current.has(url)) {
         const newImg = new Image();
+        newImg.referrerPolicy = 'no-referrer';
         newImg.src = url;
         newImg.onload = () => {
           if (chartInstanceRef.current) {
@@ -309,6 +310,7 @@ export default function Slide10DualColumn({
           if (logoUrl) {
             if (!imgCacheRef.current.has(logoUrl)) {
               const newImg = new Image();
+              newImg.referrerPolicy = 'no-referrer';
               newImg.src = logoUrl;
               newImg.onload = () => {
                 if (chartInstanceRef.current) {
