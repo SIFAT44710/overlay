@@ -41,6 +41,7 @@ export const DEFAULT_BROADCAST_THEMES: Record<string, any> = {
     8: 'day_kd_12',
     9: 'latest_h2h',
   },
+  disabledSlides: {},
   custom: {
     p1Idx: 0,
     p2Idx: 1,

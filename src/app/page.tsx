@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import AuthGate from '@/components/AuthGate';
+import { useBroadcastTheme } from '@/hooks/useBroadcastTheme';
 
 interface SlideItem {
   id: number;
@@ -97,6 +98,10 @@ const SLIDES: SlideItem[] = [
 ];
 
 export default function Home() {
+  const { themes } = useBroadcastTheme();
+  const disabledSlides = themes?.disabledSlides || {};
+  const visibleSlides = SLIDES.filter((slide) => disabledSlides[slide.id - 1] !== true);
+
   const handleLogout = async () => {
     if (confirm('Broadcast suite theke logout korben?')) {
       await fetch('/api/auth', { method: 'DELETE' });
@@ -148,7 +153,7 @@ export default function Home() {
         {/* Overlays Grid */}
         <section className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {SLIDES.map((slide) => (
+            {visibleSlides.map((slide) => (
               <div
                 key={slide.id}
                 className="group relative bg-slate-900/60 border border-purple-500/25 hover:border-purple-400/80 rounded-2xl p-5 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-900/20 hover:-translate-y-1 flex flex-col justify-between"

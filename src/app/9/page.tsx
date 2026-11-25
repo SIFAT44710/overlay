@@ -1,6 +1,7 @@
 'use client';
 
 import Slide10DualColumn from '@/components/slides/Slide10DualColumn';
+import SlideStage from '@/components/SlideStage';
 import { useLiveSheetData } from '@/hooks/useLiveSheetData';
 import { useBroadcastTheme } from '@/hooks/useBroadcastTheme';
 
@@ -9,8 +10,8 @@ export default function Slide09Page() {
   const { themes } = useBroadcastTheme();
 
   return (
-    <main id="stage" className="w-screen h-screen flex items-center justify-center p-4 overflow-hidden bg-transparent select-none">
+    <SlideStage slideIdx={8} theme={themes}>
       <Slide10DualColumn sheetData={sheetData} theme={themes} />
-    </main>
+    </SlideStage>
   );
 }

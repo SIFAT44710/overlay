@@ -1,6 +1,7 @@
 'use client';
 
 import Slide08KillsDmgLine from '@/components/slides/Slide08KillsDmgLine';
+import SlideStage from '@/components/SlideStage';
 import { useLiveSheetData } from '@/hooks/useLiveSheetData';
 import { useBroadcastTheme } from '@/hooks/useBroadcastTheme';
 
@@ -9,8 +10,8 @@ export default function Slide07Page() {
   const { themes } = useBroadcastTheme();
 
   return (
-    <main id="stage" className="w-screen h-screen flex items-center justify-center p-4 overflow-hidden bg-transparent select-none">
+    <SlideStage slideIdx={6} theme={themes}>
       <Slide08KillsDmgLine sheetData={sheetData} theme={themes} />
-    </main>
+    </SlideStage>
   );
 }

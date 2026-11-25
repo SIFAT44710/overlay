@@ -81,16 +81,23 @@ export default function AdminPage() {
     }
   }, [themes]);
 
-  // Autoplay timer
+  // Autoplay timer (automatically skips slides toggled OFF)
   useEffect(() => {
     let timer: any;
     if (isAuto) {
       timer = setInterval(() => {
-        setCurrentSlide((prev) => (prev + 1) % SLIDES.length);
+        setCurrentSlide((prev) => {
+          const disabled = draftTheme?.disabledSlides || {};
+          for (let step = 1; step <= SLIDES.length; step++) {
+            const cand = (prev + step) % SLIDES.length;
+            if (!disabled[cand]) return cand;
+          }
+          return prev;
+        });
       }, 8000);
     }
     return () => clearInterval(timer);
-  }, [isAuto]);
+  }, [isAuto, draftTheme?.disabledSlides]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -261,6 +268,21 @@ export default function AdminPage() {
     await saveThemeUpdates({ custom: newCustom });
   };
 
+  const disabledSlides = draftTheme?.disabledSlides || {};
+  const isCurrentSlideDisabled = disabledSlides[currentSlide] === true;
+
+  const handleToggleSlideEnabled = async (slideIdx: number) => {
+    const nextDisabled = {
+      ...(draftTheme?.disabledSlides || {}),
+      [slideIdx]: !(draftTheme?.disabledSlides?.[slideIdx] === true),
+    };
+    setDraftTheme((prev: BroadcastThemeConfig) => ({
+      ...prev,
+      disabledSlides: nextDisabled,
+    }));
+    await saveThemeUpdates({ disabledSlides: nextDisabled });
+  };
+
   const handleLogout = async () => {
     if (confirm('Admin panel theke logout korben?')) {
       await fetch('/api/auth', { method: 'DELETE' });
@@ -332,21 +354,29 @@ export default function AdminPage() {
               >
                 ◀
               </button>
-              {SLIDES.map((s, idx) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => setCurrentSlide(idx)}
-                  className={`slide-num-btn border border-white/10 cursor-pointer ${
-                    currentSlide === idx
-                      ? 'slide-num-active'
-                      : 'bg-slate-900 hover:bg-purple-800 text-slate-200'
-                  }`}
-                  title={s.label}
-                >
-                  {idx + 1}
-                </button>
-              ))}
+              {SLIDES.map((s, idx) => {
+                const isOff = disabledSlides[idx] === true;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setCurrentSlide(idx)}
+                    className={`slide-num-btn border cursor-pointer relative ${
+                      currentSlide === idx
+                        ? 'slide-num-active border-white/20'
+                        : isOff
+                          ? 'bg-slate-950/70 border-rose-500/40 text-slate-500 line-through opacity-60 hover:opacity-100'
+                          : 'bg-slate-900 border-white/10 hover:bg-purple-800 text-slate-200'
+                    }`}
+                    title={`${s.label}${isOff ? ' (OFF)' : ' (ON)'}`}
+                  >
+                    {idx + 1}
+                    {isOff && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-rose-500" />
+                    )}
+                  </button>
+                );
+              })}
               <button
                 type="button"
                 onClick={() => setCurrentSlide((prev) => (prev + 1) % SLIDES.length)}
@@ -425,6 +455,23 @@ export default function AdminPage() {
                 <span className="px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs font-bold">
                   {syncStatus}
                 </span>
+                <button
+                  type="button"
+                  onClick={() => handleToggleSlideEnabled(currentSlide)}
+                  className={`px-3 py-0.5 rounded-lg font-hud text-xs font-extrabold cursor-pointer border transition-all flex items-center gap-1.5 ${
+                    isCurrentSlideDisabled
+                      ? 'bg-rose-950/90 hover:bg-rose-900 border-rose-500/60 text-rose-200'
+                      : 'bg-emerald-950/90 hover:bg-emerald-900 border-emerald-500/60 text-emerald-200'
+                  }`}
+                  title="Toggle this slide ON/OFF on live routes and home screen"
+                >
+                  <span
+                    className={`w-2 h-2 rounded-full ${
+                      isCurrentSlideDisabled ? 'bg-rose-500' : 'bg-emerald-400 animate-pulse'
+                    }`}
+                  />
+                  <span>{isCurrentSlideDisabled ? 'SLIDE: OFF (HIDDEN)' : 'SLIDE: ON (LIVE)'}</span>
+                </button>
               </div>
 
               <div className="flex items-center gap-1.5">
@@ -524,8 +571,23 @@ export default function AdminPage() {
         <main
           id="stage"
           key={replayKey}
-          className="flex-1 flex items-center justify-center w-full max-w-[1440px] min-h-[580px] my-auto mx-auto px-2 sm:px-6 py-4 relative"
+          className="flex-1 flex flex-col items-center justify-center w-full max-w-[1440px] min-h-[580px] my-auto mx-auto px-2 sm:px-6 py-4 relative"
         >
+          {currentMode === 'admin' && isCurrentSlideDisabled && (
+            <div className="mb-3 px-4 py-2 rounded-xl bg-rose-950/90 border border-rose-500/60 text-rose-100 font-hud text-sm font-bold flex items-center gap-3 shadow-xl z-30">
+              <span>🔴 এই স্লাইডারটি এখন OFF করা আছে — লাইভে /{currentSlide + 1} ও হোম পেজে শো হবে না</span>
+              <button
+                type="button"
+                onClick={() => handleToggleSlideEnabled(currentSlide)}
+                className="px-2.5 py-0.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold cursor-pointer"
+              >
+                Turn ON
+              </button>
+            </div>
+          )}
+
+          {currentMode === 'live' && isCurrentSlideDisabled ? null : (
+            <>
           {currentSlide === 0 && (
             <Slide01PointsRace
               sheetData={sheetData}
@@ -608,6 +670,8 @@ export default function AdminPage() {
               replayKey={replayKey}
               onElementClick={handleOpenColorPopover}
             />
+          )}
+            </>
           )}
         </main>
       </div>

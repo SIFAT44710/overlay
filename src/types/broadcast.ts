@@ -169,6 +169,7 @@ export interface BroadcastThemeConfig {
   };
   s9: { kills: string; damage: string };
   sources?: Record<number, string>;
+  disabledSlides?: Record<number, boolean>;
   custom?: {
     p1Idx?: number;
     p2Idx?: number;

@@ -56,19 +56,21 @@ export function flushDriveCache(): void {
   driveFilesCache = null;
 }
 
-// --- Theme Config Cache (Persistent in-memory across poll cycles) ---
-let themeConfigCache: Record<string, any> = {};
+// --- Theme Config Cache (Short 2s TTL so serverless instances stay synced with Google Sheet ThemeConfig) ---
+const THEME_CACHE_TTL_MS = 2000;
+let themeConfigCache: { data: Record<string, any>; timestamp: number } | null = null;
 
 export function getCachedThemeConfig(fresh = false): Record<string, any> | null {
-  if (fresh) return null;
-  if (Object.keys(themeConfigCache).length > 0) {
-    return themeConfigCache;
+  if (fresh || !themeConfigCache) return null;
+  if (Date.now() - themeConfigCache.timestamp < THEME_CACHE_TTL_MS && Object.keys(themeConfigCache.data).length > 0) {
+    return themeConfigCache.data;
   }
   return null;
 }
 
 export function setCachedThemeConfig(data: Record<string, any>): void {
-  themeConfigCache = { ...themeConfigCache, ...data };
+  const prev = themeConfigCache?.data || {};
+  themeConfigCache = { data: { ...prev, ...data }, timestamp: Date.now() };
 }
 
 // --- Cache Diagnostics ---

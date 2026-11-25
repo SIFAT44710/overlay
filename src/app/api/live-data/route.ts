@@ -163,21 +163,22 @@ export async function GET(req: NextRequest) {
       pts: t.pts,
     }));
 
-    // Fallback if GameStanding is completely empty
-    if (matchProgression.length < 2) {
-      matchProgression.push(
-        { tag: 'TOP', name: 'RAAD VAI YT', color: '#fbbf24', pts: [21, 67, 81, 104, 134] },
-        { tag: 'EXE', name: 'EXTREME EX', color: '#a78bfa', pts: [29, 34, 55, 73, 98] },
-        { tag: 'S9x', name: 'SNEAKY9X', color: '#2dd4bf', pts: [29, 31, 62, 93, 96] },
-        { tag: 'CME', name: 'COFFIN MAKERS ESP', color: '#f43f5e', pts: [14, 34, 56, 69, 93] },
-        { tag: 'TRX', name: 'TITANOVA REX', color: '#38bdf8', pts: [12, 27, 41, 67, 85] }
-      );
+    // Derive from standing12 if GameStanding has no match rows yet (no hardcoded mock teams)
+    if (matchProgression.length === 0 && standing12.length > 0) {
+      standing12.slice(0, 5).forEach((t, idx) => {
+        matchProgression.push({
+          tag: t.tag,
+          name: t.name,
+          color: progColors[idx % progColors.length],
+          pts: [t.total],
+        });
+      });
     }
 
-    // Match Totals for Slide 8 (Dual Line Chart)
+    // Match Totals for Slide 7 (Dual Line Chart)
     const matchTotals = {
-      kills: matchKills.some((k) => k > 0) ? matchKills : [114, 102, 97, 129, 114],
-      damage: matchDamage.some((d) => d > 0) ? matchDamage : [74334, 67724, 60618, 75983, 71677],
+      kills: matchKills,
+      damage: matchDamage,
     };
 
     // -------------------------------------------------------------
@@ -216,13 +217,13 @@ export async function GET(req: NextRequest) {
             assist: dayTop10Players[0].assist,
           }
         : {
-            name: 'TOP.1SHOVO',
-            team: 'RAAD VAI YT',
-            tag: 'TOP',
-            kills: 29,
-            damage: 11859,
-            hs: 31,
-            assist: 22,
+            name: '---',
+            team: '---',
+            tag: '---',
+            kills: 0,
+            damage: 0,
+            hs: 0,
+            assist: 0,
           },
       p2: dayTop10Players[1]
         ? {
@@ -235,13 +236,13 @@ export async function GET(req: NextRequest) {
             assist: dayTop10Players[1].assist,
           }
         : {
-            name: 'EXE.SEJAN',
-            team: 'EXTREME EX',
-            tag: 'EXE',
-            kills: 27,
-            damage: 11890,
-            hs: 22,
-            assist: 13,
+            name: '---',
+            team: '---',
+            tag: '---',
+            kills: 0,
+            damage: 0,
+            hs: 0,
+            assist: 0,
           },
     };
 
@@ -428,14 +429,17 @@ export async function GET(req: NextRequest) {
       });
     });
 
-    if (mapStandingM5.length === 0) {
-      mapStandingM5.push(
-        { rank: 1, tag: 'NK', name: 'NOVA KNIGHT', surv: 8, kill: 23, total: 31 },
-        { rank: 2, tag: 'TOP', name: 'RAAD VAI YT', surv: 9, kill: 21, total: 30 },
-        { rank: 3, tag: 'EXE', name: 'EXTREME EX', surv: 5, kill: 20, total: 25 },
-        { rank: 4, tag: 'CME', name: 'COFFIN MAKERS', surv: 7, kill: 17, total: 24 },
-        { rank: 5, tag: 'TRX', name: 'TITANOVA REX', surv: 12, kill: 6, total: 18 }
-      );
+    if (mapStandingM5.length === 0 && standing12.length > 0) {
+      standing12.slice(0, 5).forEach((t) => {
+        mapStandingM5.push({
+          rank: t.rank,
+          tag: t.tag,
+          name: t.name,
+          surv: t.place,
+          kill: t.elims,
+          total: t.total,
+        });
+      });
     }
 
     // -------------------------------------------------------------
@@ -560,16 +564,16 @@ export async function GET(req: NextRequest) {
             assist: tA.assist || Math.round(tA.kills * 0.42),
           }
         : {
-            name: 'EXTREME EX',
-            tag: 'EXE',
-            rank: 2,
-            surv: 22,
-            kills: 76,
-            total: 98,
-            damage: 42349,
-            hs: 67,
-            gloo: 340,
-            assist: 32,
+            name: '---',
+            tag: '---',
+            rank: 1,
+            surv: 0,
+            kills: 0,
+            total: 0,
+            damage: 0,
+            hs: 0,
+            gloo: 0,
+            assist: 0,
           },
       b: tB
         ? {
@@ -585,16 +589,16 @@ export async function GET(req: NextRequest) {
             assist: tB.assist || Math.round(tB.kills * 0.42),
           }
         : {
-            name: '69 ESPORTS',
-            tag: '69',
-            rank: 8,
-            surv: 13,
-            kills: 48,
-            total: 61,
-            damage: 27036,
-            hs: 46,
-            gloo: 185,
-            assist: 21,
+            name: '---',
+            tag: '---',
+            rank: 2,
+            surv: 0,
+            kills: 0,
+            total: 0,
+            damage: 0,
+            hs: 0,
+            gloo: 0,
+            assist: 0,
           },
     };
 
@@ -612,11 +616,11 @@ export async function GET(req: NextRequest) {
             avgSurvMin: gA.avgSurvMin,
           }
         : {
-            name: '69 ESPORTS',
-            tag: '69',
-            avgElims: 9.6,
-            avgDmg: 5407,
-            avgSurvMin: 8.5,
+            name: '---',
+            tag: '---',
+            avgElims: 0,
+            avgDmg: 0,
+            avgSurvMin: 0,
           },
       b: gB
         ? {
@@ -627,11 +631,11 @@ export async function GET(req: NextRequest) {
             avgSurvMin: gB.avgSurvMin,
           }
         : {
-            name: 'COFFIN MAKERS ESP',
-            tag: 'CME',
-            avgElims: 11.6,
-            avgDmg: 8805,
-            avgSurvMin: 14.5,
+            name: '---',
+            tag: '---',
+            avgElims: 0,
+            avgDmg: 0,
+            avgSurvMin: 0,
           },
     };
 

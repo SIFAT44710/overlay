@@ -44,6 +44,7 @@ export const DEFAULT_THEMES: BroadcastThemeConfig = {
     8: 'day_kd_12',
     9: 'latest_h2h',
   },
+  disabledSlides: {},
   custom: { p1Idx: 0, p2Idx: 1, tAIdx: 1, tBIdx: 7, gAIdx: 7, gBIdx: 3, rAIdx: 0, rBIdx: 1, s2Logo: '' },
 };
 
