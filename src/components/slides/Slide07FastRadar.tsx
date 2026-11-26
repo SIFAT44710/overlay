@@ -53,7 +53,10 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey = 0, onEl
     gloo: 0,
   };
 
-  if (source === 'sheet_h2h_radar' && sheetData?.h2hMatch5?.a && sheetData?.h2hMatch5?.b) {
+  if (source === 'sheet_h2h_radar' && sheetData?.h2hDayStanding?.a && sheetData?.h2hDayStanding?.b) {
+    teamA = sheetData.h2hDayStanding.a;
+    teamB = sheetData.h2hDayStanding.b;
+  } else if (source === 'sheet_h2h_radar' && sheetData?.h2hMatch5?.a && sheetData?.h2hMatch5?.b) {
     teamA = sheetData.h2hMatch5.a;
     teamB = sheetData.h2hMatch5.b;
   } else if (source === 'custom_radar_h2h' && allTeams.length >= 2) {

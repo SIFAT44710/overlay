@@ -121,6 +121,7 @@ export default function Slide02PlayerClash({
       damage: p1.damage,
       hs: p1.hs,
       assist: p1.assist,
+      logoUrl: teamLogoMap[p1.tag.toUpperCase()] || teamLogoMap[p1.team.toUpperCase()],
     };
     c2 = {
       badge: 'CONTENDER 02',
@@ -131,6 +132,7 @@ export default function Slide02PlayerClash({
       damage: p2.damage,
       hs: p2.hs,
       assist: p2.assist,
+      logoUrl: teamLogoMap[p2.tag.toUpperCase()] || teamLogoMap[p2.team.toUpperCase()],
     };
   } else {
     // Team Head to Head Mode (Main / Default)

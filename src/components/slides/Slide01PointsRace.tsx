@@ -92,11 +92,12 @@ export default function Slide01PointsRace({
   const W = 1280;
   const H = 560;
   const padL = 88;
-  const padR = 310;
+  const padR = 326;
   const padT = 36;
   const padB = 68;
   const cW = W - padL - padR;
   const cH = H - padT - padB;
+  const endX = W - padR;
 
   // Scale Y axis dynamically to actual live sheet values so curves span full chart height
   const rawMax = Math.max(4, ...progression.flatMap((t) => t.pts));
@@ -197,9 +198,20 @@ export default function Slide01PointsRace({
           );
         })}
 
-        {/* X-Axis Match 1–5 Badges */}
+        {/* X-Axis Origin 0 + Match 1–5 Badges */}
+        <text
+          x={padL}
+          y={H - 24}
+          textAnchor="middle"
+          fill="#94a3b8"
+          fontSize="18"
+          fontWeight="800"
+          className="font-hud"
+        >
+          0
+        </text>
         {['MATCH 1', 'MATCH 2', 'MATCH 3', 'MATCH 4', 'MATCH 5'].map((m, i) => {
-          const x = padL + (i / 4) * cW;
+          const x = padL + ((i + 1) / 5) * cW;
           return (
             <g key={m}>
               <rect
@@ -226,17 +238,22 @@ export default function Slide01PointsRace({
           );
         })}
 
-        {/* Dynamic Cubic Curve Lines & Right Endpoint Pills */}
+        {/* Dynamic Ascending Ogive Curves (0 -> Played Matches) & Right Endpoint Pills */}
         {progression.map((rawTeam, tIdx) => {
           const colKey = `l${tIdx}` as keyof typeof themeS0;
           const col = (themeS0 as any)[colKey] || rawTeam.color;
           const isLeader = tIdx === 0;
 
-          const pts = rawTeam.pts.map((val, i) => ({
-            x: padL + (i / 4) * cW,
-            y: padT + cH - (val / maxVal) * cH,
-            val,
-          }));
+          // Build ascending Ogive path starting from (0, 0) at bottom-left up through played matches
+          const pts = [
+            { x: padL, y: padT + cH, val: 0, isOrigin: true },
+            ...rawTeam.pts.slice(0, 5).map((val, i) => ({
+              x: padL + ((i + 1) / 5) * cW,
+              y: padT + cH - (val / maxVal) * cH,
+              val,
+              isOrigin: false,
+            })),
+          ];
 
           let d = `M ${pts[0].x} ${pts[0].y}`;
           for (let i = 0; i < pts.length - 1; i++) {
@@ -246,10 +263,10 @@ export default function Slide01PointsRace({
 
           const last = pts[pts.length - 1];
           const ly = safeYs[tIdx] ?? last.y;
-          const boxW = isLeader ? 290 : 272;
+          const boxW = isLeader ? 280 : 264;
           const boxH = isLeader ? 58 : 52;
           const logoR = isLeader ? 23 : 20;
-          const logoCx = last.x + 62;
+          const logoCx = endX + 62;
           const isLightCol = col === '#fbbf24' || col === '#F5B700' || col === '#2dd4bf';
 
           const teamLogoUrl =
@@ -258,7 +275,7 @@ export default function Slide01PointsRace({
 
           return (
             <g key={rawTeam.tag}>
-              {/* Cubic Bezier Running Line */}
+              {/* Ascending Ogive Bezier Curve */}
               <path
                 d={d}
                 fill="none"
@@ -270,7 +287,7 @@ export default function Slide01PointsRace({
                   filter: `drop-shadow(0 0 6px ${col})`,
                   strokeDasharray: '2000',
                   strokeDashoffset: animated ? '0' : '2000',
-                  transition: `stroke-dashoffset 2.30s cubic-bezier(0.22, 1, 0.36, 1) ${tIdx * 0.2}s`,
+                  transition: `stroke-dashoffset 2.10s cubic-bezier(0.22, 1, 0.36, 1) ${tIdx * 0.18}s`,
                 }}
                 data-edit-group="s0"
                 data-edit-key={colKey}
@@ -279,46 +296,49 @@ export default function Slide01PointsRace({
                 }
               />
 
-              {/* Data Point Nodes along line */}
-              {pts.map((p, pIdx) => (
-                <circle
-                  key={pIdx}
-                  cx={p.x}
-                  cy={p.y}
-                  r={isLeader ? 7 : 5.5}
-                  fill={col}
-                  stroke="#090b10"
-                  strokeWidth="2"
-                  opacity={animated ? 1 : 0}
-                  className="cursor-pointer"
-                  style={{
-                    transition: `opacity 0.70s ease ${1.15 + tIdx * 0.2}s`,
-                  }}
-                  onClick={(e) =>
-                    onElementClick?.(e, 's0', colKey, `#${tIdx + 1} ${rawTeam.tag} Node`)
-                  }
-                />
-              ))}
+              {/* Data Point Nodes along played matches */}
+              {pts
+                .filter((p) => !p.isOrigin)
+                .map((p, pIdx) => (
+                  <circle
+                    key={pIdx}
+                    cx={p.x}
+                    cy={p.y}
+                    r={isLeader ? 7.5 : 5.8}
+                    fill={col}
+                    stroke="#090b10"
+                    strokeWidth="2"
+                    opacity={animated ? 1 : 0}
+                    className="cursor-pointer"
+                    style={{
+                      transition: `opacity 0.65s ease ${0.95 + tIdx * 0.18}s`,
+                    }}
+                    onClick={(e) =>
+                      onElementClick?.(e, 's0', colKey, `#${tIdx + 1} ${rawTeam.tag} Node`)
+                    }
+                  />
+                ))}
 
               {/* Non-overlapping Endpoint Tag Pill */}
               <g
                 opacity={animated ? 1 : 0}
                 style={{
-                  transition: `opacity 0.80s ease ${1.35 + tIdx * 0.2}s`,
+                  transition: `opacity 0.75s ease ${1.10 + tIdx * 0.18}s`,
                 }}
               >
-                {/* Dashed connector line to spread tag position */}
+                {/* Dashed leader line from last played node to spread pill */}
                 <path
-                  d={`M ${last.x + 6} ${last.y} L ${last.x + 20} ${last.y} L ${last.x + 32} ${ly}`}
+                  d={`M ${last.x + 6} ${last.y} L ${endX + 16} ${last.y} L ${endX + 34} ${ly}`}
                   fill="none"
                   stroke={col}
-                  strokeWidth={isLeader ? 2.4 : 1.8}
-                  strokeDasharray="3 2"
+                  strokeWidth={isLeader ? 2 : 1.5}
+                  strokeDasharray="4 6"
+                  opacity={0.5}
                 />
 
                 {/* Pill Background Box (Transparent OBS-ready) */}
                 <rect
-                  x={last.x + 34}
+                  x={endX + 34}
                   y={ly - boxH / 2}
                   width={boxW}
                   height={boxH}
@@ -367,7 +387,7 @@ export default function Slide01PointsRace({
 
                 {/* Points Full Text */}
                 <text
-                  x={last.x + 34 + boxW - 12}
+                  x={endX + 34 + boxW - 12}
                   y={ly + 8}
                   textAnchor="end"
                   fill="#ffffff"

@@ -104,6 +104,7 @@ export async function GET(req: NextRequest) {
     let progColorIdx = 0;
 
     let currentMatch = -1;
+    let maxMatchIdxSeen = -1;
     const matchKills = [0, 0, 0, 0, 0];
     const matchDamage = [0, 0, 0, 0, 0];
 
@@ -123,6 +124,10 @@ export async function GET(req: NextRequest) {
         const k = safeInt(r[6]);   // Kills for this match
         const d = safeInt(r[8]);   // Damage for this match
 
+        if (pts > 0 || k > 0 || d > 0) {
+          maxMatchIdxSeen = Math.max(maxMatchIdxSeen, currentMatch);
+        }
+
         matchKills[currentMatch] += k;
         matchDamage[currentMatch] += d;
 
@@ -139,10 +144,11 @@ export async function GET(req: NextRequest) {
       }
     });
 
-    // Calculate cumulative points across Match 1–5 and sort by final total descending
+    // Only emit cumulative points up to the latest played match (prevents flat horizontal lines on unplayed matches)
+    const playedCount = Math.max(1, maxMatchIdxSeen + 1);
     const progressionList = Object.values(progressionMap).map((t) => {
       let acc = 0;
-      const cumPts = t.pts.map((p) => {
+      const cumPts = t.pts.slice(0, playedCount).map((p) => {
         acc += p;
         return acc;
       });
@@ -639,6 +645,115 @@ export async function GET(req: NextRequest) {
     const sheetH2H = parseVmixH2HSection();
     const sheetGroupH2H = parseVmixGroupAvgSection();
 
+    // Parse HEAD TO HEAD (DAY STANDING) directly from Vmix (e.g. Row 64)
+    const parseVmixDayH2HSection = (): { a?: H2HTeam; b?: H2HTeam } => {
+      const hdrIdx = vmixRows.findIndex((r: any[]) =>
+        Array.isArray(r) &&
+        r.some((cell) => {
+          const s = safeString(cell).toUpperCase();
+          return s.includes('HEAD TO HEAD') && s.includes('DAY STANDING') && !s.includes('PLAYER');
+        })
+      );
+      if (hdrIdx === -1) return {};
+
+      const colRowIdx = vmixRows.findIndex(
+        (r: any[], idx: number) =>
+          idx > hdrIdx &&
+          idx <= hdrIdx + 3 &&
+          Array.isArray(r) &&
+          r.some((c) => safeString(c).toUpperCase() === 'TEAM NAME')
+      );
+      if (colRowIdx === -1) return {};
+
+      const colRow = vmixRows[colRowIdx] || [];
+      const nameCol = colRow.findIndex((c: any) => safeString(c).toUpperCase() === 'TEAM NAME');
+      if (nameCol === -1) return {};
+
+      const parseRow = (row: any[] | undefined): H2HTeam | undefined => {
+        if (!row) return undefined;
+        const tName = safeString(row[nameCol]);
+        if (!tName) return undefined;
+        const matched = findTeamInAll(tName);
+        const rank = safeInt(row[nameCol + 2], matched?.rank || 1);
+        const surv = safeInt(row[nameCol + 3], matched?.surv || 0);
+        const kills = safeInt(row[nameCol + 4], matched?.kills || 0);
+        const total = safeInt(row[nameCol + 5], matched?.total || 0);
+        const tag = matched?.tag || tName.slice(0, 3).toUpperCase();
+        return {
+          name: matched?.name || tName,
+          tag,
+          rank,
+          surv,
+          kills,
+          total,
+          damage: matched?.damage || 0,
+          hs: matched?.hs || 0,
+          gloo: matched?.gloo || 0,
+          assist: matched?.assist ?? Math.round(kills * 0.42),
+          logoUrl: matched?.logoUrl || resolveDriveLogo(tName, tag, driveFiles),
+        };
+      };
+
+      return {
+        a: parseRow(vmixRows[colRowIdx + 1]),
+        b: parseRow(vmixRows[colRowIdx + 2]),
+      };
+    };
+
+    // Parse HEAD TO HEAD (PLAYER DAY STANDING) directly from Vmix (e.g. Row 91)
+    const parseVmixPlayerH2HSection = (): { p1?: any; p2?: any } => {
+      const hdrIdx = vmixRows.findIndex((r: any[]) =>
+        Array.isArray(r) &&
+        r.some((cell) => {
+          const s = safeString(cell).toUpperCase();
+          return s.includes('HEAD TO HEAD') && s.includes('PLAYER');
+        })
+      );
+      if (hdrIdx === -1) return {};
+
+      const colRowIdx = vmixRows.findIndex(
+        (r: any[], idx: number) =>
+          idx > hdrIdx &&
+          idx <= hdrIdx + 3 &&
+          Array.isArray(r) &&
+          r.some((c) => safeString(c).toUpperCase() === 'PLAYER NAME')
+      );
+      if (colRowIdx === -1) return {};
+
+      const colRow = vmixRows[colRowIdx] || [];
+      const teamCol = colRow.findIndex((c: any) => safeString(c).toUpperCase() === 'TEAM NAME');
+      const pCol = colRow.findIndex((c: any) => safeString(c).toUpperCase() === 'PLAYER NAME');
+      if (pCol === -1) return {};
+
+      const parseRow = (row: any[] | undefined) => {
+        if (!row) return undefined;
+        const pName = safeString(row[pCol]);
+        if (!pName) return undefined;
+        const teamName = teamCol !== -1 ? safeString(row[teamCol]) : '';
+        const matchedTeam = findTeamInAll(teamName);
+        const tag = matchedTeam?.tag || (pName.includes('.') ? pName.split('.')[0].toUpperCase() : teamName.slice(0, 3).toUpperCase());
+        return {
+          name: pName,
+          team: matchedTeam?.name || teamName || tag,
+          tag,
+          kills: safeInt(row[pCol + 1]),
+          damage: safeInt(row[pCol + 2]),
+          assist: safeInt(row[pCol + 3]),
+          hs: safeInt(row[pCol + 6]),
+        };
+      };
+
+      return {
+        p1: parseRow(vmixRows[colRowIdx + 1]),
+        p2: parseRow(vmixRows[colRowIdx + 2]),
+      };
+    };
+
+    const sheetDayH2H = parseVmixDayH2HSection();
+    const sheetPlayerH2H = parseVmixPlayerH2HSection();
+    if (sheetPlayerH2H.p1) duel1v1.p1 = sheetPlayerH2H.p1;
+    if (sheetPlayerH2H.p2) duel1v1.p2 = sheetPlayerH2H.p2;
+
     // H2H Latest Match: Always read from Sheet's Vmix HEAD TO HEAD section first, fallback to Top 2 teams
     const tA = allTeamsFull[0];
     const tB = allTeamsFull[1] || allTeamsFull[0];
@@ -853,6 +968,11 @@ export async function GET(req: NextRequest) {
       },
     ];
 
+    const h2hDayStanding: { a: H2HTeam; b: H2HTeam } = {
+      a: sheetDayH2H.a || h2hMatch5.a,
+      b: sheetDayH2H.b || h2hMatch5.b,
+    };
+
     const payload: SheetDataPayload = {
       success: true,
       standing12,
@@ -862,6 +982,7 @@ export async function GET(req: NextRequest) {
       weaponsByMatch,
       mapStandingM5,
       h2hMatch5,
+      h2hDayStanding,
       h2hGroupAvg,
       dayTop10Players,
       allTeamsFull,

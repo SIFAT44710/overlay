@@ -195,6 +195,7 @@ export interface SheetDataPayload {
   weaponsByMatch?: Record<number, WeaponStats[]>;
   mapStandingM5: MapStanding[];
   h2hMatch5: { a: H2HTeam; b: H2HTeam };
+  h2hDayStanding?: { a: H2HTeam; b: H2HTeam };
   h2hGroupAvg: { a: H2HGroupAvgTeam; b: H2HGroupAvgTeam };
   dayTop10Players: DayTopPlayer[];
   allTeamsFull: TeamFullStats[];

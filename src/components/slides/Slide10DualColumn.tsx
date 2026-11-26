@@ -25,8 +25,6 @@ export default function Slide10DualColumn({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
   const imgCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
-  const labelsAlphaRef = useRef<number>(0);
-  const labelRafRef = useRef<number | null>(null);
 
   const themeS9 = theme?.s9 || { kills: '#F5B700', damage: '#38BDF8' };
   const source = theme?.sources?.[8] || theme?.sources?.[9] || 'day_kd_12';
@@ -179,7 +177,6 @@ export default function Slide10DualColumn({
   // 1. Initial Mount & ReplayKey: Create Chart ONCE
   useEffect(() => {
     setAnimated(false);
-    labelsAlphaRef.current = 0;
     const animTimer = setTimeout(() => setAnimated(true), 150);
 
     const canvas = canvasRef.current;
@@ -195,16 +192,12 @@ export default function Slide10DualColumn({
 
     const { cfg: currentCfg, themeS9: currentTheme } = latestRef.current;
 
-    // Custom Plugin: Crisp Numbers fading in AFTER candles settle, strictly ABOVE candles (zero collisions)
+    // Custom Plugin: Crisp Numbers rise SIMULTANEOUSLY with candles, strictly ABOVE candles (zero delay & zero overlap)
     const valuePlugin = {
       id: 'dualValuePlugin',
       afterDatasetsDraw(chart: any) {
-        const alpha = labelsAlphaRef.current;
-        if (alpha <= 0.01) return;
-
         const { ctx } = chart;
         ctx.save();
-        ctx.globalAlpha = alpha;
 
         const meta0 = chart.getDatasetMeta(0);
         const meta1 = chart.getDatasetMeta(1);
@@ -292,7 +285,7 @@ export default function Slide10DualColumn({
             if (p0 && y0 < baseY0 - 8) {
               ctx.save();
               ctx.strokeStyle = liveKillsCol;
-              ctx.globalAlpha = alpha * 0.45;
+              ctx.globalAlpha = 0.45;
               ctx.lineWidth = 1.25;
               ctx.beginPath();
               ctx.moveTo(x0, p0.y - 3);
@@ -313,7 +306,7 @@ export default function Slide10DualColumn({
             if (p1 && y1 < baseY1 - 8) {
               ctx.save();
               ctx.strokeStyle = liveDamageCol;
-              ctx.globalAlpha = alpha * 0.45;
+              ctx.globalAlpha = 0.45;
               ctx.lineWidth = 1.25;
               ctx.beginPath();
               ctx.moveTo(x1, p1.y - 3);
@@ -602,30 +595,8 @@ export default function Slide10DualColumn({
 
     chartInstanceRef.current = newChart;
 
-    // Fade numbers in smoothly AFTER the candle bars finish rising
-    const labelFadeTimer = setTimeout(() => {
-      const start = performance.now();
-      const duration = 340;
-      const tick = (now: number) => {
-        const t = Math.min(1, (now - start) / duration);
-        labelsAlphaRef.current = 1 - Math.pow(1 - t, 3);
-        newChart.draw();
-        if (t < 1) {
-          labelRafRef.current = requestAnimationFrame(tick);
-        } else {
-          labelRafRef.current = null;
-        }
-      };
-      labelRafRef.current = requestAnimationFrame(tick);
-    }, 1180);
-
     return () => {
       clearTimeout(animTimer);
-      clearTimeout(labelFadeTimer);
-      if (labelRafRef.current !== null) {
-        cancelAnimationFrame(labelRafRef.current);
-        labelRafRef.current = null;
-      }
       newChart.destroy();
       if (chartInstanceRef.current === newChart) {
         chartInstanceRef.current = null;
