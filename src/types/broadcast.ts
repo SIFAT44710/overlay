@@ -70,6 +70,7 @@ export interface H2HTeam {
   hs: number;
   gloo: number;
   assist?: number;
+  logoUrl?: string;
 }
 
 export interface H2HGroupAvgTeam {
@@ -78,6 +79,7 @@ export interface H2HGroupAvgTeam {
   avgElims: number;
   avgDmg: number;
   avgSurvMin: number;
+  logoUrl?: string;
 }
 
 export interface DayTopPlayer {

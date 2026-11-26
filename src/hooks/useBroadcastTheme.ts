@@ -38,14 +38,14 @@ export const DEFAULT_THEMES: BroadcastThemeConfig = {
     2: 'day_guns',
     3: 'group_avg_h2h',
     4: 'day_pts',
-    5: 'day_top2_radar',
+    5: 'sheet_h2h_radar',
     6: 'm1_m5_kd',
-    7: 'role_avg',
+    7: 'sheet_h2h_polar',
     8: 'day_kd_12',
     9: 'latest_h2h',
   },
   disabledSlides: {},
-  custom: { p1Idx: 0, p2Idx: 1, tAIdx: 1, tBIdx: 7, gAIdx: 7, gBIdx: 3, rAIdx: 0, rBIdx: 1, s2Logo: '' },
+  custom: { p1Idx: 0, p2Idx: 1, tAIdx: 0, tBIdx: 1, gAIdx: 0, gBIdx: 1, rAIdx: 0, rBIdx: 1, pAIdx: 0, pBIdx: 1, s2Logo: '' },
 };
 
 const STORAGE_KEY = 'dg_broadcast_themes_v3';

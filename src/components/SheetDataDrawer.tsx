@@ -13,28 +13,15 @@ interface SheetDataDrawerProps {
   onUpdateCustom: (custom: any) => void;
 }
 
-const DEFAULT_ALL_TEAMS = [
-  { rank: 1, name: 'NOCTRYX ESPORTS', tag: 'NTX' },
-  { rank: 2, name: 'iQ LESS', tag: 'iQL' },
-  { rank: 3, name: 'UNKNOWN BLOOD', tag: 'UB' },
-  { rank: 4, name: 'ALCHEMIST', tag: 'ALC' },
-  { rank: 5, name: 'NEXO BLIND', tag: 'NXB' },
-  { rank: 6, name: 'AURA SMT', tag: 'AURA' },
-  { rank: 7, name: 'WIDE YOUTH', tag: 'WY' },
-  { rank: 8, name: 'NO SYMPATHY', tag: 'NSP' },
-  { rank: 9, name: '6S BY AG', tag: '6S' },
-  { rank: 10, name: 'POWER OF BGX', tag: 'BGX' },
-  { rank: 11, name: 'DRAKEBORN', tag: 'DRK' },
-  { rank: 12, name: 'EXTREME EX', tag: 'EXE' },
-];
+const DEFAULT_ALL_TEAMS: Array<{ rank: number; name: string; tag: string }> = [];
 
 const SLIDE_DATA_OPTIONS: Array<Array<{ id: string; name: string; tab: string; pickerType?: string }>> = [
-  [{ id: 'top5_m1_m5', name: 'GameStanding: Top 5 Teams (M1–M5)', tab: 'GameStanding' }],
+  [{ id: 'top5_m1_m5', name: 'GameStanding: Top 5 Teams (Live Points)', tab: 'GameStanding' }],
   [
-    { id: 'custom_h2h', name: 'Team H2H: Pick Any 2 Teams', tab: 'TeamStats', pickerType: 'teams_s2' },
-    { id: 'latest_h2h', name: 'Team H2H: Latest Match (Match 5)', tab: 'Vmix R43' },
+    { id: 'latest_h2h', name: 'Team H2H: Live Sheet Head-to-Head', tab: 'Vmix H2H' },
     { id: 'day_top2_h2h', name: 'Team H2H: Day Top 2 Teams', tab: 'DayStanding' },
-    { id: 'day_top2_duel', name: 'Player 1v1: Day Top 2 (SHOVO vs SEJAN)', tab: 'Vmix R91' },
+    { id: 'custom_h2h', name: 'Team H2H: Pick Any 2 Teams', tab: 'TeamStats', pickerType: 'teams_s2' },
+    { id: 'day_top2_duel', name: 'Player 1v1: Day Top 2 Players', tab: 'Vmix Players' },
     { id: 'custom_duel', name: 'Player 1v1: Pick Any 2 Players', tab: 'PlayerData', pickerType: 'players' },
   ],
   [
@@ -47,8 +34,8 @@ const SLIDE_DATA_OPTIONS: Array<Array<{ id: string; name: string; tab: string; p
     { id: 'match_6_guns', name: 'Weapon Meta: Match 6', tab: 'GameStanding / M6' },
   ],
   [
-    { id: 'group_avg_h2h', name: 'Group Stage Avg (69 vs CME)', tab: 'Vmix R137' },
-    { id: 'day_top2_avg', name: 'Day Top 2 Averages (TOP vs EXE)', tab: 'DayStanding' },
+    { id: 'group_avg_h2h', name: 'Group Stage Avg (Live Sheet H2H)', tab: 'Vmix R137' },
+    { id: 'day_top2_avg', name: 'Day Top 2 Averages (Live Standing)', tab: 'DayStanding' },
     { id: 'custom_avg_h2h', name: 'Custom: Pick Any 2 Sheet Teams', tab: 'TeamStats', pickerType: 'teams_s5' },
   ],
   [
@@ -57,32 +44,32 @@ const SLIDE_DATA_OPTIONS: Array<Array<{ id: string; name: string; tab: string; p
     { id: 'day_dmg', name: 'TeamStats: Total Damage (12 Teams)', tab: 'TeamStats' },
     { id: 'day_surv', name: 'DayStanding: Survival Points (12 Teams)', tab: 'DayStanding' },
     { id: 'day_hs', name: 'DayStanding: Total Headshots (12 Teams)', tab: 'DayStanding' },
-    { id: 'latest_m5', name: 'LastMatchStanding: Match 5 Points', tab: 'LastMatchStanding' },
+    { id: 'latest_m5', name: 'LastMatchStanding: Match Points', tab: 'LastMatchStanding' },
     { id: 'top10_plrs', name: 'Vmix: Day Top 10 Players', tab: 'Vmix R78' },
   ],
   [
-    { id: 'day_top2_radar', name: 'DayStanding: Top 2 Radar (TOP vs EXE)', tab: 'DayStanding' },
+    { id: 'sheet_h2h_radar', name: 'Sheet Head-to-Head Radar (Live)', tab: 'Vmix H2H' },
+    { id: 'day_top2_radar', name: 'DayStanding: Top 2 Teams Radar', tab: 'DayStanding' },
     { id: 'custom_radar_h2h', name: 'Custom: Pick Any 2 Sheet Teams', tab: 'TeamStats', pickerType: 'teams_s7' },
   ],
-  [{ id: 'm1_m5_kd', name: 'GameStanding: Match 1–5 Kills & Damage', tab: 'GameStanding' }],
+  [{ id: 'm1_m5_kd', name: 'GameStanding: Match Kills & Damage', tab: 'GameStanding' }],
   [
+    { id: 'sheet_h2h_polar', name: 'Sheet Head-to-Head Dual Polar (Live)', tab: 'Vmix H2H' },
     { id: 'team_polar_h2h', name: 'Team H2H: Dual Polar (Pick 2 Teams)', tab: 'TeamStats', pickerType: 'teams_s8' },
     { id: 'day_top2_polar', name: 'Day Top 2 Teams: Dual Polar', tab: 'DayStanding' },
-    { id: 'role_avg', name: 'Role Avg Kills vs. Avg Damage (Legacy)', tab: 'PlayerRoleStats' },
-    { id: 'role_total', name: 'Role Total Kills vs. Total Damage', tab: 'PlayerRoleStats' },
-    { id: 'top4_teams', name: 'Top 4 Teams: Kills vs. Placement Pts', tab: 'DayStanding' },
+    { id: 'role_total', name: 'Role Avg Kills vs. Damage', tab: 'PlayerRoleStats' },
   ],
   [
     { id: 'day_kd_12', name: 'TeamStats: Kills vs. Total Damage (12 Teams)', tab: 'DayStanding / TeamStats' },
     { id: 'day_surv_kill', name: 'DayStanding: Survival Pts vs. Kill Pts', tab: 'DayStanding' },
     { id: 'day_kill_hs', name: 'DayStanding: Kills vs. Headshots', tab: 'DayStanding' },
-    { id: 'm5_surv_kill', name: 'LastMatchStanding: Match 5 Survival vs. Kills', tab: 'LastMatchStanding' },
+    { id: 'm5_surv_kill', name: 'LastMatchStanding: Match Survival vs. Kills', tab: 'LastMatchStanding' },
     { id: 'plrs_kd', name: 'Vmix: Top 10 Players Kills vs. Damage', tab: 'Vmix R78' },
     { id: 'plrs_k_hs', name: 'Vmix: Top 10 Players Kills vs. Headshots', tab: 'Vmix R78' },
   ],
   [
-    { id: 'latest_h2h', name: 'Latest Match H2H (EXE vs 69)', tab: 'Vmix R43' },
-    { id: 'day_top2_h2h', name: 'Day Top 2 H2H (TOP vs EXE)', tab: 'DayStanding' },
+    { id: 'latest_h2h', name: 'Live Sheet Head-to-Head', tab: 'Vmix H2H' },
+    { id: 'day_top2_h2h', name: 'Day Top 2 H2H (Live Standing)', tab: 'DayStanding' },
     { id: 'custom_h2h', name: 'Custom: Pick Any 2 Sheet Teams', tab: 'TeamStats', pickerType: 'teams_s4' },
   ],
 ];
@@ -183,7 +170,7 @@ export default function SheetDataDrawer({
                   TEAM 01 (LEFT / CONTENDER 1):
                 </label>
                 <select
-                  value={customSettings.tAIdx ?? 1}
+                  value={customSettings.tAIdx ?? 0}
                   onChange={(e) => {
                     const idx = parseInt(e.target.value, 10);
                     onUpdateCustom({ ...customSettings, tAIdx: idx });
@@ -205,7 +192,7 @@ export default function SheetDataDrawer({
                   TEAM 02 (RIGHT / CONTENDER 2):
                 </label>
                 <select
-                  value={customSettings.tBIdx ?? 7}
+                  value={customSettings.tBIdx ?? 1}
                   onChange={(e) => {
                     const idx = parseInt(e.target.value, 10);
                     onUpdateCustom({ ...customSettings, tBIdx: idx });
@@ -273,7 +260,7 @@ export default function SheetDataDrawer({
                   TEAM 01 (LEFT / CONTENDER 1):
                 </label>
                 <select
-                  value={customSettings.gAIdx ?? 1}
+                  value={customSettings.gAIdx ?? 0}
                   onChange={(e) => {
                     const idx = parseInt(e.target.value, 10);
                     onUpdateCustom({ ...customSettings, gAIdx: idx });
@@ -295,7 +282,7 @@ export default function SheetDataDrawer({
                   TEAM 02 (RIGHT / CONTENDER 2):
                 </label>
                 <select
-                  value={customSettings.gBIdx ?? 7}
+                  value={customSettings.gBIdx ?? 1}
                   onChange={(e) => {
                     const idx = parseInt(e.target.value, 10);
                     onUpdateCustom({ ...customSettings, gBIdx: idx });
@@ -327,7 +314,7 @@ export default function SheetDataDrawer({
                   TEAM 01 (LEFT CIRCLE):
                 </label>
                 <select
-                  value={customSettings.pAIdx ?? 1}
+                  value={customSettings.pAIdx ?? 0}
                   onChange={(e) => {
                     const idx = parseInt(e.target.value, 10);
                     onUpdateCustom({ ...customSettings, pAIdx: idx });
@@ -349,7 +336,7 @@ export default function SheetDataDrawer({
                   TEAM 02 (RIGHT CIRCLE):
                 </label>
                 <select
-                  value={customSettings.pBIdx ?? 7}
+                  value={customSettings.pBIdx ?? 1}
                   onChange={(e) => {
                     const idx = parseInt(e.target.value, 10);
                     onUpdateCustom({ ...customSettings, pBIdx: idx });

@@ -31,7 +31,7 @@ export default function Slide09RolePolar({
 
   const s8 = (theme?.s8 as any) || {};
   const custom = theme?.custom;
-  const source = theme?.sources?.[7] || theme?.sources?.[8] || 'team_polar_h2h';
+  const source = theme?.sources?.[7] || theme?.sources?.[8] || 'sheet_h2h_polar';
 
   // Independent color arrays for Left Circle (Team A) and Right Circle (Team B)
   const roleColsA = [
@@ -48,9 +48,9 @@ export default function Slide09RolePolar({
     s8.b_assist || s8.b_bomber || s8.bomber || '#10B981',
   ];
 
-  // Resolve Team A & Team B from SheetData
+  // Resolve Team A & Team B from SheetData (Sheet H2H by default, or Custom / Top 2)
   const allTeams = sheetData?.allTeamsFull || [];
-  let teamA = allTeams[custom?.pAIdx ?? 1] || allTeams[0] || {
+  let teamA: any = allTeams[custom?.pAIdx ?? 0] || allTeams[0] || {
     name: 'LOADING...',
     tag: '---',
     rank: 1,
@@ -62,7 +62,7 @@ export default function Slide09RolePolar({
     col: '#8B5CF6',
   };
 
-  let teamB = allTeams[custom?.pBIdx ?? 7] || allTeams[1] || {
+  let teamB: any = allTeams[custom?.pBIdx ?? 1] || allTeams[1] || {
     name: 'LOADING...',
     tag: '---',
     rank: 2,
@@ -74,7 +74,20 @@ export default function Slide09RolePolar({
     col: '#F43F5E',
   };
 
-  if (source === 'day_top2_polar' && allTeams.length >= 2) {
+  if ((source === 'sheet_h2h_polar' || source === 'role_avg') && sheetData?.h2hMatch5?.a && sheetData?.h2hMatch5?.b) {
+    const matchA = allTeams.find((t) => t.tag === sheetData.h2hMatch5!.a.tag || t.name === sheetData.h2hMatch5!.a.name);
+    const matchB = allTeams.find((t) => t.tag === sheetData.h2hMatch5!.b.tag || t.name === sheetData.h2hMatch5!.b.name);
+    teamA = {
+      ...sheetData.h2hMatch5.a,
+      logoUrl: sheetData.h2hMatch5.a.logoUrl || matchA?.logoUrl,
+      assist: sheetData.h2hMatch5.a.assist ?? Math.round(sheetData.h2hMatch5.a.kills * 0.44),
+    };
+    teamB = {
+      ...sheetData.h2hMatch5.b,
+      logoUrl: sheetData.h2hMatch5.b.logoUrl || matchB?.logoUrl,
+      assist: sheetData.h2hMatch5.b.assist ?? Math.round(sheetData.h2hMatch5.b.kills * 0.44),
+    };
+  } else if (source === 'day_top2_polar' && allTeams.length >= 2) {
     teamA = allTeams[0];
     teamB = allTeams[1];
   }
@@ -105,11 +118,11 @@ export default function Slide09RolePolar({
   const realA = [teamA.kills, teamA.damage, teamA.hs, assistA];
   const realB = [teamB.kills, teamB.damage, teamB.hs, assistB];
 
-  const isRoleAvgMode = source === 'role_avg' || source === 'role_total';
+  const isRoleAvgMode = source === 'role_total';
   const displayLabels = isRoleAvgMode ? ['Rusher', 'Support', 'Sniper', 'Bomber'] : METRIC_LABELS;
 
-  const currentDataA = isRoleAvgMode ? (sheetData?.rolesPolar?.map((r) => r.kills) || [10.3, 10.3, 10.4, 11.7]) : radiusA;
-  const currentDataB = isRoleAvgMode ? (sheetData?.rolesPolar?.map((r) => r.damage) || [6037, 6207, 9175, 6545]) : radiusB;
+  const currentDataA = isRoleAvgMode ? (sheetData?.rolesPolar?.map((r) => r.kills) || [0, 0, 0, 0]) : radiusA;
+  const currentDataB = isRoleAvgMode ? (sheetData?.rolesPolar?.map((r) => r.damage) || [0, 0, 0, 0]) : radiusB;
   const displayRealA = isRoleAvgMode ? currentDataA : realA;
   const displayRealB = isRoleAvgMode ? currentDataB : realB;
 

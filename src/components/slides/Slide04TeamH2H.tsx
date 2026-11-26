@@ -51,11 +51,11 @@ export default function Slide04TeamH2H({
   };
 
   if (source === 'custom_h2h' && sheetData?.allTeamsFull?.length) {
-    a = sheetData.allTeamsFull[custom?.tAIdx ?? 1] || sheetData.allTeamsFull[0];
-    b = sheetData.allTeamsFull[custom?.tBIdx ?? 7] || sheetData.allTeamsFull[1];
+    a = sheetData.allTeamsFull[custom?.tAIdx ?? 0] || sheetData.allTeamsFull[0];
+    b = sheetData.allTeamsFull[custom?.tBIdx ?? 1] || sheetData.allTeamsFull[1] || sheetData.allTeamsFull[0];
   } else if (source === 'day_top2_h2h' && sheetData?.allTeamsFull?.length) {
     a = sheetData.allTeamsFull[0];
-    b = sheetData.allTeamsFull[1];
+    b = sheetData.allTeamsFull[1] || sheetData.allTeamsFull[0];
   }
 
   // Resolve Drive Logo for each team with full tag & name coverage

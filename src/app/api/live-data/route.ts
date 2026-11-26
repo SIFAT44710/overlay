@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
       'DayStanding!A1:J20',
       'GameStanding!A1:J90',
       'LastMatchStanding!A1:J20',
-      'Vmix!A1:P150',
+      'Vmix!A1:Z150',
       'PlayerData!A1:K60',
       'PlayerRoleStats!A1:K130',
       'TeamStats!A1:L20',
@@ -163,6 +163,17 @@ export async function GET(req: NextRequest) {
       pts: t.pts,
     }));
 
+    // If GameStanding didn't include full team names (only tags), enrich from standing12
+    matchProgression.forEach((mp) => {
+      const matchTeam = standing12.find(
+        (st) => st.tag.toUpperCase() === mp.tag.toUpperCase() || st.name.toUpperCase() === mp.name.toUpperCase()
+      );
+      if (matchTeam) {
+        mp.tag = matchTeam.tag;
+        mp.name = matchTeam.name;
+      }
+    });
+
     // Derive from standing12 if GameStanding has no match rows yet (no hardcoded mock teams)
     if (matchProgression.length === 0 && standing12.length > 0) {
       standing12.slice(0, 5).forEach((t, idx) => {
@@ -252,7 +263,7 @@ export async function GET(req: NextRequest) {
     const weaponColors = ['#8b5cf6', '#2dd4bf', '#fbbf24', '#f43f5e', '#38bdf8'];
     const weaponsDay: WeaponStats[] = [];
 
-    const vmixRows = batch['Vmix!A1:P150'] || [];
+    const vmixRows = batch['Vmix!A1:Z150'] || [];
     const dayGunHeaderIdx = vmixRows.findIndex((r: any[]) =>
       safeString(r?.[0]).toUpperCase().includes('DAY MOST USED GUNS')
     );
@@ -328,16 +339,7 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Ultimate fallback if sheet is unavailable
-    if (weaponsDay.length === 0) {
-      weaponsDay.push(
-        { name: 'EVO3', kills: 256, damage: 115964, hs: 283, color: '#8b5cf6' },
-        { name: 'M7', kills: 61, damage: 35086, hs: 79, color: '#2dd4bf' },
-        { name: 'AWM', kills: 37, damage: 36446, hs: 11, color: '#fbbf24' },
-        { name: 'UZI', kills: 24, damage: 11059, hs: 66, color: '#f43f5e' },
-        { name: 'WOODPECKER', kills: 17, damage: 14844, hs: 29, color: '#38bdf8' }
-      );
-    }
+    // Keep weaponsDay strictly driven by live sheet rows (no static mock numbers)
 
     // -------------------------------------------------------------
     // 4b. Parse Weapons Per Match (Match 1–6)
@@ -358,7 +360,7 @@ export async function GET(req: NextRequest) {
     });
 
     for (let m = 1; m <= 6; m++) {
-      if (matchWepMap[m] && Object.keys(matchWepMap[m]).length >= 3) {
+      if (matchWepMap[m] && Object.keys(matchWepMap[m]).length > 0) {
         weaponsByMatch[m] = Object.entries(matchWepMap[m])
           .map(([name, s], idx) => ({
             name,
@@ -370,39 +372,7 @@ export async function GET(req: NextRequest) {
           .sort((a, b) => b.kills - a.kills)
           .slice(0, 5);
       } else {
-        const mK = matchTotals.kills[m - 1] > 0 ? matchTotals.kills[m - 1] : [58, 97, 77, 88, 64, 72][m - 1];
-        const mD = matchTotals.damage[m - 1] > 0 ? matchTotals.damage[m - 1] : [38746, 53309, 46169, 47194, 41200, 44500][m - 1];
-
-        const ratios = [
-          [0.48, 0.22, 0.12, 0.10, 0.08],
-          [0.45, 0.26, 0.13, 0.09, 0.07],
-          [0.46, 0.21, 0.15, 0.10, 0.08],
-          [0.47, 0.24, 0.12, 0.10, 0.07],
-          [0.44, 0.25, 0.14, 0.10, 0.07],
-          [0.46, 0.23, 0.13, 0.10, 0.08],
-        ][m - 1];
-
-        const gunNames = [
-          ['EVO3', 'M7', 'KAR98K', 'WOODPECKER', 'SKS'],
-          ['EVO3', 'M7', 'MAG7', 'KAR98K', 'WOODPECKER'],
-          ['EVO3', 'M7', 'AWM', 'WOODPECKER', 'UZI'],
-          ['EVO3', 'M7', 'KAR98K', 'WOODPECKER', 'SKS'],
-          ['EVO3', 'M7', 'WOODPECKER', 'KAR98K', 'UZI'],
-          ['EVO3', 'M7', 'AWM', 'KAR98K', 'WOODPECKER'],
-        ][m - 1];
-
-        weaponsByMatch[m] = gunNames.map((name, idx) => {
-          const k = Math.max(3, Math.round(mK * ratios[idx]));
-          const d = Math.max(1200, Math.round(mD * ratios[idx]));
-          const hs = Math.max(1, Math.round(k * (name === 'KAR98K' || name === 'AWM' ? 0.25 : 0.82)));
-          return {
-            name,
-            kills: k,
-            damage: d,
-            hs,
-            color: weaponColors[idx % weaponColors.length],
-          };
-        });
+        weaponsByMatch[m] = weaponsDay;
       }
     }
 
@@ -545,12 +515,138 @@ export async function GET(req: NextRequest) {
       col: t.col || DEFAULT_TEAM_COLS[idx % DEFAULT_TEAM_COLS.length],
     }));
 
-    // H2H Match 5 (Index 1 vs Index 7 default)
-    const tA = allTeamsFull[1] || allTeamsFull[0];
-    const tB = allTeamsFull[7] || allTeamsFull[1] || allTeamsFull[0];
+    // -------------------------------------------------------------
+    // 6b. Parse Live HEAD TO HEAD & GROUP STAGE H2H Directly from Vmix Tab
+    // -------------------------------------------------------------
+    const findTeamInAll = (teamName: string) => {
+      const up = safeString(teamName).toUpperCase();
+      if (!up) return undefined;
+      return allTeamsFull.find(
+        (t) => t.name.toUpperCase() === up || t.tag.toUpperCase() === up
+      );
+    };
+
+    const parseVmixH2HSection = (): { a?: H2HTeam; b?: H2HTeam } => {
+      const hdrIdx = vmixRows.findIndex((r: any[]) =>
+        Array.isArray(r) &&
+        r.some((cell) => {
+          const s = safeString(cell).toUpperCase();
+          return s.includes('HEAD TO HEAD') && !s.includes('GROUP STAGE');
+        })
+      );
+      if (hdrIdx === -1) return {};
+
+      // Find the column header row right below ("Team Name")
+      const colRowIdx = vmixRows.findIndex(
+        (r: any[], idx: number) =>
+          idx > hdrIdx &&
+          idx <= hdrIdx + 3 &&
+          Array.isArray(r) &&
+          r.some((c) => safeString(c).toUpperCase() === 'TEAM NAME')
+      );
+      if (colRowIdx === -1) return {};
+
+      const colRow = vmixRows[colRowIdx] || [];
+      const nameCol = colRow.findIndex((c: any) => safeString(c).toUpperCase() === 'TEAM NAME');
+      if (nameCol === -1) return {};
+
+      const parseRow = (row: any[] | undefined): H2HTeam | undefined => {
+        if (!row) return undefined;
+        const tName = safeString(row[nameCol]);
+        if (!tName) return undefined;
+        const matched = findTeamInAll(tName);
+        const rank = safeInt(row[nameCol + 2], matched?.rank || 1);
+        const surv = safeInt(row[nameCol + 3], matched?.surv || 0);
+        const total = safeInt(row[nameCol + 5], matched?.total || 0);
+        const kills = safeInt(row[nameCol + 6], matched?.kills || 0);
+        const damage = safeInt(row[nameCol + 8], matched?.damage || 0);
+        let hs = safeInt(row[nameCol + 9], matched?.hs || 0);
+        if (typeof row[nameCol + 9] === 'string' && row[nameCol + 9].endsWith('%') && hs >= 100) {
+          hs = Math.round(hs / 100);
+        }
+        if (hs === 0 && matched) hs = matched.hs;
+        const gloo = safeInt(row[nameCol + 11], matched?.gloo || 0);
+        const tag = matched?.tag || tName.slice(0, 3).toUpperCase();
+        const assist =
+          teamAssistsMap[tag.toUpperCase()] ||
+          teamAssistsMap[tName.toUpperCase()] ||
+          matched?.assist ||
+          Math.round(kills * 0.42);
+        return {
+          name: matched?.name || tName,
+          tag,
+          rank,
+          surv,
+          kills,
+          total,
+          damage,
+          hs,
+          gloo,
+          assist,
+        };
+      };
+
+      return {
+        a: parseRow(vmixRows[colRowIdx + 1]),
+        b: parseRow(vmixRows[colRowIdx + 2]),
+      };
+    };
+
+    const parseVmixGroupAvgSection = (): { a?: H2HGroupAvgTeam; b?: H2HGroupAvgTeam } => {
+      const hdrIdx = vmixRows.findIndex((r: any[]) =>
+        Array.isArray(r) &&
+        r.some((cell) => safeString(cell).toUpperCase().includes('GROUP STAGE AVERAGES'))
+      );
+      if (hdrIdx === -1) return {};
+
+      const colRowIdx = vmixRows.findIndex(
+        (r: any[], idx: number) =>
+          idx > hdrIdx &&
+          idx <= hdrIdx + 3 &&
+          Array.isArray(r) &&
+          r.some((c) => safeString(c).toUpperCase() === 'TEAM NAME')
+      );
+      if (colRowIdx === -1) return {};
+
+      const colRow = vmixRows[colRowIdx] || [];
+      const nameCol = colRow.findIndex((c: any) => safeString(c).toUpperCase() === 'TEAM NAME');
+      if (nameCol === -1) return {};
+
+      const parseRow = (row: any[] | undefined): H2HGroupAvgTeam | undefined => {
+        if (!row) return undefined;
+        const tName = safeString(row[nameCol]);
+        if (!tName) return undefined;
+        const matched = findTeamInAll(tName);
+        const avgElims = safeFloat(row[nameCol + 2], matched?.avgElims || 0);
+        const avgDmg = safeInt(row[nameCol + 3], matched?.avgDmg || 0);
+        const survRaw = safeString(row[nameCol + 5]).replace(',', '.');
+        const avgSurvMin = safeFloat(survRaw, matched?.avgSurvMin || 0);
+        return {
+          name: matched?.name || tName,
+          tag: matched?.tag || tName.slice(0, 3).toUpperCase(),
+          avgElims,
+          avgDmg,
+          avgSurvMin,
+        };
+      };
+
+      return {
+        a: parseRow(vmixRows[colRowIdx + 1]),
+        b: parseRow(vmixRows[colRowIdx + 2]),
+      };
+    };
+
+    const sheetH2H = parseVmixH2HSection();
+    const sheetGroupH2H = parseVmixGroupAvgSection();
+
+    // H2H Latest Match: Always read from Sheet's Vmix HEAD TO HEAD section first, fallback to Top 2 teams
+    const tA = allTeamsFull[0];
+    const tB = allTeamsFull[1] || allTeamsFull[0];
 
     const h2hMatch5: { a: H2HTeam; b: H2HTeam } = {
-      a: tA
+      a: sheetH2H.a
+        ? sheetH2H.a
+        : tA
         ? {
             name: tA.name,
             tag: tA.tag,
@@ -575,7 +671,9 @@ export async function GET(req: NextRequest) {
             gloo: 0,
             assist: 0,
           },
-      b: tB
+      b: sheetH2H.b
+        ? sheetH2H.b
+        : tB
         ? {
             name: tB.name,
             tag: tB.tag,
@@ -602,12 +700,14 @@ export async function GET(req: NextRequest) {
           },
     };
 
-    // H2H Group Average (Index 7 vs Index 3 default)
-    const gA = allTeamsFull[7] || allTeamsFull[0];
-    const gB = allTeamsFull[3] || allTeamsFull[1] || allTeamsFull[0];
+    // H2H Group Average: Read from Sheet's Vmix GROUP STAGE AVERAGES section first, fallback to Top 2
+    const gA = allTeamsFull[0];
+    const gB = allTeamsFull[1] || allTeamsFull[0];
 
     const h2hGroupAvg: { a: H2HGroupAvgTeam; b: H2HGroupAvgTeam } = {
-      a: gA
+      a: sheetGroupH2H.a
+        ? sheetGroupH2H.a
+        : gA
         ? {
             name: gA.name,
             tag: gA.tag,
@@ -622,7 +722,9 @@ export async function GET(req: NextRequest) {
             avgDmg: 0,
             avgSurvMin: 0,
           },
-      b: gB
+      b: sheetGroupH2H.b
+        ? sheetGroupH2H.b
+        : gB
         ? {
             name: gB.name,
             tag: gB.tag,
@@ -728,26 +830,26 @@ export async function GET(req: NextRequest) {
       {
         role: 'Rusher',
         color: '#EF4444',
-        kills: rolesMap.RUSHER.players > 0 ? parseFloat((rolesMap.RUSHER.kills / rolesMap.RUSHER.players).toFixed(1)) : 10.3,
-        damage: rolesMap.RUSHER.players > 0 ? Math.round(rolesMap.RUSHER.damage / rolesMap.RUSHER.players) : 6037,
+        kills: rolesMap.RUSHER.players > 0 ? parseFloat((rolesMap.RUSHER.kills / rolesMap.RUSHER.players).toFixed(1)) : 0,
+        damage: rolesMap.RUSHER.players > 0 ? Math.round(rolesMap.RUSHER.damage / rolesMap.RUSHER.players) : 0,
       },
       {
         role: 'Support',
         color: '#22C55E',
-        kills: rolesMap.SUPPORT.players > 0 ? parseFloat((rolesMap.SUPPORT.kills / rolesMap.SUPPORT.players).toFixed(1)) : 10.3,
-        damage: rolesMap.SUPPORT.players > 0 ? Math.round(rolesMap.SUPPORT.damage / rolesMap.SUPPORT.players) : 6207,
+        kills: rolesMap.SUPPORT.players > 0 ? parseFloat((rolesMap.SUPPORT.kills / rolesMap.SUPPORT.players).toFixed(1)) : 0,
+        damage: rolesMap.SUPPORT.players > 0 ? Math.round(rolesMap.SUPPORT.damage / rolesMap.SUPPORT.players) : 0,
       },
       {
         role: 'Sniper',
         color: '#A855F7',
-        kills: rolesMap.SNIPER.players > 0 ? parseFloat((rolesMap.SNIPER.kills / rolesMap.SNIPER.players).toFixed(1)) : 10.4,
-        damage: rolesMap.SNIPER.players > 0 ? Math.round(rolesMap.SNIPER.damage / rolesMap.SNIPER.players) : 9175,
+        kills: rolesMap.SNIPER.players > 0 ? parseFloat((rolesMap.SNIPER.kills / rolesMap.SNIPER.players).toFixed(1)) : 0,
+        damage: rolesMap.SNIPER.players > 0 ? Math.round(rolesMap.SNIPER.damage / rolesMap.SNIPER.players) : 0,
       },
       {
         role: 'Bomber',
         color: '#FACC15',
-        kills: rolesMap.BOMBER.players > 0 ? parseFloat((rolesMap.BOMBER.kills / rolesMap.BOMBER.players).toFixed(1)) : 11.7,
-        damage: rolesMap.BOMBER.players > 0 ? Math.round(rolesMap.BOMBER.damage / rolesMap.BOMBER.players) : 6545,
+        kills: rolesMap.BOMBER.players > 0 ? parseFloat((rolesMap.BOMBER.kills / rolesMap.BOMBER.players).toFixed(1)) : 0,
+        damage: rolesMap.BOMBER.players > 0 ? Math.round(rolesMap.BOMBER.damage / rolesMap.BOMBER.players) : 0,
       },
     ];
 

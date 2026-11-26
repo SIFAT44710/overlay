@@ -164,7 +164,7 @@ export default function Slide02PlayerClash({
         damage: sheetData.h2hMatch5.a.damage,
         hs: sheetData.h2hMatch5.a.hs,
         assist: sheetData.h2hMatch5.a.assist ?? Math.round(sheetData.h2hMatch5.a.kills * 0.42),
-        logoUrl: undefined,
+        logoUrl: sheetData.h2hMatch5.a.logoUrl,
       };
       tB = {
         name: sheetData.h2hMatch5.b.name,
@@ -174,7 +174,7 @@ export default function Slide02PlayerClash({
         damage: sheetData.h2hMatch5.b.damage,
         hs: sheetData.h2hMatch5.b.hs,
         assist: sheetData.h2hMatch5.b.assist ?? Math.round(sheetData.h2hMatch5.b.kills * 0.42),
-        logoUrl: undefined,
+        logoUrl: sheetData.h2hMatch5.b.logoUrl,
       };
     } else if (sheetData?.allTeamsFull?.length) {
       const first = sheetData.allTeamsFull[0];
@@ -238,24 +238,11 @@ export default function Slide02PlayerClash({
           assist: Math.round(s.elims * 0.42),
           logoUrl: s.logoUrl,
         }))
-      : [
-          { rank: 1, name: 'NOCTRYX ESPORTS', tag: 'NTX', kills: 63, damage: 30737, hs: 45, assist: 130 },
-          { rank: 2, name: 'iQ LESS', tag: 'iQL', kills: 32, damage: 20341, hs: 32, assist: 48 },
-          { rank: 3, name: 'UNKNOWN BLOOD', tag: 'UB', kills: 42, damage: 22100, hs: 35, assist: 38 },
-          { rank: 4, name: 'ALCHEMIST', tag: 'ALC', kills: 39, damage: 21500, hs: 31, assist: 34 },
-          { rank: 5, name: 'NEXO BLIND', tag: 'NXB', kills: 36, damage: 19800, hs: 28, assist: 30 },
-          { rank: 6, name: 'AURA SMT', tag: 'AURA', kills: 31, damage: 17400, hs: 25, assist: 28 },
-          { rank: 7, name: 'WIDE YOUTH', tag: 'WY', kills: 28, damage: 16200, hs: 22, assist: 24 },
-          { rank: 8, name: 'NO SYMPATHY', tag: 'NSP', kills: 22, damage: 20106, hs: 30, assist: 56 },
-          { rank: 9, name: '6S BY AG', tag: '6S', kills: 24, damage: 14500, hs: 19, assist: 21 },
-          { rank: 10, name: 'POWER OF BGX', tag: 'BGX', kills: 20, damage: 13200, hs: 16, assist: 18 },
-          { rank: 11, name: 'DRAKEBORN', tag: 'DRK', kills: 18, damage: 11800, hs: 14, assist: 16 },
-          { rank: 12, name: 'EXTREME EX', tag: 'EXE', kills: 76, damage: 42349, hs: 67, assist: 32 },
-        ];
+      : [];
 
-    if (source === 'custom_h2h') {
-      const idxA = custom?.tAIdx ?? 1;
-      const idxB = custom?.tBIdx ?? 7;
+    if (source === 'custom_h2h' && allTeams.length > 0) {
+      const idxA = custom?.tAIdx ?? 0;
+      const idxB = custom?.tBIdx ?? 1;
       const first = allTeams[idxA] || allTeams[0];
       const second = allTeams[idxB] || allTeams[1] || first;
       tA = {
@@ -278,7 +265,7 @@ export default function Slide02PlayerClash({
         assist: (second as any).assist ?? Math.round(((second as any).kills || 0) * 0.42),
         logoUrl: (second as any).logoUrl,
       };
-    } else if (source === 'day_top2_h2h') {
+    } else if (source === 'day_top2_h2h' && allTeams.length > 0) {
       const first = allTeams[0];
       const second = allTeams[1] || first;
       tA = {

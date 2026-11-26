@@ -29,10 +29,10 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey = 0, onEl
 
   const themeS6 = theme?.s6 || { rank1: '#E11D48', rank2: '#A78BFA', outerBox: '#090b12' };
   const custom = theme?.custom;
-  const source = theme?.sources?.[5] || theme?.sources?.[6] || 'day_top2_radar';
+  const source = theme?.sources?.[5] || theme?.sources?.[6] || 'sheet_h2h_radar';
 
   const allTeams = sheetData?.allTeamsFull || [];
-  let teamA = allTeams[0] || {
+  let teamA: any = allTeams[0] || {
     rank: 1,
     name: 'LOADING...',
     tag: '---',
@@ -42,7 +42,7 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey = 0, onEl
     hs: 0,
     gloo: 0,
   };
-  let teamB = allTeams[1] || {
+  let teamB: any = allTeams[1] || {
     rank: 2,
     name: 'LOADING...',
     tag: '---',
@@ -53,7 +53,10 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey = 0, onEl
     gloo: 0,
   };
 
-  if (source === 'custom_radar_h2h' && allTeams.length >= 2) {
+  if (source === 'sheet_h2h_radar' && sheetData?.h2hMatch5?.a && sheetData?.h2hMatch5?.b) {
+    teamA = sheetData.h2hMatch5.a;
+    teamB = sheetData.h2hMatch5.b;
+  } else if (source === 'custom_radar_h2h' && allTeams.length >= 2) {
     teamA = allTeams[custom?.rAIdx ?? 0] || allTeams[0];
     teamB = allTeams[custom?.rBIdx ?? 1] || allTeams[1];
   }

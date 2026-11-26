@@ -25,6 +25,8 @@ export default function Slide10DualColumn({
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const chartInstanceRef = useRef<Chart | null>(null);
   const imgCacheRef = useRef<Map<string, HTMLImageElement>>(new Map());
+  const labelsAlphaRef = useRef<number>(0);
+  const labelRafRef = useRef<number | null>(null);
 
   const themeS9 = theme?.s9 || { kills: '#F5B700', damage: '#38BDF8' };
   const source = theme?.sources?.[8] || theme?.sources?.[9] || 'day_kd_12';
@@ -177,6 +179,7 @@ export default function Slide10DualColumn({
   // 1. Initial Mount & ReplayKey: Create Chart ONCE
   useEffect(() => {
     setAnimated(false);
+    labelsAlphaRef.current = 0;
     const animTimer = setTimeout(() => setAnimated(true), 150);
 
     const canvas = canvasRef.current;
@@ -192,12 +195,16 @@ export default function Slide10DualColumn({
 
     const { cfg: currentCfg, themeS9: currentTheme } = latestRef.current;
 
-    // Custom Plugin: Large 24px Numbers cleanly positioned with 2D Anti-Collision Stacking (Up/Down)
+    // Custom Plugin: Crisp Numbers fading in AFTER candles settle, strictly ABOVE candles (zero collisions)
     const valuePlugin = {
       id: 'dualValuePlugin',
       afterDatasetsDraw(chart: any) {
-        const { ctx, chartArea } = chart;
+        const alpha = labelsAlphaRef.current;
+        if (alpha <= 0.01) return;
+
+        const { ctx } = chart;
         ctx.save();
+        ctx.globalAlpha = alpha;
 
         const meta0 = chart.getDatasetMeta(0);
         const meta1 = chart.getDatasetMeta(1);
@@ -210,19 +217,19 @@ export default function Slide10DualColumn({
         const ds1 = chart.data.datasets[1];
         const total = Math.max(meta0.data.length, meta1.data.length);
 
-        ctx.font = '800 24px "GFF Latin", "Teko", sans-serif';
+        ctx.font = '800 18px "GFF Latin", "Teko", sans-serif';
         ctx.textBaseline = 'bottom';
-        ctx.lineWidth = 4.5;
+        ctx.lineWidth = 4;
         ctx.strokeStyle = 'rgba(0,0,0,0.96)';
 
-        const topBound = (chartArea?.top ?? 10) + 26;
+        const topBound = 22;
         const placedBoxes: Array<{ x1: number; x2: number; yTop: number; yBot: number }> = [];
 
         const resolveY = (cx: number, w: number, baseY: number): number => {
-          let y = baseY;
-          const halfW = w / 2 + 5;
-          for (let attempt = 0; attempt < 5; attempt++) {
-            const box = { x1: cx - halfW, x2: cx + halfW, yTop: y - 26, yBot: y + 2 };
+          let y = Math.max(topBound, baseY);
+          const halfW = w / 2 + 4;
+          for (let attempt = 0; attempt < 8; attempt++) {
+            const box = { x1: cx - halfW, x2: cx + halfW, yTop: y - 20, yBot: y + 2 };
             const collides = placedBoxes.some(
               (b) => !(box.x2 < b.x1 || box.x1 > b.x2 || box.yBot < b.yTop || box.yTop > b.yBot)
             );
@@ -230,14 +237,11 @@ export default function Slide10DualColumn({
               placedBoxes.push(box);
               return y;
             }
-            // Stack upward; if near chart top, drop down inside bar
-            if (y - 30 >= topBound) {
-              y -= 30;
-            } else {
-              y += 28;
-            }
+            // Strictly stack upward above bars — never drop down inside a candle
+            y = Math.max(topBound, y - 22);
+            if (y === topBound) break;
           }
-          placedBoxes.push({ x1: cx - halfW, x2: cx + halfW, yTop: y - 26, yBot: y + 2 });
+          placedBoxes.push({ x1: cx - halfW, x2: cx + halfW, yTop: y - 20, yBot: y + 2 });
           return y;
         };
 
@@ -262,10 +266,10 @@ export default function Slide10DualColumn({
           const w0 = has0 ? ctx.measureText(txt0).width : 0;
           const w1 = has1 ? ctx.measureText(txt1).width : 0;
 
-          const x0 = p0 ? p0.x - 2 : 0;
-          const x1 = p1 ? p1.x : 0;
-          const baseY0 = p0 ? p0.y - 10 : 0;
-          const baseY1 = p1 ? p1.y - 10 : 0;
+          const x0 = p0 ? p0.x - 1 : 0;
+          const x1 = p1 ? p1.x + 1 : 0;
+          const baseY0 = p0 ? p0.y - 8 : 0;
+          const baseY1 = p1 ? p1.y - 8 : 0;
 
           // Place lower bar's label first, then higher/adjacent label resolves cleanly above
           let y0 = baseY0;
@@ -285,20 +289,42 @@ export default function Slide10DualColumn({
           }
 
           if (has0) {
+            if (p0 && y0 < baseY0 - 8) {
+              ctx.save();
+              ctx.strokeStyle = liveKillsCol;
+              ctx.globalAlpha = alpha * 0.45;
+              ctx.lineWidth = 1.25;
+              ctx.beginPath();
+              ctx.moveTo(x0, p0.y - 3);
+              ctx.lineTo(x0, y0 + 2);
+              ctx.stroke();
+              ctx.restore();
+            }
             ctx.textAlign = 'center';
             ctx.fillStyle = liveKillsCol;
             ctx.shadowColor = liveKillsCol;
-            ctx.shadowBlur = 8;
+            ctx.shadowBlur = 7;
             ctx.strokeText(txt0, x0, y0);
             ctx.fillText(txt0, x0, y0);
             ctx.shadowBlur = 0;
           }
 
           if (has1) {
+            if (p1 && y1 < baseY1 - 8) {
+              ctx.save();
+              ctx.strokeStyle = liveDamageCol;
+              ctx.globalAlpha = alpha * 0.45;
+              ctx.lineWidth = 1.25;
+              ctx.beginPath();
+              ctx.moveTo(x1, p1.y - 3);
+              ctx.lineTo(x1, y1 + 2);
+              ctx.stroke();
+              ctx.restore();
+            }
             ctx.textAlign = 'center';
             ctx.fillStyle = liveDamageCol;
             ctx.shadowColor = liveDamageCol;
-            ctx.shadowBlur = 8;
+            ctx.shadowBlur = 7;
             ctx.strokeText(txt1, x1, y1);
             ctx.fillText(txt1, x1, y1);
             ctx.shadowBlur = 0;
@@ -513,10 +539,10 @@ export default function Slide10DualColumn({
             );
           }
         },
-        layout: { padding: { top: 75, bottom: 94, left: 10, right: 10 } },
+        layout: { padding: { top: 116, bottom: 94, left: 10, right: 10 } },
         animation: {
-          duration: 1050,
-          delay: (c: any) => c.dataIndex * 45 + c.datasetIndex * 35,
+          duration: 1000,
+          delay: (c: any) => c.dataIndex * 24 + c.datasetIndex * 24,
           easing: 'easeOutQuart',
         },
         plugins: {
@@ -576,8 +602,30 @@ export default function Slide10DualColumn({
 
     chartInstanceRef.current = newChart;
 
+    // Fade numbers in smoothly AFTER the candle bars finish rising
+    const labelFadeTimer = setTimeout(() => {
+      const start = performance.now();
+      const duration = 340;
+      const tick = (now: number) => {
+        const t = Math.min(1, (now - start) / duration);
+        labelsAlphaRef.current = 1 - Math.pow(1 - t, 3);
+        newChart.draw();
+        if (t < 1) {
+          labelRafRef.current = requestAnimationFrame(tick);
+        } else {
+          labelRafRef.current = null;
+        }
+      };
+      labelRafRef.current = requestAnimationFrame(tick);
+    }, 1180);
+
     return () => {
       clearTimeout(animTimer);
+      clearTimeout(labelFadeTimer);
+      if (labelRafRef.current !== null) {
+        cancelAnimationFrame(labelRafRef.current);
+        labelRafRef.current = null;
+      }
       newChart.destroy();
       if (chartInstanceRef.current === newChart) {
         chartInstanceRef.current = null;

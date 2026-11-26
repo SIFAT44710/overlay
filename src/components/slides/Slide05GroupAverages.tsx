@@ -22,6 +22,7 @@ const DEFAULT_ALL_TEAMS = Array.from({ length: 12 }, (_, idx) => ({
   assist: 0,
   surv: 0,
   total: 0,
+  logoUrl: undefined as string | undefined,
 }));
 
 export default function Slide05GroupAverages({
@@ -59,9 +60,9 @@ export default function Slide05GroupAverages({
       }))
     : DEFAULT_ALL_TEAMS;
 
-  // Resolve Team A & Team B based on custom indices or defaults
-  const idxA = custom?.gAIdx ?? 1; // Default to #2 iQ LESS
-  const idxB = custom?.gBIdx ?? 7; // Default to #8 NO SYMPATHY
+  // Resolve Team A & Team B based on custom indices or live sheet H2H
+  const idxA = custom?.gAIdx ?? 0;
+  const idxB = custom?.gBIdx ?? 1;
 
   let rawA: any = allTeams[idxA] || allTeams[0];
   let rawB: any = allTeams[idxB] || allTeams[1] || rawA;
@@ -70,11 +71,16 @@ export default function Slide05GroupAverages({
     rawA = allTeams[0];
     rawB = allTeams[1];
   } else if (source === 'group_avg_h2h' && sheetData?.h2hGroupAvg?.a && sheetData?.h2hGroupAvg?.b) {
-    // If standard group average data is available, preserve team names
     const matchA = allTeams.find((t) => t.tag === sheetData.h2hGroupAvg.a.tag || t.name === sheetData.h2hGroupAvg.a.name);
     const matchB = allTeams.find((t) => t.tag === sheetData.h2hGroupAvg.b.tag || t.name === sheetData.h2hGroupAvg.b.name);
-    if (matchA) rawA = matchA;
-    if (matchB) rawB = matchB;
+    rawA = {
+      ...sheetData.h2hGroupAvg.a,
+      logoUrl: sheetData.h2hGroupAvg.a.logoUrl || matchA?.logoUrl,
+    };
+    rawB = {
+      ...sheetData.h2hGroupAvg.b,
+      logoUrl: sheetData.h2hGroupAvg.b.logoUrl || matchB?.logoUrl,
+    };
   }
 
   const a = {

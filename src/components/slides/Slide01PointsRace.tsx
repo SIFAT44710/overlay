@@ -98,10 +98,13 @@ export default function Slide01PointsRace({
   const cW = W - padL - padR;
   const cH = H - padT - padB;
 
-  // Find max value across all teams to scale Y axis (standard 140 default)
-  const maxVal = Math.max(140, ...progression.flatMap((t) => t.pts));
+  // Scale Y axis dynamically to actual live sheet values so curves span full chart height
+  const rawMax = Math.max(4, ...progression.flatMap((t) => t.pts));
+  const unit = rawMax <= 12 ? 1 : rawMax <= 80 ? 5 : 10;
+  const niceStep = Math.max(1, Math.ceil((rawMax * 1.15) / 4 / unit) * unit);
+  const maxVal = niceStep * 4;
 
-  const gridValues = [0, 35, 70, 105, 140];
+  const gridValues = [0, niceStep, niceStep * 2, niceStep * 3, maxVal];
 
   // Resolve Drive Logo for each team from sheetData.standing12
   const teamLogoMap: Record<string, string> = {};
@@ -119,7 +122,7 @@ export default function Slide01PointsRace({
     const lastVal = t.pts[t.pts.length - 1] ?? 0;
     return { y: padT + cH - (lastVal / maxVal) * cH, origIdx: idx };
   });
-  const safeYs = spreadY(rawYs, 62, padT + 28, H - padB - 28);
+  const safeYs = spreadY(rawYs, 66, padT + 30, H - padB - 30);
 
   return (
     <div className="w-full max-w-[1340px] pt-14 relative font-hud select-none">

@@ -57,16 +57,7 @@ export default function Slide03WeaponRings({
     activeWeapons = sheetData.weaponsByMatch[matchNum];
   }
 
-  const weapons =
-    activeWeapons && activeWeapons.length > 0
-      ? activeWeapons
-      : [
-          { name: 'EVO3', kills: 256, damage: 115964, hs: 283, color: '#8b5cf6' },
-          { name: 'M7', kills: 61, damage: 35086, hs: 79, color: '#2dd4bf' },
-          { name: 'AWM', kills: 37, damage: 36446, hs: 11, color: '#fbbf24' },
-          { name: 'UZI', kills: 24, damage: 11059, hs: 66, color: '#f43f5e' },
-          { name: 'WOODPECKER', kills: 17, damage: 14844, hs: 29, color: '#38bdf8' },
-        ];
+  const weapons = activeWeapons && activeWeapons.length > 0 ? activeWeapons : [];
 
   const matchBadgeLabel = matchNum >= 1
     ? `MATCH 0${matchNum} • WEAPON META RINGS`
