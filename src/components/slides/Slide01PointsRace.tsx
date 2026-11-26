@@ -212,8 +212,10 @@ export default function Slide01PointsRace({
         </text>
         {['MATCH 1', 'MATCH 2', 'MATCH 3', 'MATCH 4', 'MATCH 5'].map((m, i) => {
           const x = padL + ((i + 1) / 5) * cW;
+          const playedCount = Math.max(1, progression[0]?.pts?.length || 1);
+          const isPlayed = i < playedCount;
           return (
-            <g key={m}>
+            <g key={m} opacity={isPlayed ? 1 : 0.42}>
               <rect
                 x={x - 54}
                 y={H - 48}
@@ -265,8 +267,9 @@ export default function Slide01PointsRace({
           const ly = safeYs[tIdx] ?? last.y;
           const boxW = isLeader ? 280 : 264;
           const boxH = isLeader ? 58 : 52;
+          const pillX = last.x + 28;
           const logoR = isLeader ? 23 : 20;
-          const logoCx = endX + 62;
+          const logoCx = pillX + 28;
           const isLightCol = col === '#fbbf24' || col === '#F5B700' || col === '#2dd4bf';
 
           const teamLogoUrl =
@@ -319,26 +322,25 @@ export default function Slide01PointsRace({
                   />
                 ))}
 
-              {/* Non-overlapping Endpoint Tag Pill */}
+              {/* Non-overlapping Endpoint Tag Pill anchored directly at curve end */}
               <g
                 opacity={animated ? 1 : 0}
                 style={{
                   transition: `opacity 0.75s ease ${1.10 + tIdx * 0.18}s`,
                 }}
               >
-                {/* Dashed leader line from last played node to spread pill */}
+                {/* Short direct connector from last played node to spread pill */}
                 <path
-                  d={`M ${last.x + 6} ${last.y} L ${endX + 16} ${last.y} L ${endX + 34} ${ly}`}
+                  d={`M ${last.x + 6} ${last.y} L ${last.x + 16} ${last.y} L ${pillX} ${ly}`}
                   fill="none"
                   stroke={col}
-                  strokeWidth={isLeader ? 2 : 1.5}
-                  strokeDasharray="4 6"
-                  opacity={0.5}
+                  strokeWidth={isLeader ? 2.2 : 1.7}
+                  strokeDasharray="3 2"
                 />
 
                 {/* Pill Background Box (Transparent OBS-ready) */}
                 <rect
-                  x={endX + 34}
+                  x={pillX}
                   y={ly - boxH / 2}
                   width={boxW}
                   height={boxH}
@@ -387,7 +389,7 @@ export default function Slide01PointsRace({
 
                 {/* Points Full Text */}
                 <text
-                  x={endX + 34 + boxW - 12}
+                  x={pillX + boxW - 12}
                   y={ly + 8}
                   textAnchor="end"
                   fill="#ffffff"
