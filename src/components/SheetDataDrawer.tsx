@@ -46,6 +46,7 @@ const SLIDE_DATA_OPTIONS: Array<Array<{ id: string; name: string; tab: string; p
     { id: 'top10_plrs', name: 'Vmix: Top 10 Players Kills', tab: 'Vmix R78' },
   ],
   [
+    { id: 'latest_h2h', name: 'Sheet Team H2H Map Standing (Live)', tab: 'Vmix R43' },
     { id: 'sheet_h2h_radar', name: 'Sheet Team H2H Day Standing (Live)', tab: 'Vmix R64' },
     { id: 'custom_radar_h2h', name: 'Pick Any 2 Teams', tab: 'TeamStats', pickerType: 'teams_s7' },
   ],

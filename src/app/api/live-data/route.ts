@@ -589,6 +589,7 @@ export async function GET(req: NextRequest) {
           hs,
           gloo,
           assist,
+          logoUrl: matched?.logoUrl || resolveDriveLogo(tName, tag, driveFiles),
         };
       };
 

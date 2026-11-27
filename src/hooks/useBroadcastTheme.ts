@@ -38,7 +38,7 @@ export const DEFAULT_THEMES: BroadcastThemeConfig = {
     2: 'day_guns',
     3: 'group_avg_h2h',
     4: 'day_pts',
-    5: 'sheet_h2h_radar',
+    5: 'latest_h2h',
     6: 'm1_m5_kd',
     7: 'sheet_h2h_polar',
     8: 'day_kd_12',

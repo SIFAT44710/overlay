@@ -29,7 +29,7 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey = 0, onEl
 
   const themeS6 = theme?.s6 || { rank1: '#E11D48', rank2: '#A78BFA', outerBox: '#090b12' };
   const custom = theme?.custom;
-  const source = theme?.sources?.[5] || theme?.sources?.[6] || 'sheet_h2h_radar';
+  const source = theme?.sources?.[5] || theme?.sources?.[6] || 'latest_h2h';
 
   const allTeams = sheetData?.allTeamsFull || [];
   let teamA: any = allTeams[0] || {
@@ -53,7 +53,10 @@ export default function Slide07FastRadar({ sheetData, theme, replayKey = 0, onEl
     gloo: 0,
   };
 
-  if (source === 'sheet_h2h_radar' && sheetData?.h2hDayStanding?.a && sheetData?.h2hDayStanding?.b) {
+  if (source === 'latest_h2h' && sheetData?.h2hMatch5?.a && sheetData?.h2hMatch5?.b) {
+    teamA = sheetData.h2hMatch5.a;
+    teamB = sheetData.h2hMatch5.b;
+  } else if (source === 'sheet_h2h_radar' && sheetData?.h2hDayStanding?.a && sheetData?.h2hDayStanding?.b) {
     teamA = sheetData.h2hDayStanding.a;
     teamB = sheetData.h2hDayStanding.b;
   } else if (source === 'sheet_h2h_radar' && sheetData?.h2hMatch5?.a && sheetData?.h2hMatch5?.b) {
